@@ -1,0 +1,67 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
+import * as path from 'path';
+import { exec } from 'child_process';
+
+function dpdToNplClass(dpd: number): string {
+  if (dpd <= 0)   return 'PERFORMING';
+  if (dpd <= 30)  return 'WATCH';
+  if (dpd <= 90)  return 'SUBSTANDARD';
+  if (dpd <= 180) return 'DOUBTFUL';
+  return 'LOSS';
+}
+
+@Injectable()
+export class SchedulerService {
+  private readonly log = new Logger(SchedulerService.name);
+
+  constructor(private prisma: PrismaService) {}
+
+  // Runs every night at 01:00 server time
+  @Cron('0 1 * * *')
+  async recalculateDpd() {
+    this.log.log('DPD recalculation started');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const loans = await this.prisma.loan.findMany({
+      select: { id: true, maturityDate: true, daysPastDue: true },
+    });
+
+    let updated = 0;
+    for (const loan of loans) {
+      const dpd = loan.maturityDate && loan.maturityDate < today
+        ? Math.floor((today.getTime() - loan.maturityDate.getTime()) / 86_400_000)
+        : 0;
+
+      if (dpd !== loan.daysPastDue) {
+        await this.prisma.loan.update({
+          where: { id: loan.id },
+          data: {
+            daysPastDue: dpd,
+            nplClassification: dpdToNplClass(dpd) as any,
+            dpdLastCalculatedAt: new Date(),
+          },
+        });
+        updated++;
+      }
+    }
+
+    this.log.log(`DPD recalculation complete — ${updated}/${loans.length} loans updated`);
+  }
+
+  // Runs every night at 02:00 server time
+  @Cron('0 2 * * *')
+  runBackup() {
+    const script = path.join(process.cwd(), 'scripts', 'backup.sh');
+    exec(`bash "${script}"`, (err, stdout, stderr) => {
+      if (err) {
+        this.log.error(`Backup failed: ${err.message}`);
+        this.log.error(stderr);
+      } else {
+        this.log.log(`Backup complete:\n${stdout.trim()}`);
+      }
+    });
+  }
+}

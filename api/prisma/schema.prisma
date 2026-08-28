@@ -1,0 +1,428 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(uuid()) @db.Uuid
+  username          String              @unique @db.VarChar(50)
+  passwordHash      String              @map("password_hash") @db.VarChar(255)
+  fullName          String              @map("full_name") @db.VarChar(150)
+  email             String              @unique @db.VarChar(150)
+  role                 UserRole            @default(OFFICER)
+  isActive             Boolean             @default(true) @map("is_active")
+  officeId             String?             @map("office_id") @db.Uuid
+  tokenVersion         Int                 @default(0) @map("token_version")
+  failedLoginAttempts  Int                 @default(0) @map("failed_login_attempts")
+  lockedUntil          DateTime?           @map("locked_until") @db.Timestamptz(6)
+  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  activities        Activity[]
+  caseStatusChanges CaseStatusHistory[]
+  cases             Case[]              @relation("AssignedOfficer")
+  documents         Document[]
+  payments          Payment[]
+  tasksAssigned     Task[]              @relation("TasksAssigned")
+  tasksCreated      Task[]              @relation("TasksCreated")
+  office            Office?             @relation(fields: [officeId], references: [id])
+
+  @@map("users")
+}
+
+model Office {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  code      String   @unique @db.VarChar(10)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  cases     Case[]
+  users     User[]
+
+  @@map("offices")
+}
+
+model Institution {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(150)
+  shortName String   @map("short_name") @db.VarChar(20)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  loans     Loan[]
+
+  @@map("institutions")
+}
+
+model Person {
+  id          String      @id @default(uuid()) @db.Uuid
+  personalId  String      @unique @map("personal_id") @db.VarChar(30)
+  firstName   String      @map("first_name") @db.VarChar(100)
+  lastName    String      @map("last_name") @db.VarChar(100)
+  dateOfBirth DateTime?   @map("date_of_birth") @db.Date
+  phone1      String?     @db.VarChar(30)
+  phone2      String?     @db.VarChar(30)
+  email       String?     @db.VarChar(150)
+  address     String?     @db.VarChar(255)
+  city        String?     @db.VarChar(100)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  relatedTo   LoanParty[]
+  loans       Loan[]
+
+  @@map("persons")
+}
+
+model Loan {
+  id                        String      @id @default(uuid()) @db.Uuid
+  loanNumber                String      @unique @map("loan_number") @db.VarChar(30)
+  institutionId             String      @map("institution_id") @db.Uuid
+  borrowerId                String      @map("borrower_id") @db.Uuid
+  originalLoanAmount        Decimal     @map("original_loan_amount") @db.Decimal(18, 2)
+  disbursedAmount           Decimal     @map("disbursed_amount") @db.Decimal(18, 2)
+  currentOutstandingBalance Decimal     @map("current_outstanding_balance") @db.Decimal(18, 2)
+  currency                  String      @default("EUR") @db.VarChar(3)
+  interestRate              Decimal?    @map("interest_rate") @db.Decimal(5, 4)
+  productType               String?     @map("product_type") @db.VarChar(50)
+  disbursementDate          DateTime    @map("disbursement_date") @db.Date
+  maturityDate              DateTime?   @map("maturity_date") @db.Date
+  lastPaymentDate           DateTime?   @map("last_payment_date") @db.Date
+  daysPastDue               Int         @default(0) @map("days_past_due")
+  dpdLastCalculatedAt       DateTime?   @map("dpd_last_calculated_at") @db.Timestamptz(6)
+  nplClassification         NplClass?   @map("npl_classification")
+  createdAt                 DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  case                      Case?
+  relatedParties            LoanParty[]
+  borrower                  Person      @relation(fields: [borrowerId], references: [id])
+  institution               Institution @relation(fields: [institutionId], references: [id])
+
+  @@index([daysPastDue(sort: Desc)])
+  @@map("loans")
+}
+
+model LoanParty {
+  id       String        @id @default(uuid()) @db.Uuid
+  loanId   String        @map("loan_id") @db.Uuid
+  personId String        @map("person_id") @db.Uuid
+  role     LoanPartyRole
+  loan     Loan          @relation(fields: [loanId], references: [id])
+  person   Person        @relation(fields: [personId], references: [id])
+
+  @@unique([loanId, personId, role])
+  @@map("loan_parties")
+}
+
+model Case {
+  id                String              @id @default(uuid()) @db.Uuid
+  caseReference     String              @unique @map("case_reference") @db.VarChar(30)
+  loanId            String              @unique @map("loan_id") @db.Uuid
+  officeId          String?             @map("office_id") @db.Uuid
+  assignedOfficerId String?             @map("assigned_officer_id") @db.Uuid
+  status            CaseStatus          @default(ACTIVE)
+  collectionStage   CollectionStage     @default(D1) @map("collection_stage")
+  priorityScore     Int                 @default(0) @map("priority_score")
+  nextActionDate    DateTime?           @map("next_action_date") @db.Timestamptz(6)
+  nextActionNote    String?             @map("next_action_note") @db.VarChar(500)
+  deletedAt         DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  activities        Activity[]
+  agreements        Agreement[]
+  statusHistory     CaseStatusHistory[]
+  assignedOfficer   User?               @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+  loan              Loan                @relation(fields: [loanId], references: [id])
+  office            Office?             @relation(fields: [officeId], references: [id])
+  documents         Document[]
+  legalProceedings  LegalProceeding[]
+  payments          Payment[]
+  tasks             Task[]
+
+  @@index([status])
+  @@index([officeId])
+  @@index([assignedOfficerId])
+  @@index([deletedAt])
+  @@map("cases")
+}
+
+model Activity {
+  id              String           @id @default(uuid()) @db.Uuid
+  caseId          String           @map("case_id") @db.Uuid
+  officerId       String           @map("officer_id") @db.Uuid
+  activityType    ActivityType     @map("activity_type")
+  channel         String?          @db.VarChar(30)
+  notes           String?
+  outcome         ActivityOutcome?
+  promiseAmount   Decimal?         @map("promise_amount") @db.Decimal(18, 2)
+  promiseCurrency String?          @map("promise_currency") @db.VarChar(3)
+  occurredAt      DateTime         @map("occurred_at") @db.Timestamptz(6)
+  nextActionDate  DateTime?        @map("next_action_date") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  case            Case             @relation(fields: [caseId], references: [id])
+  officer         User             @relation(fields: [officerId], references: [id])
+
+  @@index([caseId, occurredAt(sort: Desc)])
+  @@map("activities")
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  caseId            String        @map("case_id") @db.Uuid
+  officerId         String        @map("officer_id") @db.Uuid
+  paymentReference  String        @unique @map("payment_reference") @db.VarChar(50)
+  amount            Decimal       @db.Decimal(18, 2)
+  currency          String        @default("EUR") @db.VarChar(3)
+  paymentDate       DateTime      @map("payment_date") @db.Date
+  paymentMethod     PaymentMethod @map("payment_method")
+  paymentChannel    String?       @map("payment_channel") @db.VarChar(30)
+  externalReference String?       @map("external_reference") @db.VarChar(100)
+  notes             String?       @db.VarChar(500)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  case              Case          @relation(fields: [caseId], references: [id])
+  officer           User          @relation(fields: [officerId], references: [id])
+
+  @@index([caseId, paymentDate(sort: Desc)])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model Agreement {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  caseId             String                 @map("case_id") @db.Uuid
+  agreementReference String                 @unique @map("agreement_reference") @db.VarChar(30)
+  status             AgreementStatus        @default(ACTIVE)
+  totalAmount        Decimal                @map("total_amount") @db.Decimal(18, 2)
+  currency           String                 @default("EUR") @db.VarChar(3)
+  installmentCount   Int                    @map("installment_count")
+  startDate          DateTime               @map("start_date") @db.Date
+  endDate            DateTime               @map("end_date") @db.Date
+  notes              String?
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  installments       AgreementInstallment[]
+  case               Case                   @relation(fields: [caseId], references: [id])
+
+  @@index([caseId])
+  @@map("agreements")
+}
+
+model AgreementInstallment {
+  id          String            @id @default(uuid()) @db.Uuid
+  agreementId String            @map("agreement_id") @db.Uuid
+  dueDate     DateTime          @map("due_date") @db.Date
+  amount      Decimal           @db.Decimal(18, 2)
+  currency    String            @default("EUR") @db.VarChar(3)
+  status      InstallmentStatus @default(PENDING)
+  paidAt      DateTime?         @map("paid_at") @db.Date
+  paidAmount  Decimal?          @map("paid_amount") @db.Decimal(18, 2)
+  agreement   Agreement         @relation(fields: [agreementId], references: [id])
+
+  @@index([agreementId])
+  @@map("agreement_installments")
+}
+
+model LegalProceeding {
+  id              String                @id @default(uuid()) @db.Uuid
+  caseId          String                @map("case_id") @db.Uuid
+  proceedingRef   String                @unique @map("proceeding_ref") @db.VarChar(30)
+  status          LegalProceedingStatus @default(INITIATED)
+  court           String?               @db.VarChar(150)
+  filingDate      DateTime              @map("filing_date") @db.Date
+  nextHearingDate DateTime?             @map("next_hearing_date") @db.Date
+  judgmentDate    DateTime?             @map("judgment_date") @db.Date
+  judgmentAmount  Decimal?              @map("judgment_amount") @db.Decimal(18, 2)
+  notes           String?
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  case            Case                  @relation(fields: [caseId], references: [id])
+
+  @@index([caseId])
+  @@map("legal_proceedings")
+}
+
+model Document {
+  id           String       @id @default(uuid()) @db.Uuid
+  caseId       String       @map("case_id") @db.Uuid
+  uploadedById String       @map("uploaded_by_id") @db.Uuid
+  documentType DocumentType @map("document_type")
+  fileName     String       @map("file_name") @db.VarChar(255)
+  fileSize     Int          @map("file_size")
+  mimeType     String       @map("mime_type") @db.VarChar(100)
+  storagePath  String       @map("storage_path") @db.VarChar(500)
+  notes        String?      @db.VarChar(500)
+  uploadedAt   DateTime     @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+  case         Case         @relation(fields: [caseId], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  @@index([caseId])
+  @@map("documents")
+}
+
+model Task {
+  id           String        @id @default(uuid()) @db.Uuid
+  caseId       String?       @map("case_id") @db.Uuid
+  title        String        @db.VarChar(200)
+  description  String?
+  priority     TaskPriority  @default(MEDIUM)
+  dueDate      DateTime?     @map("due_date") @db.Timestamptz(6)
+  completedAt  DateTime?     @map("completed_at") @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  assignedToId String?       @map("assigned_to_id") @db.Uuid
+  createdById  String?       @map("created_by_id") @db.Uuid
+  assignedTo   User?         @relation("TasksAssigned", fields: [assignedToId], references: [id])
+  case         Case?         @relation(fields: [caseId], references: [id])
+  createdBy    User?         @relation("TasksCreated", fields: [createdById], references: [id])
+
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model CaseStatusHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  caseId      String   @map("case_id") @db.Uuid
+  changedById String   @map("changed_by_id") @db.Uuid
+  field       String   @db.VarChar(50)
+  oldValue    String?  @map("old_value") @db.VarChar(100)
+  newValue    String?  @map("new_value") @db.VarChar(100)
+  note        String?  @db.VarChar(500)
+  changedAt   DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+  case        Case     @relation(fields: [caseId], references: [id])
+  changedBy   User     @relation(fields: [changedById], references: [id])
+
+  @@index([caseId, changedAt(sort: Desc)])
+  @@map("case_status_history")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OFFICER
+  VIEWER
+}
+
+enum CaseStatus {
+  ACTIVE
+  CLOSED
+  SUSPENDED
+  LEGAL
+}
+
+enum CollectionStage {
+  D1
+  D2
+  D3
+  D4
+  LEGAL
+  WRITTEN_OFF
+}
+
+enum ActivityType {
+  CALL
+  VISIT
+  SMS
+  EMAIL
+  LETTER
+  PROMISE_TO_PAY
+  PAYMENT_RECEIVED
+  LEGAL_ACTION
+  NOTE
+  FIELD_VISIT
+}
+
+enum ActivityOutcome {
+  CONTACTED
+  NO_ANSWER
+  PROMISE_RECEIVED
+  REFUSED
+  PARTIAL_PAYMENT
+  FULL_PAYMENT
+  DISPUTE
+  DECEASED
+  OTHER
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CHECK
+  CARD
+  MOBILE
+  OTHER
+}
+
+enum AgreementStatus {
+  ACTIVE
+  COMPLETED
+  BROKEN
+  CANCELLED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum LegalProceedingStatus {
+  INITIATED
+  IN_PROGRESS
+  JUDGMENT
+  ENFORCEMENT
+  CLOSED
+}
+
+enum DocumentType {
+  CONTRACT
+  ID_DOCUMENT
+  COLLATERAL
+  COURT_ORDER
+  PAYMENT_PROOF
+  AGREEMENT
+  CORRESPONDENCE
+  OTHER
+}
+
+enum TaskPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum LoanPartyRole {
+  BORROWER
+  CO_BORROWER
+  GUARANTOR
+  SPOUSE
+  EMPLOYER
+  OTHER
+}
+
+enum NplClass {
+  PERFORMING
+  WATCH
+  SUBSTANDARD
+  DOUBTFUL
+  LOSS
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  username   String?  @db.VarChar(50)
+  action     String   @db.VarChar(100)
+  entity     String?  @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.VarChar(100)
+  details    String?  @db.Text
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([occurredAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
+}

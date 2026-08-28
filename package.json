@@ -1,0 +1,14 @@
+{
+  "name": "dlr",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names \"API,WEB\" --prefix-colors \"magenta,cyan\" \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd api && npm run start:dev",
+    "dev:web": "cd web && npm run dev",
+    "install:all": "npm install && cd api && npm install && cd ../web && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

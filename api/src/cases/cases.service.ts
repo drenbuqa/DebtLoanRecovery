@@ -1,0 +1,491 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CollectionStage, CaseStatus } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+
+const CASE_LIST_SELECT = {
+  id: true,
+  caseReference: true,
+  status: true,
+  collectionStage: true,
+  priorityScore: true,
+  nextActionDate: true,
+  createdAt: true,
+  updatedAt: true,
+  loan: {
+    select: {
+      id: true,
+      loanNumber: true,
+      currentOutstandingBalance: true,
+      originalLoanAmount: true,
+      currency: true,
+      lastPaymentDate: true,
+      daysPastDue: true,
+      institution: { select: { id: true, shortName: true, name: true } },
+      borrower: { select: { id: true, firstName: true, lastName: true, personalId: true } },
+    },
+  },
+  assignedOfficer: { select: { id: true, fullName: true } },
+  office: { select: { id: true, name: true } },
+  _count: { select: { activities: true, payments: true } },
+};
+
+const CASE_DETAIL_EXTRA = {
+  nextActionNote: true,
+  loan: {
+    select: {
+      id: true,
+      loanNumber: true,
+      currentOutstandingBalance: true,
+      originalLoanAmount: true,
+      disbursedAmount: true,
+      currency: true,
+      productType: true,
+      interestRate: true,
+      disbursementDate: true,
+      maturityDate: true,
+      lastPaymentDate: true,
+      daysPastDue: true,
+      nplClassification: true,
+      institution: { select: { id: true, shortName: true, name: true } },
+      borrower: {
+        select: {
+          id: true, firstName: true, lastName: true, personalId: true,
+          dateOfBirth: true, phone1: true, phone2: true, email: true, address: true, city: true,
+        },
+      },
+      relatedParties: {
+        select: {
+          role: true,
+          person: { select: { id: true, firstName: true, lastName: true, personalId: true, phone1: true, phone2: true } },
+        },
+      },
+    },
+  },
+  activities: {
+    orderBy: { occurredAt: 'desc' as const },
+    take: 50,
+    select: {
+      id: true, activityType: true, channel: true, notes: true,
+      outcome: true, occurredAt: true, nextActionDate: true, promiseAmount: true,
+      officer: { select: { id: true, fullName: true } },
+    },
+  },
+  payments: {
+    orderBy: { paymentDate: 'desc' as const },
+    take: 20,
+    select: {
+      id: true, paymentReference: true, amount: true, currency: true,
+      paymentDate: true, paymentMethod: true, paymentChannel: true, notes: true,
+      officer: { select: { id: true, fullName: true } },
+    },
+  },
+  agreements: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 5,
+    select: {
+      id: true, agreementReference: true, status: true, totalAmount: true,
+      currency: true, installmentCount: true, startDate: true, endDate: true,
+      installments: { orderBy: { dueDate: 'asc' as const } },
+    },
+  },
+  tasks: {
+    where: { completedAt: null },
+    orderBy: { dueDate: 'asc' as const },
+    take: 10,
+    select: { id: true, title: true, dueDate: true, priority: true },
+  },
+  documents: {
+    orderBy: { uploadedAt: 'desc' as const },
+    take: 20,
+    select: {
+      id: true, documentType: true, fileName: true, uploadedAt: true, fileSize: true,
+      uploadedBy: { select: { id: true, fullName: true } },
+    },
+  },
+  legalProceedings: {
+    orderBy: { createdAt: 'desc' as const },
+    take: 5,
+    select: {
+      id: true, proceedingRef: true, status: true, court: true,
+      filingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, notes: true,
+    },
+  },
+};
+
+@Injectable()
+export class CasesService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    stage?: string;
+    institutionId?: string;
+    officeId?: string;
+    officerId?: string;
+    view?: string;
+  }) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 25, 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.status) where.status = query.status;
+    if (query.stage) where.collectionStage = query.stage;
+    if (query.officeId) where.officeId = query.officeId;
+    if (query.officerId) where.assignedOfficerId = query.officerId;
+    if (query.institutionId) where.loan = { institutionId: query.institutionId };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (query.view === 'promises_today') {
+      where.activities = {
+        some: { activityType: 'PROMISE_TO_PAY', nextActionDate: { gte: today, lt: tomorrow } },
+      };
+    } else if (query.view === 'inactive_30d') {
+      const thirtyAgo = new Date();
+      thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+      where.activities = { none: { occurredAt: { gte: thirtyAgo } } };
+    } else if (query.view === 'legal') {
+      where.legalProceedings = { some: {} };
+    }
+
+    if (query.search) {
+      where.OR = [
+        { caseReference: { contains: query.search, mode: 'insensitive' } },
+        { loan: { loanNumber: { contains: query.search, mode: 'insensitive' } } },
+        { loan: { borrower: { firstName: { contains: query.search, mode: 'insensitive' } } } },
+        { loan: { borrower: { lastName: { contains: query.search, mode: 'insensitive' } } } },
+        { loan: { borrower: { personalId: { contains: query.search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.case.count({ where }),
+      this.prisma.case.findMany({
+        where,
+        select: CASE_LIST_SELECT,
+        orderBy: [{ priorityScore: 'desc' }, { updatedAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return { data: items, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+  }
+
+  async findOne(id: string) {
+    const c = await this.prisma.case.findFirst({
+      where: { OR: [{ id }, { caseReference: id }] },
+      select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
+    });
+    if (!c) throw new NotFoundException('Case not found');
+    return c;
+  }
+
+  async updateNextAction(id: string, dto: { nextActionDate?: string; nextActionNote?: string }) {
+    return this.prisma.case.update({
+      where: { id },
+      data: {
+        ...(dto.nextActionDate && { nextActionDate: new Date(dto.nextActionDate) }),
+        ...(dto.nextActionNote !== undefined && { nextActionNote: dto.nextActionNote }),
+      },
+      select: { id: true, nextActionDate: true, nextActionNote: true },
+    });
+  }
+
+  async updateCase(id: string, dto: {
+    assignedOfficerId?: string;
+    officeId?: string;
+    currentOutstandingBalance?: number;
+    maturityDate?: string;
+    interestRate?: number;
+    productType?: string;
+    nplClassification?: string;
+  }) {
+    const loanData: any = {};
+    if (dto.currentOutstandingBalance !== undefined) loanData.currentOutstandingBalance = dto.currentOutstandingBalance;
+    if (dto.maturityDate !== undefined) loanData.maturityDate = dto.maturityDate ? new Date(dto.maturityDate) : null;
+    if (dto.interestRate !== undefined) loanData.interestRate = dto.interestRate;
+    if (dto.productType !== undefined) loanData.productType = dto.productType;
+    if (dto.nplClassification !== undefined) loanData.nplClassification = dto.nplClassification;
+
+    const caseData: any = {};
+    if (dto.assignedOfficerId !== undefined) caseData.assignedOfficerId = dto.assignedOfficerId || null;
+    if (dto.officeId !== undefined) caseData.officeId = dto.officeId || null;
+
+    if (Object.keys(loanData).length) {
+      const c = await this.prisma.case.findUnique({ where: { id }, select: { loanId: true } });
+      if (c?.loanId) await this.prisma.loan.update({ where: { id: c.loanId }, data: loanData });
+    }
+    return this.prisma.case.update({ where: { id }, data: caseData, select: { id: true } });
+  }
+
+  async assignOfficer(id: string, officerId: string) {
+    return this.prisma.case.update({
+      where: { id },
+      data: { assignedOfficerId: officerId },
+      select: { id: true, assignedOfficerId: true, assignedOfficer: { select: { id: true, fullName: true } } },
+    });
+  }
+
+  async searchPerson(personalId: string) {
+    return this.prisma.person.findUnique({
+      where: { personalId },
+      select: {
+        id: true, personalId: true, firstName: true, lastName: true,
+        phone1: true, phone2: true, email: true, address: true, city: true,
+        loans: {
+          select: {
+            id: true, loanNumber: true, currentOutstandingBalance: true,
+            case: { select: { id: true, caseReference: true, status: true } },
+            institution: { select: { shortName: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async createCase(dto: {
+    // Person (borrower)
+    personalId: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: string;
+    phone1?: string;
+    phone2?: string;
+    email?: string;
+    address?: string;
+    city?: string;
+    // Loan
+    loanNumber: string;
+    institutionId: string;
+    originalLoanAmount: number;
+    disbursedAmount: number;
+    currentOutstandingBalance: number;
+    currency?: string;
+    interestRate?: number;
+    productType?: string;
+    disbursementDate: string;
+    maturityDate?: string;
+    daysPastDue: number;
+    nplClassification?: string;
+    // Case
+    officeId?: string;
+    assignedOfficerId?: string;
+    collectionStage?: string;
+  }, createdById: string) {
+    // Check loan number not already used
+    const existing = await this.prisma.loan.findUnique({ where: { loanNumber: dto.loanNumber } });
+    if (existing) throw new BadRequestException(`Loan number ${dto.loanNumber} already exists`);
+
+    // Upsert person (by personalId)
+    const person = await this.prisma.person.upsert({
+      where: { personalId: dto.personalId },
+      update: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        ...(dto.phone1 !== undefined && { phone1: dto.phone1 }),
+        ...(dto.phone2 !== undefined && { phone2: dto.phone2 }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.city !== undefined && { city: dto.city }),
+      },
+      create: {
+        personalId: dto.personalId,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        phone1: dto.phone1,
+        phone2: dto.phone2,
+        email: dto.email,
+        address: dto.address,
+        city: dto.city,
+      },
+    });
+
+    // Generate case reference
+    const year = new Date().getFullYear();
+    const count = await this.prisma.case.count();
+    const caseRef = `DLR-${year}-${String(count + 1).padStart(4, '0')}`;
+
+    // Create loan + case in a transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      const loan = await tx.loan.create({
+        data: {
+          loanNumber: dto.loanNumber,
+          institutionId: dto.institutionId,
+          borrowerId: person.id,
+          originalLoanAmount: dto.originalLoanAmount,
+          disbursedAmount: dto.disbursedAmount,
+          currentOutstandingBalance: dto.currentOutstandingBalance,
+          currency: dto.currency ?? 'EUR',
+          interestRate: dto.interestRate,
+          productType: dto.productType,
+          disbursementDate: new Date(dto.disbursementDate),
+          maturityDate: dto.maturityDate ? new Date(dto.maturityDate) : undefined,
+          daysPastDue: dto.daysPastDue ?? 0,
+          nplClassification: dto.nplClassification as any,
+        },
+      });
+
+      const newCase = await tx.case.create({
+        data: {
+          caseReference: caseRef,
+          loanId: loan.id,
+          officeId: dto.officeId,
+          assignedOfficerId: dto.assignedOfficerId,
+          collectionStage: (dto.collectionStage as CollectionStage) ?? CollectionStage.D1,
+          priorityScore: Math.min(dto.daysPastDue ?? 0, 999),
+        },
+        select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
+      });
+
+      // Log creation in history
+      await tx.caseStatusHistory.create({
+        data: {
+          caseId: newCase.id,
+          changedById: createdById,
+          field: 'status',
+          oldValue: null,
+          newValue: 'ACTIVE',
+          note: 'Case created',
+        },
+      });
+
+      return newCase;
+    });
+
+    return result;
+  }
+
+  async updateStatus(id: string, dto: { status?: string; collectionStage?: string; note?: string }, changedById: string) {
+    const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true } });
+    if (!current) throw new NotFoundException('Case not found');
+
+    const updates: any = {};
+    const historyEntries: any[] = [];
+
+    if (dto.status && dto.status !== current.status) {
+      updates.status = dto.status as CaseStatus;
+      historyEntries.push({ field: 'status', oldValue: current.status, newValue: dto.status, note: dto.note });
+    }
+    if (dto.collectionStage && dto.collectionStage !== current.collectionStage) {
+      updates.collectionStage = dto.collectionStage as CollectionStage;
+      historyEntries.push({ field: 'collectionStage', oldValue: current.collectionStage, newValue: dto.collectionStage, note: dto.note });
+    }
+
+    if (Object.keys(updates).length === 0) return current;
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.case.update({ where: { id }, data: updates, select: { id: true, status: true, collectionStage: true } }),
+      ...historyEntries.map((e) =>
+        this.prisma.caseStatusHistory.create({
+          data: { caseId: id, changedById, ...e },
+        }),
+      ),
+    ]);
+    return updated;
+  }
+
+  async getHistory(id: string) {
+    return this.prisma.caseStatusHistory.findMany({
+      where: { caseId: id },
+      orderBy: { changedAt: 'desc' },
+      select: {
+        id: true, field: true, oldValue: true, newValue: true, note: true, changedAt: true,
+        changedBy: { select: { fullName: true } },
+      },
+    });
+  }
+
+  async getDashboardStats(officeId?: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // All case-scoped queries filter by office when provided
+    const caseScope = officeId ? { officeId } : {};
+    const caseFilter = { status: 'ACTIVE' as const, ...caseScope };
+
+    const [
+      activeCases,
+      totalOutstanding,
+      collectionsThisMonth,
+      promisesToday,
+      activeAgreements,
+      overdueInstallments,
+      legalCases,
+      officeStats,
+    ] = await Promise.all([
+      this.prisma.case.count({ where: caseFilter }),
+      this.prisma.loan.aggregate({
+        where: { case: { ...caseScope } },
+        _sum: { currentOutstandingBalance: true },
+      }),
+      this.prisma.payment.aggregate({
+        where: { paymentDate: { gte: startOfMonth }, ...(officeId ? { case: { officeId } } : {}) },
+        _sum: { amount: true },
+      }),
+      this.prisma.activity.count({
+        where: {
+          activityType: 'PROMISE_TO_PAY',
+          nextActionDate: { gte: today, lt: tomorrow },
+          ...(officeId ? { case: { officeId } } : {}),
+        },
+      }),
+      this.prisma.agreement.count({ where: { case: { ...caseScope } } }),
+      this.prisma.agreementInstallment.count({
+        where: { status: 'OVERDUE', agreement: { case: { ...caseScope } } },
+      }),
+      this.prisma.case.count({ where: { legalProceedings: { some: {} }, ...caseScope } }),
+      this.prisma.office.findMany({
+        where: officeId ? { id: officeId } : undefined,
+        select: {
+          id: true, name: true,
+          _count: { select: { cases: { where: { status: 'ACTIVE' } } } },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    // Monthly collections for last 6 months
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const rawPayments = await this.prisma.payment.findMany({
+      where: {
+        paymentDate: { gte: sixMonthsAgo },
+        ...(officeId ? { case: { officeId } } : {}),
+      },
+      select: { paymentDate: true, amount: true },
+    });
+
+    // Group by month
+    const monthlyMap: Record<string, number> = {};
+    for (const p of rawPayments) {
+      const key = `${p.paymentDate.getFullYear()}-${String(p.paymentDate.getMonth() + 1).padStart(2, '0')}`;
+      monthlyMap[key] = (monthlyMap[key] ?? 0) + Number(p.amount);
+    }
+    const monthlyCollections = Object.entries(monthlyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, total]) => ({ month, total }));
+
+    return {
+      activeCases,
+      totalOutstanding: Number(totalOutstanding._sum.currentOutstandingBalance ?? 0),
+      collectionsThisMonth: Number(collectionsThisMonth._sum.amount ?? 0),
+      promisesToday,
+      activeAgreements,
+      overdueInstallments,
+      legalCases,
+      officeStats: officeStats.map((o) => ({ ...o, activeCases: o._count.cases })),
+      monthlyCollections,
+    };
+  }
+}

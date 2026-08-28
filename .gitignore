@@ -1,0 +1,38 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# ── Build output ──────────────────────────────────────────────────────────────
+api/dist/
+web/.next/
+web/out/
+web/tsconfig.tsbuildinfo
+api/tsconfig.build.tsbuildinfo
+
+# ── Runtime / uploads ────────────────────────────────────────────────────────
+api/uploads/
+api/backups/
+
+# ── AI tool caches (not project code) ────────────────────────────────────────
+api/.agents/
+api/.windsurf/
+api/.claude/
+api/skills-lock.json
+web/AGENTS.md
+web/CLAUDE.md
+
+# ── Next.js generated files ───────────────────────────────────────────────────
+web/next-env.d.ts
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
