@@ -1,0 +1,292 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Topbar from "@/components/layout/Topbar";
+import { Card } from "@/components/ui/Card";
+import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
+import { formatCurrency, formatEnum } from "@/lib/utils";
+import { payments as paymentsApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useRefreshing } from "@/lib/useRefreshing";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
+import { useIsMobile } from "@/lib/useIsMobile";
+
+const METHOD_LABELS: Record<string, string> = {
+  CASH: "Kesh", BANK_TRANSFER: "Transfertë Bankare", CHECK: "Çek",
+  ONLINE: "Online", OTHER: "Tjetër",
+};
+
+function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void; scopedToSelf: boolean }) {
+  const borrower = p.case?.loan?.borrower;
+  const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "—";
+  const date = new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+  return (
+    <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50 cursor-pointer">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <div className="text-[14px] font-semibold text-gray-900 truncate">{name}</div>
+          <div className="text-[11px] text-gray-400 font-mono mt-0.5">{p.case?.caseReference ?? "—"}</div>
+        </div>
+        <span className="text-[15px] font-bold text-emerald-700 tabular shrink-0">{formatCurrency(Number(p.amount))}</span>
+      </div>
+      <div className="h-px bg-gray-100 mb-3" />
+      <div className="flex items-center gap-3 text-[12px] text-gray-400">
+        <span>{METHOD_LABELS[p.paymentMethod] ?? formatEnum(p.paymentMethod)}</span>
+        <span className="w-1 h-1 rounded-full bg-gray-200" />
+        <span>{date}</span>
+        {!scopedToSelf && p.officer?.fullName && (
+          <><span className="w-1 h-1 rounded-full bg-gray-200" /><span>{p.officer.fullName}</span></>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function PaymentsPage() {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const { user, scopedToSelf, scopedToOffice } = useAuth();
+  const [refreshing, triggerRefresh] = useRefreshing();
+
+  const [data, setData] = useState<any[]>([]);
+  const [meta, setMeta] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [datePreset, setDatePreset] = useState<DatePreset>("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const load = useCallback(async (p = 1) => {
+    setLoading(true); setError(null);
+    try {
+      const params: Record<string, any> = { page: p, limit: 100 };
+      if (scopedToSelf   && user?.id)       params.officerId = user.id;
+      if (scopedToOffice && user?.officeId) params.officeId  = user.officeId;
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo)   params.dateTo   = dateTo;
+      const res = await paymentsApi.list(params);
+      setData(res.data);
+      setMeta(res.meta);
+      setStats(res.stats);
+      setPage(p);
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  }, [scopedToSelf, user?.id, dateFrom, dateTo]);
+
+  useEffect(() => { load(1); }, [load]);
+
+  const total = meta?.total ?? 0;
+  const pages = meta?.pages ?? 1;
+
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? data.filter((p) => {
+        const borrower = p.case?.loan?.borrower;
+        const name = borrower ? `${borrower.firstName} ${borrower.lastName}`.toLowerCase() : "";
+        const ref = (p.case?.caseReference ?? "").toLowerCase();
+        return name.includes(q) || ref.includes(q);
+      })
+    : data;
+
+  const subtitle = scopedToSelf
+    ? "Pagesat që keni regjistruar"
+    : `${total.toLocaleString()} transaksione gjithsej`;
+
+  return (
+    <div className="flex flex-col">
+      <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
+        { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha dosjet. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
+        { title: "Si të regjistroni një pagesë", body: "Shkoni te dosja e debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Shto Pagesë' brenda dosjes. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
+        { title: "Filtrimi sipas datës", body: "Përdorni zgjedhësin e datave në krye për të shfaqur vetëm pagesat nga një periudhë e caktuar — për shembull, të gjitha pagesat e marra këtë javë ose këtë muaj." },
+      ]} />
+
+      <div className="p-3 md:p-6 space-y-4 md:space-y-5">
+
+        {/* Stats */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              {
+                label: scopedToSelf ? "Arkëtimet e Mia Sot" : "Arkëtime Sot",
+                value: formatCurrency(stats.todayTotal ?? 0),
+              },
+              {
+                label: scopedToSelf ? "Arkëtimet e Mia Këtë Muaj" : "Arkëtime Këtë Muaj",
+                value: formatCurrency(stats.monthTotal ?? 0),
+              },
+              {
+                label: scopedToSelf ? "Transaksionet e Mia" : "Gjithsej Transaksione",
+                value: total.toLocaleString(),
+              },
+            ].map((s) => (
+              <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
+                <div className="text-[22px] font-bold text-gray-900 tabular leading-tight mt-1.5">{s.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Filter bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Kërko debitor ose dosje…"
+              className="w-full pl-7 pr-3 py-2 md:py-1.5 text-[13px] border border-gray-200 rounded-xl md:rounded-lg bg-white focus:outline-none focus:border-brand-400"
+            />
+          </div>
+          <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
+        </div>
+
+        {isMobile ? (
+          /* ── Mobile card list ── */
+          <div className="space-y-2.5">
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
+                {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+              </div>
+            )}
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-200 p-4 animate-pulse space-y-3">
+                  <div className="flex justify-between"><div className="h-4 w-32 bg-gray-100 rounded" /><div className="h-5 w-20 bg-gray-100 rounded" /></div>
+                  <div className="h-px bg-gray-100" />
+                  <div className="h-3 w-40 bg-gray-100 rounded" />
+                </div>
+              ))
+            ) : filtered.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 flex flex-col items-center justify-center py-16 gap-4">
+                <CreditCard size={22} className="text-gray-400" />
+                <div className="text-[13px] font-semibold text-gray-700">Nuk u gjetën pagesa</div>
+              </div>
+            ) : (
+              <>
+                {filtered.map((p) => (
+                  <PaymentCard key={p.id} p={p} scopedToSelf={scopedToSelf} onClick={() => p.case?.id && router.push(`/cases/${p.case.id}`)} />
+                ))}
+                {pages > 1 && (
+                  <div className="flex items-center justify-between pt-1 pb-2">
+                    <button disabled={page <= 1} onClick={() => load(page - 1)}
+                      className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
+                      <ChevronLeft size={14} /> Mëparshme
+                    </button>
+                    <span className="text-[12px] text-gray-400">{page} / {pages}</span>
+                    <button disabled={page >= pages} onClick={() => load(page + 1)}
+                      className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
+                      Tjetër <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          /* ── Desktop table ── */
+          <Card padding="none">
+            <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
+                {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
+              </div>
+              <button onClick={() => triggerRefresh(() => load(1))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+              </button>
+            </div>
+
+            {error && (
+              <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
+                {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="divide-y divide-gray-50">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex gap-4 px-5 py-3.5 animate-pulse">
+                    <div className="flex-1 space-y-2"><div className="h-3 w-40 bg-gray-100 rounded" /><div className="h-2.5 w-24 bg-gray-100 rounded" /></div>
+                    <div className="h-3 w-16 bg-gray-100 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <CreditCard size={22} className="text-gray-400" />
+                </div>
+                <div>
+                  <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën pagesa</div>
+                  <div className="text-[12px] text-gray-400 max-w-xs">
+                    {dateFrom || dateTo ? "Provoni të ndryshoni intervalin e datave." : "Pagesat e regjistruara ndaj dosjeve do të shfaqen këtu."}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <Thead>
+                    <tr>
+                      <Th>Referenca</Th>
+                      <Th>Debitori</Th>
+                      <Th>Kredia #</Th>
+                      <Th>Institucioni</Th>
+                      <Th>Shuma</Th>
+                      <Th>Metoda</Th>
+                      <Th>Data</Th>
+                      {!scopedToSelf && <Th>Oficeri</Th>}
+                    </tr>
+                  </Thead>
+                  <Tbody>
+                    {filtered.map((p) => (
+                      <Tr key={p.id} onClick={() => p.case?.id && router.push(`/cases/${p.case.id}`)}>
+                        <Td><span className="font-mono text-[12px] text-gray-500">{p.paymentReference}</span></Td>
+                        <Td>
+                          <span className="font-medium text-gray-900">
+                            {p.case?.loan?.borrower
+                              ? `${p.case.loan.borrower.firstName} ${p.case.loan.borrower.lastName}`
+                              : "—"}
+                          </span>
+                        </Td>
+                        <Td><span className="tabular text-gray-500 font-mono text-[12px]">{p.case?.loan?.loanNumber ?? "—"}</span></Td>
+                        <Td><span className="text-gray-500 text-[12px]">{p.case?.loan?.institution?.shortName ?? "—"}</span></Td>
+                        <Td><span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span></Td>
+                        <Td><span className="text-[12px] text-gray-500">{METHOD_LABELS[p.paymentMethod] ?? formatEnum(p.paymentMethod)}</span></Td>
+                        <Td>
+                          <span className="tabular text-gray-500 text-[12px]">
+                            {new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+                        </Td>
+                        {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{p.officer?.fullName ?? "—"}</span></Td>}
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+
+                {pages > 1 && (
+                  <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
+                    <span>{((page - 1) * 25) + 1}–{Math.min(page * 25, total)} of {total}</span>
+                    <div className="flex gap-2">
+                      <button disabled={page <= 1} onClick={() => load(page - 1)}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
+                      <button disabled={page >= pages} onClick={() => load(page + 1)}
+                        className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+        )}
+
+      </div>
+    </div>
+  );
+}
