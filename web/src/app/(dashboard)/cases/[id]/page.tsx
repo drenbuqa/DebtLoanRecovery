@@ -7,7 +7,6 @@ import {
   activities as activitiesApi,
   payments as paymentsApi,
   agreements as agreementsApi,
-  tasks as tasksApi,
   documents as docsApi,
   users as usersApi,
   offices as officesApi,
@@ -413,7 +412,7 @@ export default function CaseDetailPage() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [caseData, setCaseData] = useState<any>(null);
   const [loadingCase, setLoadingCase] = useState(true);
-  const [caseTasks, setCaseTasks] = useState<any[]>([]);
+  const [caseError, setCaseError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -482,15 +481,14 @@ export default function CaseDetailPage() {
   }
 
   async function loadCase() {
-    if (!caseId) return;
+    if (!caseId) { setLoadingCase(false); return; }
+    setCaseError(null);
     try {
       const c = await casesApi.get(caseId);
       setCaseData(c);
-      // Fetch open tasks for this case
-      const t = await tasksApi.list({ caseId, completed: "false", limit: 10 });
-      setCaseTasks(t.data ?? []);
-    } catch {}
-    finally { setLoadingCase(false); }
+    } catch (e: any) {
+      setCaseError(e.message ?? "Gabim gjatë ngarkimit të dosjes");
+    } finally { setLoadingCase(false); }
   }
 
   useEffect(() => { loadCase(); }, [caseId]);
@@ -519,9 +517,8 @@ export default function CaseDetailPage() {
   }
 
   async function downloadDoc(docId: string, fileName: string) {
-    const token = localStorage.getItem("dlr_token");
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api"}/documents/${docId}/download`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     });
     if (!res.ok) return;
     const blob = await res.blob();
@@ -573,10 +570,10 @@ export default function CaseDetailPage() {
   const agreements = caseData?.agreements ?? [];
   const parties = caseData
     ? [
-        { name: debtor, role: "Debitor", personalId: caseData.loan?.borrower?.personalId, phone: caseData.loan?.borrower?.phone1, address: caseData.loan?.borrower?.address },
+        { name: debtor, role: "Debitor", personalId: caseData.loan?.borrower?.personalId, phone: caseData.loan?.borrower?.phones?.[0]?.phoneNumber, address: caseData.loan?.borrower?.address },
         ...(caseData.loan?.relatedParties ?? []).map((rp: any) => ({
           name: `${rp.person?.firstName} ${rp.person?.lastName}`, role: rp.role,
-          personalId: rp.person?.personalId, phone: rp.person?.phone1, address: "",
+          personalId: rp.person?.personalId, phone: rp.person?.phones?.[0]?.phoneNumber, address: "",
         })),
       ]
     : [];
@@ -592,6 +589,24 @@ export default function CaseDetailPage() {
     return (
       <div className="flex items-center justify-center h-64 gap-2 text-sm text-gray-400">
         <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar dosjen…
+      </div>
+    );
+  }
+
+  if (caseError || !caseData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-6">
+        <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center">
+          <X size={22} className="text-red-400" />
+        </div>
+        <div>
+          <div className="text-[15px] font-semibold text-gray-800 mb-1">Dosja nuk u gjet</div>
+          <div className="text-[13px] text-gray-400 max-w-xs">{caseError ?? "Kjo dosje nuk ekziston ose nuk keni akses."}</div>
+        </div>
+        <button onClick={() => router.push("/cases")}
+          className="px-4 py-2 text-[13px] font-medium text-brand-700 border border-brand-200 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors">
+          ← Kthehu te dosjet
+        </button>
       </div>
     );
   }
@@ -869,36 +884,6 @@ export default function CaseDetailPage() {
                 </div>
               </div>
 
-              {/* Open tasks for this case */}
-              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[12px] font-semibold text-gray-900">Detyra të Hapura</h3>
-                  <span className="text-[11px] text-gray-400">{caseTasks.length} hapur</span>
-                </div>
-                {caseTasks.length === 0 ? (
-                  <p className="text-[12px] text-gray-400">Nuk ka detyra të hapura për këtë dosje.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {caseTasks.slice(0, 4).map((t: any) => {
-                      const overdue = t.dueDate && new Date(t.dueDate) < new Date();
-                      return (
-                        <div key={t.id} className="flex items-start gap-2">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${overdue ? "bg-red-400" : "bg-amber-400"}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[12px] text-gray-800 leading-snug">{t.title}</div>
-                            {t.dueDate && (
-                              <div className={`text-[11px] ${overdue ? "text-red-500" : "text-gray-400"}`}>
-                                Afati {new Date(t.dueDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
               {/* Contacts */}
               {parties.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
@@ -1009,7 +994,7 @@ export default function CaseDetailPage() {
                         <Td><span className="font-mono text-[12px] text-gray-500">{p.paymentReference}</span></Td>
                         <Td><span className="tabular text-[12px]">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
                         <Td><span className="font-semibold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span></Td>
-                        <Td><span className="text-[12px] text-gray-500">{p.paymentMethod?.replace(/_/g, " ")}</span></Td>
+                        <Td><span className="text-[12px] text-gray-500">{formatEnum(p.paymentMethod)}</span></Td>
                         <Td><span className="text-[12px] text-gray-400">{p.notes ?? "—"}</span></Td>
                       </Tr>
                     ))}

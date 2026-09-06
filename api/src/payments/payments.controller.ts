@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Query, Request, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
+import { RegisterPaymentDto } from './dto/register-payment.dto';
 
 @Controller('payments')
 @UseGuards(RolesGuard)
@@ -9,6 +10,7 @@ export class PaymentsController {
 
   @Get()
   findAll(
+    @Request() req: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('caseId') caseId?: string,
@@ -17,12 +19,15 @@ export class PaymentsController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
+    const user = req.user;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
     return this.svc.findAll({ page: page ? +page : undefined, limit: limit ? +limit : undefined, caseId, officerId, officeId, dateFrom, dateTo });
   }
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  register(@Body() body: any, @Request() req: any) {
-    return this.svc.register({ ...body, officerId: body.officerId ?? req.user?.id });
+  register(@Body() body: RegisterPaymentDto, @Request() req: any) {
+    return this.svc.register({ ...body, officerId: req.user?.id });
   }
 }

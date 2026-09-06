@@ -29,30 +29,37 @@ export function formatDateShort(date: string | Date) {
 
 const ENUM_SQ: Record<string, string> = {
   // Statuset e dosjes
-  ACTIVE: "Aktive", CLOSED: "Mbyllur", WRITTEN_OFF: "E Çregjistruar", INACTIVE: "Joaktive",
+  ACTIVE: "Aktive", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "E Çregjistruar", INACTIVE: "Joaktive",
   // Fazat e arkëtimit
   D1: "D1", D2: "D2", D3: "D3", D4: "D4", LEGAL: "Juridike",
   // Llojet e aktivitetit
   CALL: "Telefonatë", SMS: "SMS", EMAIL: "Email",
   FIELD_VISIT: "Vizitë në Terren", PROMISE_TO_PAY: "Premtim Pagese",
   PAYMENT_RECEIVED: "Pagesë e Marrë", DISPUTE: "Ankesë", OTHER: "Tjetër",
-  // Rezultatet
+  // Rezultatet e aktivitetit
   KEPT: "E Mbajtur", BROKEN: "E Thyer", PARTIAL: "Pjesërisht",
   PENDING: "Në Pritje", NO_ANSWER: "Pa Përgjigje", DECLINED: "E Refuzuar", AGREED: "E Dakorduar",
   // Statusi ligjor
   JUDGMENT_OBTAINED: "Vendim i Marrë", ENFORCEMENT: "Ekzekutim", APPEALED: "E Ankimuar",
+  IN_PROGRESS: "Në Progres", INITIATED: "Iniciuar", JUDGMENT: "Vendim",
   // Statusi i marrëveshjes
   COMPLETED: "E Përfunduar", DEFAULTED: "E Dështuar", CANCELLED: "E Anuluar",
   // Statusi i këstit
   PAID: "Paguar", OVERDUE: "Me Vonesë", PARTIAL_PAID: "Pjesërisht Paguar",
   // Metodat e pagesës
-  CASH: "Cash", BANK_TRANSFER: "Transfer Bankar", CARD: "Kartë", CHECK: "Çek", ONLINE: "Online",
+  CASH: "Kesh", BANK_TRANSFER: "Transfer Bankar", CARD: "Kartë", CHECK: "Çek", ONLINE: "Online",
+  // Kanalet e pagesës
+  BRANCH: "Degë", ATM: "ATM", MOBILE_APP: "Aplikacion Mobil", AGENT: "Agjent",
+  // Llojet e telefonit
+  MOBILE: "Celular", WORK: "Pune", HOME: "Shtëpie",
   // Rolet e përdoruesit
   ADMIN: "Administrator", MANAGER: "Menaxher", OFFICER: "Oficer", VIEWER: "Vëzhgues",
   // Klasifikimi NPL
   SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje",
   // Lloji i produktit
-  PERSONAL: "Personal", MORTGAGE: "Hipotekë", BUSINESS: "Biznesi", AUTO: "Auto",
+  PERSONAL: "Personal", MORTGAGE: "Hipotekë", BUSINESS: "Biznesi", AUTO: "Auto", CONSUMER: "Konsumator",
+  // Rolet e palëve të lidhura
+  GUARANTOR: "Garant", CO_BORROWER: "Bashkëhuamarrës",
 };
 
 /** Konverton vlerat enum të bazës së të dhënave në shqip. */

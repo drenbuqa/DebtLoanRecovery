@@ -95,8 +95,8 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
       if (person) {
         setFirstName(person.firstName);
         setLastName(person.lastName);
-        setPhone1(person.phone1 ?? "");
-        setPhone2(person.phone2 ?? "");
+        setPhone1(person.phones?.[0]?.phoneNumber ?? "");
+        setPhone2(person.phones?.[1]?.phoneNumber ?? "");
         setEmail(person.email ?? "");
         setAddress(person.address ?? "");
         setCity(person.city ?? "");
@@ -597,15 +597,15 @@ function CasesPageInner() {
                 <CaseCard key={c.id} c={c} onClick={() => router.push(`/cases/${c.id}`)} />
               ))}
               {meta.pages > 1 && (
-                <div className="flex items-center justify-between pt-1 pb-2">
-                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                    className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
-                    <ChevronLeft size={14} /> Mëparshme
+                <div className="flex items-center justify-center gap-3 pt-1 pb-2">
+                  <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
+                    <ChevronLeft size={16} />
                   </button>
-                  <span className="text-[12px] text-gray-400">{page} / {meta.pages}</span>
-                  <button onClick={() => setPage((p) => Math.min(meta.pages, p + 1))} disabled={page === meta.pages}
-                    className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
-                    Tjetër <ChevronRight size={14} />
+                  <span className="text-[13px] text-gray-500 tabular-nums">{page} / {meta.pages}</span>
+                  <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               )}
@@ -651,7 +651,7 @@ function CasesPageInner() {
         </div>
 
         {/* View tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex items-center border-b border-gray-200">
           {VIEWS.map((v) => (
             <button
               key={v.key}
@@ -665,16 +665,16 @@ function CasesPageInner() {
               {v.label}
             </button>
           ))}
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-[13px] font-semibold text-gray-900">Dosjet</h3>
+          <div className="ml-auto flex items-center gap-1 pb-px shrink-0">
+            <span className="text-[12px] text-gray-400">{!loading && `${meta.total.toLocaleString()} dosje`}</span>
             <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           {error ? (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error} <button onClick={load} className="underline ml-2">Riprovo</button></div>
           ) : loading ? (
@@ -755,24 +755,16 @@ function CasesPageInner() {
           {/* Pagination */}
           {meta.pages > 1 && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-[12px] text-gray-400">
-                {((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} of {meta.total.toLocaleString()}
-              </span>
+              <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors text-[12px] text-gray-600 flex items-center gap-1"
-                >
-                  <ChevronLeft size={13} /> Mëparshme
+                <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                  <ChevronLeft size={15} />
                 </button>
-                <span className="text-[12px] text-gray-400">Faqe {page} nga {meta.pages}</span>
-                <button
-                  onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
-                  disabled={page === meta.pages}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors text-[12px] text-gray-600 flex items-center gap-1"
-                >
-                  Vazhdo <ChevronRight size={13} />
+                <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {meta.pages}</span>
+                <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                  <ChevronRight size={15} />
                 </button>
               </div>
             </div>

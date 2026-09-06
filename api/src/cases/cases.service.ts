@@ -50,13 +50,19 @@ const CASE_DETAIL_EXTRA = {
       borrower: {
         select: {
           id: true, firstName: true, lastName: true, personalId: true,
-          dateOfBirth: true, phone1: true, phone2: true, email: true, address: true, city: true,
+          dateOfBirth: true, email: true, address: true, city: true,
+          phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         },
       },
       relatedParties: {
         select: {
           role: true,
-          person: { select: { id: true, firstName: true, lastName: true, personalId: true, phone1: true, phone2: true } },
+          person: {
+            select: {
+              id: true, firstName: true, lastName: true, personalId: true,
+              phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
+            },
+          },
         },
       },
     },
@@ -87,12 +93,6 @@ const CASE_DETAIL_EXTRA = {
       currency: true, installmentCount: true, startDate: true, endDate: true,
       installments: { orderBy: { dueDate: 'asc' as const } },
     },
-  },
-  tasks: {
-    where: { completedAt: null },
-    orderBy: { dueDate: 'asc' as const },
-    take: 10,
-    select: { id: true, title: true, dueDate: true, priority: true },
   },
   documents: {
     orderBy: { uploadedAt: 'desc' as const },
@@ -131,7 +131,7 @@ export class CasesService {
     const limit = Math.min(query.limit ?? 25, 100);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { deletedAt: null };
     if (query.status) where.status = query.status;
     if (query.stage) where.collectionStage = query.stage;
     if (query.officeId) where.officeId = query.officeId;
@@ -181,7 +181,7 @@ export class CasesService {
 
   async findOne(id: string) {
     const c = await this.prisma.case.findFirst({
-      where: { OR: [{ id }, { caseReference: id }] },
+      where: { OR: [{ id }, { caseReference: id }], deletedAt: null },
       select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
     });
     if (!c) throw new NotFoundException('Case not found');
@@ -226,12 +226,18 @@ export class CasesService {
     return this.prisma.case.update({ where: { id }, data: caseData, select: { id: true } });
   }
 
-  async assignOfficer(id: string, officerId: string) {
-    return this.prisma.case.update({
-      where: { id },
-      data: { assignedOfficerId: officerId },
-      select: { id: true, assignedOfficerId: true, assignedOfficer: { select: { id: true, fullName: true } } },
-    });
+  async assignOfficer(id: string, officerId: string, assignedById: string) {
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.case.update({
+        where: { id },
+        data: { assignedOfficerId: officerId },
+        select: { id: true, assignedOfficerId: true, assignedOfficer: { select: { id: true, fullName: true } } },
+      }),
+      this.prisma.caseAssignment.create({
+        data: { caseId: id, officerId, assignedById },
+      }),
+    ]);
+    return updated;
   }
 
   async searchPerson(personalId: string) {
@@ -239,7 +245,8 @@ export class CasesService {
       where: { personalId },
       select: {
         id: true, personalId: true, firstName: true, lastName: true,
-        phone1: true, phone2: true, email: true, address: true, city: true,
+        email: true, address: true, city: true,
+        phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         loans: {
           select: {
             id: true, loanNumber: true, currentOutstandingBalance: true,
@@ -290,8 +297,6 @@ export class CasesService {
       update: {
         firstName: dto.firstName,
         lastName: dto.lastName,
-        ...(dto.phone1 !== undefined && { phone1: dto.phone1 }),
-        ...(dto.phone2 !== undefined && { phone2: dto.phone2 }),
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.city !== undefined && { city: dto.city }),
@@ -301,21 +306,30 @@ export class CasesService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
-        phone1: dto.phone1,
-        phone2: dto.phone2,
         email: dto.email,
         address: dto.address,
         city: dto.city,
       },
     });
 
-    // Generate case reference
-    const year = new Date().getFullYear();
-    const count = await this.prisma.case.count();
-    const caseRef = `DLR-${year}-${String(count + 1).padStart(4, '0')}`;
+    // Upsert phone numbers into person_phones (only add if not already present)
+    if (dto.phone1) {
+      const exists = await this.prisma.personPhone.findFirst({ where: { personId: person.id, phoneNumber: dto.phone1 } });
+      if (!exists) await this.prisma.personPhone.create({ data: { personId: person.id, phoneNumber: dto.phone1, phoneType: 'MOBILE', isPrimary: true } });
+    }
+    if (dto.phone2) {
+      const exists = await this.prisma.personPhone.findFirst({ where: { personId: person.id, phoneNumber: dto.phone2 } });
+      if (!exists) await this.prisma.personPhone.create({ data: { personId: person.id, phoneNumber: dto.phone2, phoneType: 'MOBILE', isPrimary: false } });
+    }
 
     // Create loan + case in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
+      // Generate a collision-free reference inside the transaction using an advisory lock
+      const year = new Date().getFullYear();
+      const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM cases WHERE EXTRACT(YEAR FROM created_at) = ${year}
+      `;
+      const caseRef = `DLR-${year}-${String(Number(count) + 1).padStart(4, '0')}`;
       const loan = await tx.loan.create({
         data: {
           loanNumber: dto.loanNumber,

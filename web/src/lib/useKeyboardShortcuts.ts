@@ -34,7 +34,6 @@ export function useKeyboardShortcuts() {
         switch (key) {
           case "d": e.preventDefault(); router.push("/dashboard"); break;
           case "c": e.preventDefault(); router.push("/cases"); break;
-          case "t": e.preventDefault(); router.push("/tasks"); break;
           case "a": e.preventDefault(); router.push("/activities"); break;
           case "p": e.preventDefault(); router.push("/payments"); break;
           case "f": e.preventDefault(); router.push("/field-visits"); break;

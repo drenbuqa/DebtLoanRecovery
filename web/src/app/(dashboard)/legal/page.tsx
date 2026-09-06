@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
 import { legal as legalApi, cases as casesApi } from "@/lib/api";
-import { RefreshCw, Scale, Plus, X, Search, Pencil } from "lucide-react";
+import { RefreshCw, Scale, Plus, X, Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
 import { formatEnum } from "@/lib/utils";
@@ -280,24 +280,21 @@ export default function LegalPage() {
 
         {/* Filter bar */}
         <div className="space-y-2">
-          {/* Row 1: search + action button */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          {/* Row 1: search + date filter + action button */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Kërko debitor ose dosje…"
-                className="w-full pl-7 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
             </div>
+            <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
             {can("legal:create") && (
               <button onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
-                <Plus size={14} /> <span className="hidden sm:inline">Procedim i Ri</span>
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
+                <Plus size={14} /> Procedim i Ri
               </button>
             )}
-          </div>
-          {/* Row 2: date filter */}
-          <div className="flex items-center gap-2">
-            <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
           </div>
           <div className="flex border-b border-gray-200">
             {filterOptions.map(({ key, label }) => (
@@ -377,6 +374,9 @@ export default function LegalPage() {
                           {lp.case?.loan?.borrower?.personalId && (
                             <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
                           )}
+                          {lp.notes && (
+                            <div className="text-[11px] text-gray-400 italic mt-0.5 line-clamp-1">{lp.notes}</div>
+                          )}
                         </Td>
                         <Td><span className="text-gray-500">{lp.case?.loan?.institution?.shortName ?? "—"}</span></Td>
                         <Td><span className="text-gray-500 text-[12px]">{lp.court ?? "—"}</span></Td>
@@ -415,13 +415,18 @@ export default function LegalPage() {
               </Table>
 
               {meta && meta.pages > 1 && (
-                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
-                  <span>{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} of {meta.total}</span>
-                  <div className="flex gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => load(meta.page - 1)}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
-                    <button disabled={meta.page >= meta.pages} onClick={() => load(meta.page + 1)}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <button disabled={meta.page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page - 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
+                    <button disabled={meta.page >= meta.pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page + 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
               )}

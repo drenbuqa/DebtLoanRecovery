@@ -173,8 +173,6 @@ export class ImportService {
               firstName: row.first_name.trim(),
               lastName: row.last_name.trim(),
               dateOfBirth: parseDate(row.date_of_birth),
-              phone1: row.phone1?.trim() || undefined,
-              phone2: row.phone2?.trim() || undefined,
               email: row.email?.trim() || undefined,
               address: row.address?.trim() || undefined,
               city: row.city?.trim() || undefined,
@@ -182,10 +180,16 @@ export class ImportService {
             update: {
               firstName: row.first_name.trim(),
               lastName: row.last_name.trim(),
-              phone1: row.phone1?.trim() || undefined,
               email: row.email?.trim() || undefined,
             },
           });
+          // Upsert phones for borrower
+          for (const [phone, isPrimary] of [[row.phone1?.trim(), true], [row.phone2?.trim(), false]] as [string | undefined, boolean][]) {
+            if (phone) {
+              const exists = await tx.personPhone.findFirst({ where: { personId: borrower.id, phoneNumber: phone } });
+              if (!exists) await tx.personPhone.create({ data: { personId: borrower.id, phoneNumber: phone, phoneType: 'MOBILE', isPrimary } });
+            }
+          }
 
           const loan = await tx.loan.create({
             data: {
@@ -220,14 +224,16 @@ export class ImportService {
                 personalId: row.guarantor_personal_id.trim(),
                 firstName: row.guarantor_first_name.trim(),
                 lastName: row.guarantor_last_name.trim(),
-                phone1: row.guarantor_phone?.trim() || undefined,
               },
               update: {
                 firstName: row.guarantor_first_name.trim(),
                 lastName: row.guarantor_last_name.trim(),
-                phone1: row.guarantor_phone?.trim() || undefined,
               },
             });
+            if (row.guarantor_phone?.trim()) {
+              const exists = await tx.personPhone.findFirst({ where: { personId: guarantor.id, phoneNumber: row.guarantor_phone.trim() } });
+              if (!exists) await tx.personPhone.create({ data: { personId: guarantor.id, phoneNumber: row.guarantor_phone.trim(), phoneType: 'MOBILE', isPrimary: true } });
+            }
             await tx.loanParty.createMany({
               data: [{ loanId: loan.id, personId: guarantor.id, role: 'GUARANTOR' }],
               skipDuplicates: true,
@@ -242,13 +248,16 @@ export class ImportService {
                 personalId: row.co_borrower_personal_id.trim(),
                 firstName: row.co_borrower_first_name.trim(),
                 lastName: row.co_borrower_last_name.trim(),
-                phone1: row.co_borrower_phone?.trim() || undefined,
               },
               update: {
                 firstName: row.co_borrower_first_name.trim(),
                 lastName: row.co_borrower_last_name.trim(),
               },
             });
+            if (row.co_borrower_phone?.trim()) {
+              const exists = await tx.personPhone.findFirst({ where: { personId: coBorrower.id, phoneNumber: row.co_borrower_phone.trim() } });
+              if (!exists) await tx.personPhone.create({ data: { personId: coBorrower.id, phoneNumber: row.co_borrower_phone.trim(), phoneType: 'MOBILE', isPrimary: true } });
+            }
             await tx.loanParty.createMany({
               data: [{ loanId: loan.id, personId: coBorrower.id, role: 'CO_BORROWER' }],
               skipDuplicates: true,

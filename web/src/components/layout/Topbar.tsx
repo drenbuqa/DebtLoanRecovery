@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, HelpCircle, X, FolderOpen, AlertCircle, CheckSquare, Scale, ChevronRight, Menu } from "lucide-react";
-import { cases as casesApi, tasks as tasksApi } from "@/lib/api";
+import { Search, Bell, HelpCircle, X, FolderOpen, AlertCircle, CheckSquare, Scale, ChevronRight } from "lucide-react";
+import { cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 // ── Types ────────────────────────────────────────────────────
@@ -29,7 +29,6 @@ function GlobalSearch() {
   const timer                 = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const router                = useRouter();
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -38,7 +37,6 @@ function GlobalSearch() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Debounced search
   useEffect(() => {
     clearTimeout(timer.current);
     if (!query.trim()) { setResults([]); setOpen(false); return; }
@@ -130,12 +128,11 @@ function GlobalSearch() {
 
 // ── Notifications ────────────────────────────────────────────
 function NotificationsPanel() {
-  const [open, setOpen]       = useState(false);
-  const [alerts, setAlerts]   = useState<any>(null);
-  const [tasks, setTasks]     = useState<any[]>([]);
+  const [open, setOpen]     = useState(false);
+  const [alerts, setAlerts] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const ref                   = useRef<HTMLDivElement>(null);
-  const router                = useRouter();
+  const ref                 = useRef<HTMLDivElement>(null);
+  const router              = useRouter();
   const { user, scopedToSelf } = useAuth();
 
   useEffect(() => {
@@ -146,39 +143,19 @@ function NotificationsPanel() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  async function loadNotifications() {
-    if (!user) return;
-    const todayStr = new Date().toISOString().split("T")[0];
-    const taskParams: Record<string, string | number> = { completed: "false", limit: 20 };
-    if (scopedToSelf) taskParams.assignedToId = user.id;
-
-    const requests: Promise<any>[] = [tasksApi.list(taskParams).catch(() => ({ data: [] }))];
-    if (!scopedToSelf) requests.push(casesApi.dashboardStats().catch(() => null));
-
-    const results = await Promise.all(requests);
-    const t = results[0];
-    const stats = scopedToSelf ? null : (results[1] ?? null);
-
-    if (stats) setAlerts(stats);
-    else setAlerts(null);
-
-    const dueTasks = (t.data ?? []).filter((task: any) =>
-      task.dueDate && new Date(task.dueDate) <= new Date(todayStr + "T23:59:59")
-    ).slice(0, 5);
-    setTasks(dueTasks);
+  async function loadAlerts() {
+    if (!user || scopedToSelf) return;
+    try {
+      const stats = await casesApi.dashboardStats();
+      setAlerts(stats);
+    } catch {}
   }
 
-  // Pre-fetch on mount so the bell dot shows without opening the panel
-  useEffect(() => {
-    if (!user) return;
-    loadNotifications();
-  }, [user, scopedToSelf]);
+  useEffect(() => { loadAlerts(); }, [user, scopedToSelf]);
 
   async function fetchAlerts() {
-    if (!user) return;
     setLoading(true);
-    try { await loadNotifications(); }
-    catch {}
+    try { await loadAlerts(); }
     finally { setLoading(false); }
   }
 
@@ -187,9 +164,9 @@ function NotificationsPanel() {
     setOpen((o) => !o);
   }
 
-  const hasAlerts = tasks.length > 0 || (alerts && (
-    alerts.promisesDueToday > 0 || alerts.overdueInstallments > 0
-  ));
+  const hasAlerts = !scopedToSelf && alerts && (
+    alerts.promisesToday > 0 || alerts.overdueInstallments > 0 || alerts.legalCases > 0
+  );
 
   return (
     <div ref={ref} className="relative">
@@ -212,6 +189,13 @@ function NotificationsPanel() {
             <div className="px-4 py-6 text-[12px] text-gray-400 text-center">Duke ngarkuar…</div>
           ) : (
             <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+              {scopedToSelf && (
+                <div className="px-4 py-8 text-center">
+                  <div className="text-[13px] font-medium text-gray-700 mb-1">Gjithçka në rregull</div>
+                  <div className="text-[12px] text-gray-400">Nuk ka njoftime për sot.</div>
+                </div>
+              )}
+
               {!scopedToSelf && alerts?.overdueInstallments > 0 && (
                 <button onClick={() => { router.push("/agreements"); setOpen(false); }}
                   className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
@@ -227,15 +211,15 @@ function NotificationsPanel() {
                 </button>
               )}
 
-              {!scopedToSelf && alerts?.promisesDueToday > 0 && (
-                <button onClick={() => { router.push("/cases"); setOpen(false); }}
+              {!scopedToSelf && alerts?.promisesToday > 0 && (
+                <button onClick={() => { router.push("/cases?view=promises_today"); setOpen(false); }}
                   className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
                   <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
                     <CheckSquare size={13} className="text-amber-500" />
                   </div>
                   <div>
                     <div className="text-[13px] font-medium text-gray-900">
-                      {alerts.promisesDueToday} premtim{alerts.promisesDueToday !== 1 ? "e" : ""} pagese për sot
+                      {alerts.promisesToday} premtim{alerts.promisesToday !== 1 ? "e" : ""} pagese për sot
                     </div>
                     <div className="text-[11px] text-gray-400">Ndiqni angazhimet e pagesave</div>
                   </div>
@@ -257,25 +241,7 @@ function NotificationsPanel() {
                 </button>
               )}
 
-              {tasks.map((t: any) => {
-                const isOverdue = t.dueDate && new Date(t.dueDate) < new Date(new Date().toISOString().split("T")[0]);
-                return (
-                <button key={t.id} onClick={() => { router.push("/tasks"); setOpen(false); }}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isOverdue ? "bg-red-50" : "bg-amber-50"}`}>
-                    <CheckSquare size={13} className={isOverdue ? "text-red-500" : "text-amber-500"} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-gray-900 truncate">{t.title}</div>
-                    <div className={`text-[11px] ${isOverdue ? "text-red-500" : "text-gray-400"}`}>
-                      {isOverdue ? "Me vonesë · " : "Skadon sot · "}
-                      {t.dueDate ? new Date(t.dueDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : ""}
-                    </div>
-                  </div>
-                </button>
-              ); })}
-
-              {!loading && !hasAlerts && (
+              {!scopedToSelf && !loading && !hasAlerts && alerts && (
                 <div className="px-4 py-8 text-center">
                   <div className="text-[13px] font-medium text-gray-700 mb-1">Gjithçka në rregull</div>
                   <div className="text-[12px] text-gray-400">Nuk ka njoftime për sot.</div>
@@ -293,7 +259,7 @@ function NotificationsPanel() {
 const DEFAULT_HELP: HelpItem[] = [
   { title: "Si të lëvizni në platformë", body: "Përdorni menunë në të majtë për të kaluar ndërmjet seksioneve. Nëse jeni me telefon ose tablet, shtypni ikonën e menusë në krye për ta hapur atë." },
   { title: "Si të gjeni një debitor ose dosje", body: "Shkruani emrin e debitorit, numrin personal ose numrin e dosjes në shiritin e kërkimit në krye. Rezultatet shfaqen menjëherë ndërsa shkruani — klikoni mbi të dhënën për të hapur dosjen." },
-  { title: "Navigim i shpejtë", body: "Shtypni / në tastierë për të kaluar direkt te shiriti i kërkimit. Përdorni g pastaj d për Dosjet, t për Detyrat, ose b për t'u kthyer mbrapa." },
+  { title: "Navigim i shpejtë", body: "Shtypni / në tastierë për të kaluar direkt te shiriti i kërkimit. Përdorni g pastaj d për Ballinën, c për Dosjet, a për Aktivitetet, ose b për t'u kthyer mbrapa." },
   { title: "Nuk dini çfarë të bëni?", body: "Pyesni menaxherin tuaj ose administratorin e sistemit. Mund të klikoni gjithashtu butonin ? në çdo faqe për të parë udhëzime specifike për atë seksion." },
 ];
 
@@ -361,15 +327,8 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(timer.current);
   }, [query]);
 
-  function go(id: string) {
-    router.push(`/cases/${id}`);
-    onClose();
-  }
+  function go(id: string) { router.push(`/cases/${id}`); onClose(); }
 
-  const statusLabel: Record<string, string> = {
-    ACTIVE: "Aktiv", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur",
-    LEGAL: "Juridike", WRITTEN_OFF: "I Shlyer",
-  };
   const stageColor: Record<string, string> = {
     ACTIVE: "bg-emerald-100 text-emerald-700",
     SUSPENDED: "bg-amber-100 text-amber-700",
@@ -377,12 +336,14 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
     CLOSED: "bg-gray-100 text-gray-500",
     WRITTEN_OFF: "bg-red-100 text-red-600",
   };
+  const statusLabel: Record<string, string> = {
+    ACTIVE: "Aktiv", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur",
+    LEGAL: "Juridike", WRITTEN_OFF: "I Shlyer",
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-      {/* Search card */}
       <div className="bg-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        {/* Input bar */}
         <div className="flex items-center gap-3 px-4 h-14 shrink-0">
           <div className="flex-1 flex items-center gap-2.5 bg-gray-100 rounded-xl px-3 py-2.5">
             <Search size={15} className="text-gray-400 shrink-0" />
@@ -404,11 +365,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
             Anulo
           </button>
         </div>
-
-        {/* Divider */}
         <div className="h-px bg-gray-100" />
-
-        {/* Results area */}
         <div className="max-h-[70vh] overflow-y-auto">
           {loading ? (
             <div className="px-4 py-5 space-y-3">
@@ -475,8 +432,6 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </div>
-
-      {/* Tap backdrop to dismiss */}
       <div className="flex-1" onClick={onClose} />
     </div>
   );
@@ -496,11 +451,8 @@ export default function Topbar({ title, subtitle, children, help }: TopbarProps)
           <h1 className="text-[15px] font-semibold text-gray-900 leading-none truncate">{title}</h1>
           {subtitle && <p className="text-[12px] text-gray-400 mt-0.5 truncate">{subtitle}</p>}
         </div>
-
         {children && <div className="flex items-center gap-2 shrink-0">{children}</div>}
-
         <GlobalSearch />
-
         <div className="flex items-center gap-1 shrink-0">
           <NotificationsPanel />
           <HelpPanel items={help ?? DEFAULT_HELP} />
@@ -509,25 +461,16 @@ export default function Topbar({ title, subtitle, children, help }: TopbarProps)
 
       {/* ── Mobile topbar ── */}
       <header className="md:hidden flex h-14 bg-white border-b border-gray-200 items-center px-4 gap-2 sticky top-0 z-30">
-        {/* Title */}
         <div className="flex-1 min-w-0">
           <h1 className="text-[15px] font-semibold text-gray-900 leading-none truncate">{title}</h1>
           {subtitle && <p className="text-[11px] text-gray-400 mt-0.5 truncate">{subtitle}</p>}
         </div>
-
-        {/* Action buttons from page (e.g. New User, Add Office) */}
         {children && <div className="flex items-center gap-1.5 shrink-0">{children}</div>}
-
-        {/* Search icon → full-screen overlay */}
         <button onClick={() => setMobileSearchOpen(true)}
           className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 active:bg-gray-100 transition-colors shrink-0">
           <Search size={18} />
         </button>
-
-        {/* Notifications */}
         <NotificationsPanel />
-
-        {/* Help */}
         <HelpPanel items={help ?? DEFAULT_HELP} />
       </header>
     </>

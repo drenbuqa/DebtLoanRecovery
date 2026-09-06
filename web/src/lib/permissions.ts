@@ -4,7 +4,6 @@ export type Permission =
   | "page:dashboard"
   | "page:cases"
   | "page:activities"
-  | "page:tasks"
   | "page:payments"
   | "page:agreements"
   | "page:legal"
@@ -21,10 +20,6 @@ export type Permission =
   | "case:assign"
   // Activity actions
   | "activity:create"
-  // Task actions
-  | "task:create"
-  | "task:edit"
-  | "task:delete"
   // Payment actions
   | "payment:create"
   // Agreement actions
@@ -50,13 +45,12 @@ export type Permission =
 
 // ── Per-role permission sets ─────────────────────────────────
 const ADMIN_PERMS: Permission[] = [
-  "page:dashboard", "page:cases", "page:activities", "page:tasks",
+  "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal", "page:field-visits",
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings",
   "case:create", "case:edit", "case:assign",
   "activity:create",
-  "task:create", "task:edit", "task:delete",
   "payment:create",
   "agreement:create",
   "legal:create",
@@ -69,13 +63,12 @@ const ADMIN_PERMS: Permission[] = [
 ];
 
 const MANAGER_PERMS: Permission[] = [
-  "page:dashboard", "page:cases", "page:activities", "page:tasks",
+  "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal", "page:field-visits",
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings",
   "case:create", "case:edit", "case:assign",
   "activity:create",
-  "task:create", "task:edit", "task:delete",
   "payment:create",
   "agreement:create",
   "legal:create",
@@ -87,11 +80,10 @@ const MANAGER_PERMS: Permission[] = [
 ];
 
 const OFFICER_PERMS: Permission[] = [
-  "page:dashboard", "page:cases", "page:activities", "page:tasks",
+  "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal", "page:field-visits",
   "page:settings",
   "activity:create",
-  "task:create", "task:edit",
   "payment:create",
   "agreement:create",
   "field-visit:create",
@@ -100,7 +92,7 @@ const OFFICER_PERMS: Permission[] = [
 ];
 
 const VIEWER_PERMS: Permission[] = [
-  "page:dashboard", "page:cases", "page:activities", "page:tasks",
+  "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal", "page:field-visits",
   "page:institutions", "page:reports", "page:performance",
   "report:export",
@@ -118,7 +110,7 @@ export function can(role: string | null | undefined, permission: Permission): bo
   return ROLE_MAP[role]?.has(permission) ?? false;
 }
 
-// Data scoping: OFFICERs only see their own cases/tasks/activities
+// Data scoping: OFFICERs only see their own cases/activities
 export function isScopedToSelf(role: string | null | undefined): boolean {
   return role === "OFFICER";
 }
@@ -143,7 +135,7 @@ export const ROLE_META: Record<string, { label: string; color: string; descripti
   OFFICER: {
     label: "Collection Officer",
     color: "bg-blue-100 text-blue-700",
-    description: "Works their assigned cases: logs activities, payments, field visits, and tasks.",
+    description: "Works their assigned cases: logs activities, payments, field visits, and agreements.",
   },
   VIEWER: {
     label: "Viewer",

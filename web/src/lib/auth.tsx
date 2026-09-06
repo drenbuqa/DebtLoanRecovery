@@ -1,15 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth as authApi, getToken } from "@/lib/api";
+import { auth as authApi } from "@/lib/api";
 import { can as canFn, isScopedToSelf, isScopedToOffice, Permission } from "@/lib/permissions";
 
 type AuthCtx = {
   user: any | null;
   loading: boolean;
   can: (p: Permission) => boolean;
-  scopedToSelf: boolean;   // OFFICER — data filtered to own assignments
-  scopedToOffice: boolean; // MANAGER — data filtered to own office
+  scopedToSelf: boolean;
+  scopedToOffice: boolean;
 };
 
 const AuthContext = createContext<AuthCtx>({
@@ -25,10 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!getToken()) { setLoading(false); return; }
+    // Cookie is httpOnly — invisible to JS. Just call /me; if no valid session
+    // the API returns 401 and the req() helper redirects to /login.
     authApi.me()
       .then(setUser)
-      .catch(() => {})
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
 

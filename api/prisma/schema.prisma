@@ -7,28 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────
+// ORGANIZATION
+// ─────────────────────────────────────────────
+
 model User {
-  id                String              @id @default(uuid()) @db.Uuid
-  username          String              @unique @db.VarChar(50)
-  passwordHash      String              @map("password_hash") @db.VarChar(255)
-  fullName          String              @map("full_name") @db.VarChar(150)
-  email             String              @unique @db.VarChar(150)
-  role                 UserRole            @default(OFFICER)
-  isActive             Boolean             @default(true) @map("is_active")
-  officeId             String?             @map("office_id") @db.Uuid
-  tokenVersion         Int                 @default(0) @map("token_version")
-  failedLoginAttempts  Int                 @default(0) @map("failed_login_attempts")
-  lockedUntil          DateTime?           @map("locked_until") @db.Timestamptz(6)
-  createdAt            DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  activities        Activity[]
-  caseStatusChanges CaseStatusHistory[]
-  cases             Case[]              @relation("AssignedOfficer")
-  documents         Document[]
-  payments          Payment[]
-  tasksAssigned     Task[]              @relation("TasksAssigned")
-  tasksCreated      Task[]              @relation("TasksCreated")
-  office            Office?             @relation(fields: [officeId], references: [id])
+  id                  String              @id @default(uuid()) @db.Uuid
+  username            String              @unique @db.VarChar(50)
+  passwordHash        String              @map("password_hash") @db.VarChar(255)
+  fullName            String              @map("full_name") @db.VarChar(150)
+  email               String              @unique @db.VarChar(150)
+  role                UserRole            @default(OFFICER)
+  isActive            Boolean             @default(true) @map("is_active")
+  officeId            String?             @map("office_id") @db.Uuid
+  tokenVersion        Int                 @default(0) @map("token_version")
+  failedLoginAttempts Int                 @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?           @map("locked_until") @db.Timestamptz(6)
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  office                   Office?              @relation(fields: [officeId], references: [id])
+  activities               Activity[]
+  caseStatusChanges        CaseStatusHistory[]
+  assignedCases            Case[]               @relation("AssignedOfficer")
+  documents                Document[]
+  payments                 Payment[]
+  caseAssignments          CaseAssignment[]     @relation("AssignmentOfficer")
+  assignmentsMade          CaseAssignment[]     @relation("AssignmentCreatedBy")
+  promisesCreated          PromiseToPay[]
+  loanBalancesRecorded     LoanBalanceHistory[]
+  legalActivitiesCreated   LegalActivity[]
+  agreementsCreated        Agreement[]
+  legalProceedingsCreated  LegalProceeding[]
+  importJobs               ImportJob[]
 
   @@map("users")
 }
@@ -39,11 +50,16 @@ model Office {
   code      String   @unique @db.VarChar(10)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  cases     Case[]
-  users     User[]
+
+  cases Case[]
+  users User[]
 
   @@map("offices")
 }
+
+// ─────────────────────────────────────────────
+// INSTITUTIONS & LOAN PRODUCTS
+// ─────────────────────────────────────────────
 
 model Institution {
   id        String   @id @default(uuid()) @db.Uuid
@@ -51,53 +67,81 @@ model Institution {
   shortName String   @map("short_name") @db.VarChar(20)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  loans     Loan[]
+
+  loans      Loan[]
+  importJobs ImportJob[]
 
   @@map("institutions")
 }
 
+// ─────────────────────────────────────────────
+// PERSONS
+// ─────────────────────────────────────────────
+
 model Person {
-  id          String      @id @default(uuid()) @db.Uuid
-  personalId  String      @unique @map("personal_id") @db.VarChar(30)
-  firstName   String      @map("first_name") @db.VarChar(100)
-  lastName    String      @map("last_name") @db.VarChar(100)
-  dateOfBirth DateTime?   @map("date_of_birth") @db.Date
-  phone1      String?     @db.VarChar(30)
-  phone2      String?     @db.VarChar(30)
-  email       String?     @db.VarChar(150)
-  address     String?     @db.VarChar(255)
-  city        String?     @db.VarChar(100)
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  relatedTo   LoanParty[]
-  loans       Loan[]
+  id          String    @id @default(uuid()) @db.Uuid
+  personalId  String    @unique @map("personal_id") @db.VarChar(30)
+  firstName   String    @map("first_name") @db.VarChar(100)
+  lastName    String    @map("last_name") @db.VarChar(100)
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+  email       String?   @db.VarChar(150)
+  address     String?   @db.VarChar(255)
+  city        String?   @db.VarChar(100)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  phones    PersonPhone[]
+  loans     Loan[]
+  relatedTo LoanParty[]
+  promises  PromiseToPay[]
 
   @@map("persons")
 }
 
+model PersonPhone {
+  id          String    @id @default(uuid()) @db.Uuid
+  personId    String    @map("person_id") @db.Uuid
+  phoneNumber String    @map("phone_number") @db.VarChar(30)
+  phoneType   PhoneType @default(MOBILE) @map("phone_type")
+  isPrimary   Boolean   @default(false) @map("is_primary")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  person Person @relation(fields: [personId], references: [id])
+
+  @@index([personId])
+  @@map("person_phones")
+}
+
+// ─────────────────────────────────────────────
+// LOANS
+// ─────────────────────────────────────────────
+
 model Loan {
-  id                        String      @id @default(uuid()) @db.Uuid
-  loanNumber                String      @unique @map("loan_number") @db.VarChar(30)
-  institutionId             String      @map("institution_id") @db.Uuid
-  borrowerId                String      @map("borrower_id") @db.Uuid
-  originalLoanAmount        Decimal     @map("original_loan_amount") @db.Decimal(18, 2)
-  disbursedAmount           Decimal     @map("disbursed_amount") @db.Decimal(18, 2)
-  currentOutstandingBalance Decimal     @map("current_outstanding_balance") @db.Decimal(18, 2)
-  currency                  String      @default("EUR") @db.VarChar(3)
-  interestRate              Decimal?    @map("interest_rate") @db.Decimal(5, 4)
-  productType               String?     @map("product_type") @db.VarChar(50)
-  disbursementDate          DateTime    @map("disbursement_date") @db.Date
-  maturityDate              DateTime?   @map("maturity_date") @db.Date
-  lastPaymentDate           DateTime?   @map("last_payment_date") @db.Date
-  daysPastDue               Int         @default(0) @map("days_past_due")
-  dpdLastCalculatedAt       DateTime?   @map("dpd_last_calculated_at") @db.Timestamptz(6)
-  nplClassification         NplClass?   @map("npl_classification")
-  createdAt                 DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                 DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  case                      Case?
-  relatedParties            LoanParty[]
-  borrower                  Person      @relation(fields: [borrowerId], references: [id])
-  institution               Institution @relation(fields: [institutionId], references: [id])
+  id                        String    @id @default(uuid()) @db.Uuid
+  loanNumber                String    @unique @map("loan_number") @db.VarChar(30)
+  institutionId             String    @map("institution_id") @db.Uuid
+  borrowerId                String    @map("borrower_id") @db.Uuid
+  originalLoanAmount        Decimal   @map("original_loan_amount") @db.Decimal(18, 2)
+  disbursedAmount           Decimal   @map("disbursed_amount") @db.Decimal(18, 2)
+  currentOutstandingBalance Decimal   @map("current_outstanding_balance") @db.Decimal(18, 2)
+  currency                  String    @default("EUR") @db.VarChar(3)
+  interestRate              Decimal?  @map("interest_rate") @db.Decimal(5, 4)
+  productType               String?   @map("product_type") @db.VarChar(50)
+  disbursementDate          DateTime  @map("disbursement_date") @db.Date
+  maturityDate              DateTime? @map("maturity_date") @db.Date
+  lastPaymentDate           DateTime? @map("last_payment_date") @db.Date
+  daysPastDue               Int       @default(0) @map("days_past_due")
+  dpdLastCalculatedAt       DateTime? @map("dpd_last_calculated_at") @db.Timestamptz(6)
+  nplClassification         NplClass? @map("npl_classification")
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case           Case?
+  relatedParties LoanParty[]
+  borrower       Person             @relation(fields: [borrowerId], references: [id])
+  institution    Institution        @relation(fields: [institutionId], references: [id])
+  balanceHistory LoanBalanceHistory[]
 
   @@index([daysPastDue(sort: Desc)])
   @@map("loans")
@@ -108,37 +152,63 @@ model LoanParty {
   loanId   String        @map("loan_id") @db.Uuid
   personId String        @map("person_id") @db.Uuid
   role     LoanPartyRole
-  loan     Loan          @relation(fields: [loanId], references: [id])
-  person   Person        @relation(fields: [personId], references: [id])
+
+  loan   Loan   @relation(fields: [loanId], references: [id])
+  person Person @relation(fields: [personId], references: [id])
 
   @@unique([loanId, personId, role])
   @@map("loan_parties")
 }
 
+// Tracks the outstanding balance over time — each payment or import creates a snapshot
+model LoanBalanceHistory {
+  id                 String   @id @default(uuid()) @db.Uuid
+  loanId             String   @map("loan_id") @db.Uuid
+  balanceDate        DateTime @map("balance_date") @db.Date
+  outstandingBalance Decimal  @map("outstanding_balance") @db.Decimal(18, 2)
+  // PAYMENT | IMPORT | MANUAL
+  source             String   @db.VarChar(20)
+  recordedById       String?  @map("recorded_by_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  loan       Loan  @relation(fields: [loanId], references: [id])
+  recordedBy User? @relation(fields: [recordedById], references: [id])
+
+  @@index([loanId, balanceDate(sort: Desc)])
+  @@map("loan_balance_history")
+}
+
+// ─────────────────────────────────────────────
+// CASES
+// ─────────────────────────────────────────────
+
 model Case {
-  id                String              @id @default(uuid()) @db.Uuid
-  caseReference     String              @unique @map("case_reference") @db.VarChar(30)
-  loanId            String              @unique @map("loan_id") @db.Uuid
-  officeId          String?             @map("office_id") @db.Uuid
-  assignedOfficerId String?             @map("assigned_officer_id") @db.Uuid
-  status            CaseStatus          @default(ACTIVE)
-  collectionStage   CollectionStage     @default(D1) @map("collection_stage")
-  priorityScore     Int                 @default(0) @map("priority_score")
-  nextActionDate    DateTime?           @map("next_action_date") @db.Timestamptz(6)
-  nextActionNote    String?             @map("next_action_note") @db.VarChar(500)
-  deletedAt         DateTime?           @map("deleted_at") @db.Timestamptz(6)
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  activities        Activity[]
-  agreements        Agreement[]
-  statusHistory     CaseStatusHistory[]
-  assignedOfficer   User?               @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
-  loan              Loan                @relation(fields: [loanId], references: [id])
-  office            Office?             @relation(fields: [officeId], references: [id])
-  documents         Document[]
-  legalProceedings  LegalProceeding[]
-  payments          Payment[]
-  tasks             Task[]
+  id                String          @id @default(uuid()) @db.Uuid
+  caseReference     String          @unique @map("case_reference") @db.VarChar(30)
+  loanId            String          @unique @map("loan_id") @db.Uuid
+  officeId          String?         @map("office_id") @db.Uuid
+  assignedOfficerId String?         @map("assigned_officer_id") @db.Uuid
+  status            CaseStatus      @default(ACTIVE)
+  collectionStage   CollectionStage @default(D1) @map("collection_stage")
+  priorityScore     Int             @default(0) @map("priority_score")
+  nextActionDate    DateTime?       @map("next_action_date") @db.Timestamptz(6)
+  nextActionNote    String?         @map("next_action_note") @db.VarChar(500)
+  closedAt          DateTime?       @map("closed_at") @db.Timestamptz(6)
+  deletedAt         DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  assignedOfficer  User?               @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+  loan             Loan                @relation(fields: [loanId], references: [id])
+  office           Office?             @relation(fields: [officeId], references: [id])
+  activities       Activity[]
+  agreements       Agreement[]
+  statusHistory    CaseStatusHistory[]
+  documents        Document[]
+  legalProceedings LegalProceeding[]
+  payments         Payment[]
+  assignments      CaseAssignment[]
+  promises         PromiseToPay[]
 
   @@index([status])
   @@index([officeId])
@@ -146,6 +216,28 @@ model Case {
   @@index([deletedAt])
   @@map("cases")
 }
+
+// Full assignment history — who had a case and when
+model CaseAssignment {
+  id           String    @id @default(uuid()) @db.Uuid
+  caseId       String    @map("case_id") @db.Uuid
+  officerId    String    @map("officer_id") @db.Uuid
+  assignedById String    @map("assigned_by_id") @db.Uuid
+  assignedAt   DateTime  @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  unassignedAt DateTime? @map("unassigned_at") @db.Timestamptz(6)
+
+  case       Case @relation(fields: [caseId], references: [id])
+  officer    User @relation("AssignmentOfficer", fields: [officerId], references: [id])
+  assignedBy User @relation("AssignmentCreatedBy", fields: [assignedById], references: [id])
+
+  @@index([caseId])
+  @@index([officerId])
+  @@map("case_assignments")
+}
+
+// ─────────────────────────────────────────────
+// ACTIVITIES
+// ─────────────────────────────────────────────
 
 model Activity {
   id              String           @id @default(uuid()) @db.Uuid
@@ -160,12 +252,49 @@ model Activity {
   occurredAt      DateTime         @map("occurred_at") @db.Timestamptz(6)
   nextActionDate  DateTime?        @map("next_action_date") @db.Timestamptz(6)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  case            Case             @relation(fields: [caseId], references: [id])
-  officer         User             @relation(fields: [officerId], references: [id])
+
+  case    Case          @relation(fields: [caseId], references: [id])
+  officer User          @relation(fields: [officerId], references: [id])
+  promise PromiseToPay?
 
   @@index([caseId, occurredAt(sort: Desc)])
   @@map("activities")
 }
+
+// ─────────────────────────────────────────────
+// PROMISES TO PAY
+// ─────────────────────────────────────────────
+
+model PromiseToPay {
+  id              String        @id @default(uuid()) @db.Uuid
+  caseId          String        @map("case_id") @db.Uuid
+  activityId      String?       @unique @map("activity_id") @db.Uuid
+  personId        String?       @map("person_id") @db.Uuid
+  createdById     String        @map("created_by_id") @db.Uuid
+  promisedAmount  Decimal       @map("promised_amount") @db.Decimal(18, 2)
+  currency        String        @default("EUR") @db.VarChar(3)
+  promiseDate     DateTime      @map("promise_date") @db.Date
+  status          PromiseStatus @default(PENDING)
+  fulfilledAmount Decimal?      @map("fulfilled_amount") @db.Decimal(18, 2)
+  fulfilledAt     DateTime?     @map("fulfilled_at") @db.Date
+  notes           String?       @db.VarChar(500)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case      Case      @relation(fields: [caseId], references: [id])
+  activity  Activity? @relation(fields: [activityId], references: [id])
+  person    Person?   @relation(fields: [personId], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([caseId])
+  @@index([promiseDate])
+  @@index([status])
+  @@map("promises_to_pay")
+}
+
+// ─────────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────────
 
 model Payment {
   id                String        @id @default(uuid()) @db.Uuid
@@ -180,52 +309,68 @@ model Payment {
   externalReference String?       @map("external_reference") @db.VarChar(100)
   notes             String?       @db.VarChar(500)
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  case              Case          @relation(fields: [caseId], references: [id])
-  officer           User          @relation(fields: [officerId], references: [id])
+
+  case    Case @relation(fields: [caseId], references: [id])
+  officer User @relation(fields: [officerId], references: [id])
 
   @@index([caseId, paymentDate(sort: Desc)])
   @@index([paymentDate])
   @@map("payments")
 }
 
+// ─────────────────────────────────────────────
+// AGREEMENTS
+// ─────────────────────────────────────────────
+
 model Agreement {
-  id                 String                 @id @default(uuid()) @db.Uuid
-  caseId             String                 @map("case_id") @db.Uuid
-  agreementReference String                 @unique @map("agreement_reference") @db.VarChar(30)
-  status             AgreementStatus        @default(ACTIVE)
-  totalAmount        Decimal                @map("total_amount") @db.Decimal(18, 2)
-  currency           String                 @default("EUR") @db.VarChar(3)
-  installmentCount   Int                    @map("installment_count")
-  startDate          DateTime               @map("start_date") @db.Date
-  endDate            DateTime               @map("end_date") @db.Date
+  id                 String          @id @default(uuid()) @db.Uuid
+  caseId             String          @map("case_id") @db.Uuid
+  createdById        String?         @map("created_by_id") @db.Uuid
+  agreementReference String          @unique @map("agreement_reference") @db.VarChar(30)
+  status             AgreementStatus @default(ACTIVE)
+  totalAmount        Decimal         @map("total_amount") @db.Decimal(18, 2)
+  currency           String          @default("EUR") @db.VarChar(3)
+  installmentCount   Int             @map("installment_count")
+  startDate          DateTime        @map("start_date") @db.Date
+  endDate            DateTime        @map("end_date") @db.Date
   notes              String?
-  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  installments       AgreementInstallment[]
-  case               Case                   @relation(fields: [caseId], references: [id])
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case         Case                   @relation(fields: [caseId], references: [id])
+  createdBy    User?                  @relation(fields: [createdById], references: [id])
+  installments AgreementInstallment[]
 
   @@index([caseId])
   @@map("agreements")
 }
 
 model AgreementInstallment {
-  id          String            @id @default(uuid()) @db.Uuid
-  agreementId String            @map("agreement_id") @db.Uuid
-  dueDate     DateTime          @map("due_date") @db.Date
-  amount      Decimal           @db.Decimal(18, 2)
-  currency    String            @default("EUR") @db.VarChar(3)
-  status      InstallmentStatus @default(PENDING)
-  paidAt      DateTime?         @map("paid_at") @db.Date
-  paidAmount  Decimal?          @map("paid_amount") @db.Decimal(18, 2)
-  agreement   Agreement         @relation(fields: [agreementId], references: [id])
+  id                 String            @id @default(uuid()) @db.Uuid
+  agreementId        String            @map("agreement_id") @db.Uuid
+  installmentNumber  Int               @map("installment_number")
+  dueDate            DateTime          @map("due_date") @db.Date
+  amount             Decimal           @db.Decimal(18, 2)
+  currency           String            @default("EUR") @db.VarChar(3)
+  status             InstallmentStatus @default(PENDING)
+  paidAt             DateTime?         @map("paid_at") @db.Date
+  paidAmount         Decimal?          @map("paid_amount") @db.Decimal(18, 2)
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agreement Agreement @relation(fields: [agreementId], references: [id])
 
   @@index([agreementId])
   @@map("agreement_installments")
 }
 
+// ─────────────────────────────────────────────
+// LEGAL
+// ─────────────────────────────────────────────
+
 model LegalProceeding {
   id              String                @id @default(uuid()) @db.Uuid
   caseId          String                @map("case_id") @db.Uuid
+  createdById     String?               @map("created_by_id") @db.Uuid
   proceedingRef   String                @unique @map("proceeding_ref") @db.VarChar(30)
   status          LegalProceedingStatus @default(INITIATED)
   court           String?               @db.VarChar(150)
@@ -236,11 +381,37 @@ model LegalProceeding {
   notes           String?
   createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
-  case            Case                  @relation(fields: [caseId], references: [id])
+
+  case            Case            @relation(fields: [caseId], references: [id])
+  createdBy       User?           @relation(fields: [createdById], references: [id])
+  legalActivities LegalActivity[]
 
   @@index([caseId])
   @@map("legal_proceedings")
 }
+
+// Individual events within a legal proceeding (hearings, deadlines, judgments)
+model LegalActivity {
+  id                String            @id @default(uuid()) @db.Uuid
+  legalProceedingId String            @map("legal_proceeding_id") @db.Uuid
+  createdById       String            @map("created_by_id") @db.Uuid
+  activityType      LegalActivityType @map("activity_type")
+  activityDate      DateTime          @map("activity_date") @db.Date
+  description       String?           @db.Text
+  deadline          DateTime?         @db.Date
+  completedAt       DateTime?         @map("completed_at") @db.Date
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  legalProceeding LegalProceeding @relation(fields: [legalProceedingId], references: [id])
+  createdBy       User            @relation(fields: [createdById], references: [id])
+
+  @@index([legalProceedingId])
+  @@map("legal_activities")
+}
+
+// ─────────────────────────────────────────────
+// DOCUMENTS
+// ─────────────────────────────────────────────
 
 model Document {
   id           String       @id @default(uuid()) @db.Uuid
@@ -253,32 +424,17 @@ model Document {
   storagePath  String       @map("storage_path") @db.VarChar(500)
   notes        String?      @db.VarChar(500)
   uploadedAt   DateTime     @default(now()) @map("uploaded_at") @db.Timestamptz(6)
-  case         Case         @relation(fields: [caseId], references: [id])
-  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  case       Case @relation(fields: [caseId], references: [id])
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
 
   @@index([caseId])
   @@map("documents")
 }
 
-model Task {
-  id           String        @id @default(uuid()) @db.Uuid
-  caseId       String?       @map("case_id") @db.Uuid
-  title        String        @db.VarChar(200)
-  description  String?
-  priority     TaskPriority  @default(MEDIUM)
-  dueDate      DateTime?     @map("due_date") @db.Timestamptz(6)
-  completedAt  DateTime?     @map("completed_at") @db.Timestamptz(6)
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  assignedToId String?       @map("assigned_to_id") @db.Uuid
-  createdById  String?       @map("created_by_id") @db.Uuid
-  assignedTo   User?         @relation("TasksAssigned", fields: [assignedToId], references: [id])
-  case         Case?         @relation(fields: [caseId], references: [id])
-  createdBy    User?         @relation("TasksCreated", fields: [createdById], references: [id])
-
-  @@index([assignedToId])
-  @@index([dueDate])
-  @@map("tasks")
-}
+// ─────────────────────────────────────────────
+// HISTORY & AUDIT
+// ─────────────────────────────────────────────
 
 model CaseStatusHistory {
   id          String   @id @default(uuid()) @db.Uuid
@@ -289,18 +445,87 @@ model CaseStatusHistory {
   newValue    String?  @map("new_value") @db.VarChar(100)
   note        String?  @db.VarChar(500)
   changedAt   DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
-  case        Case     @relation(fields: [caseId], references: [id])
-  changedBy   User     @relation(fields: [changedById], references: [id])
+
+  case      Case @relation(fields: [caseId], references: [id])
+  changedBy User @relation(fields: [changedById], references: [id])
 
   @@index([caseId, changedAt(sort: Desc)])
   @@map("case_status_history")
 }
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  username   String?  @db.VarChar(50)
+  action     String   @db.VarChar(100)
+  entity     String?  @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.VarChar(100)
+  details    String?  @db.Text
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([occurredAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// BULK IMPORTS
+// ─────────────────────────────────────────────
+
+model ImportJob {
+  id             String       @id @default(uuid()) @db.Uuid
+  institutionId  String?      @map("institution_id") @db.Uuid
+  uploadedById   String       @map("uploaded_by_id") @db.Uuid
+  importType     ImportType   @map("import_type")
+  fileName       String       @map("file_name") @db.VarChar(255)
+  status         ImportStatus @default(PENDING)
+  totalRows      Int          @default(0) @map("total_rows")
+  successfulRows Int          @default(0) @map("successful_rows")
+  failedRows     Int          @default(0) @map("failed_rows")
+  startedAt      DateTime?    @map("started_at") @db.Timestamptz(6)
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  institution Institution? @relation(fields: [institutionId], references: [id])
+  uploadedBy  User         @relation(fields: [uploadedById], references: [id])
+  errors      ImportError[]
+
+  @@index([uploadedById])
+  @@map("import_jobs")
+}
+
+model ImportError {
+  id           String   @id @default(uuid()) @db.Uuid
+  importJobId  String   @map("import_job_id") @db.Uuid
+  rowNumber    Int      @map("row_number")
+  errorMessage String   @map("error_message") @db.Text
+  rawData      String?  @map("raw_data") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id])
+
+  @@index([importJobId])
+  @@map("import_errors")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
 
 enum UserRole {
   ADMIN
   MANAGER
   OFFICER
   VIEWER
+}
+
+enum PhoneType {
+  MOBILE
+  HOME
+  WORK
+  OTHER
 }
 
 enum CaseStatus {
@@ -344,6 +569,14 @@ enum ActivityOutcome {
   OTHER
 }
 
+enum PromiseStatus {
+  PENDING
+  KEPT
+  BROKEN
+  PARTIAL
+  CANCELLED
+}
+
 enum PaymentMethod {
   BANK_TRANSFER
   CASH
@@ -375,6 +608,16 @@ enum LegalProceedingStatus {
   CLOSED
 }
 
+enum LegalActivityType {
+  HEARING
+  SUBMISSION
+  DEADLINE
+  JUDGMENT
+  APPEAL
+  ENFORCEMENT
+  OTHER
+}
+
 enum DocumentType {
   CONTRACT
   ID_DOCUMENT
@@ -384,13 +627,6 @@ enum DocumentType {
   AGREEMENT
   CORRESPONDENCE
   OTHER
-}
-
-enum TaskPriority {
-  CRITICAL
-  HIGH
-  MEDIUM
-  LOW
 }
 
 enum LoanPartyRole {
@@ -410,19 +646,15 @@ enum NplClass {
   LOSS
 }
 
-model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String?  @map("user_id") @db.Uuid
-  username   String?  @db.VarChar(50)
-  action     String   @db.VarChar(100)
-  entity     String?  @db.VarChar(50)
-  entityId   String?  @map("entity_id") @db.VarChar(100)
-  details    String?  @db.Text
-  ipAddress  String?  @map("ip_address") @db.VarChar(45)
-  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+enum ImportType {
+  PORTFOLIO
+  PAYMENTS
+  BALANCES
+}
 
-  @@index([userId])
-  @@index([occurredAt(sort: Desc)])
-  @@index([action])
-  @@map("audit_logs")
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

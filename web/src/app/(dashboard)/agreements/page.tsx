@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency, formatEnum } from "@/lib/utils";
-import { agreements as agreementsApi } from "@/lib/api";
+import { agreements as agreementsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, FileText, Search } from "lucide-react";
+import { RefreshCw, FileText, Search, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { useFormErrors } from "@/lib/form";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE:    "Aktive",
-  COMPLETED: "Përfunduar",
-  BROKEN:    "Prishur",
-  CANCELLED: "Anuluar",
+  COMPLETED: "E Përfunduar",
+  DEFAULTED: "E Dështuar",
+  BROKEN:    "E Thyer",
+  CANCELLED: "E Anuluar",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -25,6 +29,167 @@ const STATUS_DOT: Record<string, string> = {
   CANCELLED: "bg-gray-200",
 };
 
+function AF({ label, required, error, children }: { label: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+        {label}
+        {required ? <span className="text-red-500 font-bold">*</span> : <span className="text-gray-300 font-normal normal-case tracking-normal text-[10px]">(opsionale)</span>}
+      </label>
+      {children}
+      {error && <p className="mt-1 text-[11px] text-red-500">↑ {error}</p>}
+    </div>
+  );
+}
+
+function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [caseSearch, setCaseSearch] = useState("");
+  const [caseResults, setCaseResults] = useState<any[]>([]);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [caseAttempted, setCaseAttempted] = useState(false);
+  const [totalAmount, setTotalAmount] = useState("");
+  const [installmentCount, setInstallmentCount] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const { touch, touchAll, fieldError } = useFormErrors();
+
+  async function searchCases(q: string) {
+    setCaseSearch(q);
+    if (q.length < 2) { setCaseResults([]); return; }
+    try {
+      const res = await casesApi.list({ search: q, limit: 6 });
+      setCaseResults(res.data);
+    } catch {}
+  }
+
+  const amountError  = fieldError("totalAmount",      totalAmount,      { required: true, custom: (v) => isNaN(parseFloat(v)) || parseFloat(v) <= 0 ? "Shuma duhet të jetë pozitive" : null });
+  const countError   = fieldError("installmentCount", installmentCount, { required: true, custom: (v) => { const n = parseInt(v); return (isNaN(n) || n < 1 || n > 120) ? "Ndërmjet 1 dhe 120" : null; } });
+  const startError   = fieldError("startDate",        startDate,        { required: true });
+  const caseError    = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një dosje" : null;
+
+  const inp = (hasErr: boolean) =>
+    `w-full px-3 py-2 text-[13px] border rounded-lg focus:outline-none transition-colors ${hasErr ? "border-red-400 focus:border-red-400 bg-red-50/30" : "border-gray-200 focus:border-brand-400"}`;
+
+  async function submit() {
+    setCaseAttempted(true);
+    touchAll(["totalAmount", "installmentCount", "startDate"]);
+    if (!selectedCase || amountError || countError || startError) return;
+    setSaving(true); setSubmitError("");
+    try {
+      await agreementsApi.create({
+        caseId: selectedCase.id,
+        totalAmount: parseFloat(totalAmount),
+        installmentCount: parseInt(installmentCount),
+        startDate,
+        notes: notes.trim() || undefined,
+      });
+      onCreated();
+    } catch (e: any) {
+      setSubmitError(e.message);
+      setSaving(false);
+    }
+  }
+
+  const monthlyAmount = totalAmount && installmentCount && !isNaN(parseFloat(totalAmount)) && parseInt(installmentCount) > 0
+    ? parseFloat(totalAmount) / parseInt(installmentCount)
+    : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel">
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-gray-900">Marrëveshje e Re Ripagimi</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5">Krijoni një plan këstesh me debitorin</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+        </div>
+
+        <div className="p-4 md:p-6 space-y-4">
+          {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
+
+          {/* Case search */}
+          <AF label="Dosje" required error={caseError}>
+            {selectedCase ? (
+              <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-xl">
+                <div>
+                  <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
+                  <span className="text-[12px] text-gray-600 ml-2">
+                    {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.firstName} ${selectedCase.loan.borrower.lastName}` : ""}
+                  </span>
+                </div>
+                <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); }}
+                  className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input value={caseSearch} onChange={(e) => searchCases(e.target.value)}
+                  placeholder="Kërko sipas referencës ose emrit të debitorit…"
+                  className={inp(!!caseError)} />
+                {caseResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                    {caseResults.map((c) => (
+                      <button key={c.id} onClick={() => { setSelectedCase(c); setCaseSearch(""); setCaseResults([]); }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                        <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
+                        <span className="text-[12px] text-gray-700">
+                          {c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "—"}
+                        </span>
+                        <span className="ml-auto text-[11px] text-gray-400">{c.loan?.institution?.shortName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </AF>
+
+          <div className="grid grid-cols-2 gap-3">
+            <AF label="Shuma Totale (€)" required error={amountError}>
+              <input value={totalAmount} onChange={(e) => { setTotalAmount(e.target.value); touch("totalAmount"); }}
+                onBlur={() => touch("totalAmount")}
+                placeholder="p.sh. 5000" type="number" min="0" step="0.01"
+                className={inp(!!amountError)} />
+            </AF>
+            <AF label="Numri i Kësteve" required error={countError}>
+              <input value={installmentCount} onChange={(e) => { setInstallmentCount(e.target.value); touch("installmentCount"); }}
+                onBlur={() => touch("installmentCount")}
+                placeholder="p.sh. 12" type="number" min="1" max="120"
+                className={inp(!!countError)} />
+            </AF>
+          </div>
+
+          {monthlyAmount !== null && (
+            <div className="px-3 py-2 bg-brand-50 border border-brand-100 rounded-lg text-[12px] text-brand-700">
+              Këst mujor: <span className="font-semibold">{formatCurrency(monthlyAmount)}</span>
+            </div>
+          )}
+
+          <AF label="Data e Këstit të Parë" required error={startError}>
+            <DatePicker value={startDate} onChange={(v) => { setStartDate(v); touch("startDate"); }} placeholder="Zgjidhni datën" />
+          </AF>
+
+          <AF label="Shënime">
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              placeholder="Kushte të veçanta, shënime mbi marrëveshjen…"
+              className={`${inp(false)} resize-none`} />
+          </AF>
+        </div>
+
+        <div className="px-6 pb-5 flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
+          <button onClick={submit} disabled={saving}
+            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+            {saving ? "Duke krijuar…" : "Krijo Marrëveshjen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function nextDueInstallment(installments: any[]) {
   if (!installments?.length) return null;
   const pending = installments.filter((i) => i.status !== "PAID" && i.status !== "WAIVED");
@@ -33,8 +198,10 @@ function nextDueInstallment(installments: any[]) {
 }
 
 export default function AgreementsPage() {
-  const { user, scopedToSelf, scopedToOffice } = useAuth();
+  const { user, scopedToSelf, scopedToOffice, can } = useAuth();
+  const { toast } = useToast();
   const [refreshing, triggerRefresh] = useRefreshing();
+  const [showNew, setShowNew] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>(null);
   const [stats, setStats] = useState<any>({});
@@ -85,20 +252,27 @@ export default function AgreementsPage() {
 
   return (
     <div className="flex flex-col">
+      {showNew && <NewAgreementModal onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); load(1); toast("Marrëveshja u krijua"); }} />}
       <Topbar title="Marrëveshjet" subtitle={scopedToSelf ? "Marrëveshjet tuaja aktive të ripagimit" : "Marrëveshjet e ripagimit dhe oraret e kësteve"} />
 
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Filter bar */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 max-w-xs">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Kërko debitor ose dosje…"
-                className="w-full pl-7 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
             </div>
             <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
+            {can("agreement:create") && (
+              <button onClick={() => setShowNew(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
+                <Plus size={14} /> Marrëveshje e Re
+              </button>
+            )}
           </div>
           <div className="flex border-b border-gray-200">
             {filterOptions.map(({ key, label }) => (
@@ -176,6 +350,9 @@ export default function AgreementsPage() {
                               ? `${a.case.loan.borrower.firstName} ${a.case.loan.borrower.lastName}`
                               : "—"}
                           </span>
+                          {a.notes && (
+                            <div className="text-[11px] text-gray-400 italic mt-0.5 line-clamp-1">{a.notes}</div>
+                          )}
                         </Td>
                         <Td><span className="font-mono text-[12px] text-gray-500">{a.case?.caseReference ?? "—"}</span></Td>
                         <Td><span className="font-semibold tabular text-gray-900">{formatCurrency(Number(a.totalAmount))}</span></Td>
@@ -218,13 +395,18 @@ export default function AgreementsPage() {
               </Table>
 
               {meta && meta.pages > 1 && (
-                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
-                  <span>{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} of {meta.total}</span>
-                  <div className="flex gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => load(meta.page - 1)}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
-                    <button disabled={meta.page >= meta.pages} onClick={() => load(meta.page + 1)}
-                      className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <button disabled={meta.page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page - 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
+                    <button disabled={meta.page >= meta.pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page + 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
               )}

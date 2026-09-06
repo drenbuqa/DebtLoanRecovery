@@ -3,6 +3,8 @@ import { Throttle } from '@nestjs/throttler';
 import { UsersService } from './users.service';
 import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 @UseGuards(RolesGuard)
@@ -30,7 +32,7 @@ export class UsersController {
 
   @Post()
   @RequireRoles('ADMIN')
-  async create(@Body() body: any, @Request() req: any) {
+  async create(@Body() body: CreateUserDto, @Request() req: any) {
     const user = await this.svc.create(body);
     await this.audit.log({
       userId: req.user.id, username: req.user.username,
@@ -42,11 +44,8 @@ export class UsersController {
 
   @Patch(':id')
   @RequireRoles('ADMIN')
-  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    // Prevent role escalation: only ADMINs reach here, but double-check role field
-    const allowed = ['fullName', 'email', 'role', 'officeId', 'isActive', 'password'];
-    const keys = Object.keys(body);
-    if (keys.some((k) => !allowed.includes(k))) throw new ForbiddenException('Invalid update fields');
+  async update(@Param('id') id: string, @Body() body: UpdateUserDto, @Request() req: any) {
+    const keys = Object.keys(body).filter((k) => (body as any)[k] !== undefined);
 
     const user = await this.svc.update(id, body);
     await this.audit.log({

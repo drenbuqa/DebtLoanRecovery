@@ -54,9 +54,9 @@ function OfficerBarChart({ officers }: { officers: any[] }) {
 }
 
 function PerformancePageInner() {
-  const [datePreset, setDatePreset] = useState<DatePreset>("month");
-  const [dateFrom, setDateFrom] = useState(() => presetToRange("month").from);
-  const [dateTo,   setDateTo]   = useState(() => presetToRange("month").to);
+  const [datePreset, setDatePreset] = useState<DatePreset>("3months");
+  const [dateFrom, setDateFrom] = useState(() => presetToRange("3months").from);
+  const [dateTo,   setDateTo]   = useState(() => presetToRange("3months").to);
   const [officeFilter, setOfficeFilter] = useState("");
   const [officers, setOfficers] = useState<any[]>([]);
   const [officeStats, setOfficeStats] = useState<any[]>([]);

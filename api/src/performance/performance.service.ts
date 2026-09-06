@@ -10,58 +10,32 @@ export class PerformanceService {
     const to = query.to ? new Date(query.to) : new Date();
 
     const officers = await this.prisma.user.findMany({
-      where: {
-        isActive: true,
-        role: { in: ['OFFICER', 'MANAGER'] },
-        ...(query.officeId ? { officeId: query.officeId } : {}),
-      },
-      select: {
-        id: true, fullName: true, role: true,
-        office: { select: { name: true, code: true } },
-        cases: {
-          where: { status: 'ACTIVE' },
-          select: { id: true },
-        },
-        activities: {
-          where: { occurredAt: { gte: from, lte: to } },
-          select: { activityType: true, promiseAmount: true },
-        },
-        payments: {
-          where: { paymentDate: { gte: from, lte: to } },
-          select: { amount: true },
-        },
-      },
+      where: { isActive: true, role: { in: ['OFFICER', 'MANAGER'] }, ...(query.officeId ? { officeId: query.officeId } : {}) },
+      select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
     });
 
-    return officers.map((o) => {
-      const activeCases = o.cases.length;
-      const totalActivities = o.activities.length;
-      const calls = o.activities.filter((a) => a.activityType === 'CALL').length;
-      const visits = o.activities.filter((a) => ['VISIT', 'FIELD_VISIT'].includes(a.activityType)).length;
-      const promises = o.activities.filter((a) => a.activityType === 'PROMISE_TO_PAY').length;
-      const promiseAmount = o.activities
-        .filter((a) => a.activityType === 'PROMISE_TO_PAY' && a.promiseAmount)
-        .reduce((s, a) => s + Number(a.promiseAmount), 0);
-      const collectedAmount = o.payments.reduce((s, p) => s + Number(p.amount), 0);
-      const paymentCount = o.payments.length;
+    return Promise.all(officers.map(async (o) => {
+      const [activeCases, activities, payments] = await Promise.all([
+        this.prisma.case.count({ where: { assignedOfficerId: o.id, status: 'ACTIVE' } }),
+        this.prisma.activity.findMany({ where: { officerId: o.id, occurredAt: { gte: from, lte: to } }, select: { activityType: true, promiseAmount: true } }),
+        this.prisma.payment.findMany({ where: { officerId: o.id, paymentDate: { gte: from, lte: to } }, select: { amount: true } }),
+      ]);
+
+      const totalActivities = activities.length;
+      const calls = activities.filter((a) => a.activityType === 'CALL').length;
+      const visits = activities.filter((a) => ['VISIT', 'FIELD_VISIT'].includes(a.activityType)).length;
+      const promises = activities.filter((a) => a.activityType === 'PROMISE_TO_PAY').length;
+      const promiseAmount = activities.filter((a) => a.activityType === 'PROMISE_TO_PAY' && a.promiseAmount).reduce((s, a) => s + Number(a.promiseAmount), 0);
+      const collectedAmount = payments.reduce((s, p) => s + Number(p.amount), 0);
+      const paymentCount = payments.length;
 
       return {
-        id: o.id,
-        fullName: o.fullName,
-        role: o.role,
-        office: o.office,
-        activeCases,
-        totalActivities,
-        calls,
-        visits,
-        promises,
-        promiseAmount,
-        collectedAmount,
-        paymentCount,
+        id: o.id, fullName: o.fullName, role: o.role, office: o.office,
+        activeCases, totalActivities, calls, visits, promises, promiseAmount, collectedAmount, paymentCount,
         activitiesPerCase: activeCases > 0 ? +(totalActivities / activeCases).toFixed(1) : 0,
         collectionRate: promiseAmount > 0 ? +((collectedAmount / promiseAmount) * 100).toFixed(1) : null,
       };
-    });
+    }));
   }
 
   async officeStats(query: { from?: string; to?: string }) {

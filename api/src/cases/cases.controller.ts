@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, Request, UseGuards } from '@nestjs/common';
 import { CasesService } from './cases.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
+import { CreateCaseDto } from './dto/create-case.dto';
 
 @Controller('cases')
 @UseGuards(RolesGuard)
@@ -17,6 +18,7 @@ export class CasesController {
 
   @Get()
   findAll(
+    @Request() req: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -27,6 +29,16 @@ export class CasesController {
     @Query('officerId') officerId?: string,
     @Query('view') view?: string,
   ) {
+    const user = req.user;
+    // Officers can only see their own cases regardless of query params
+    if (user?.role === 'OFFICER') {
+      officerId = user.id;
+      officeId = undefined;
+    }
+    // Managers can only see their own office
+    if (user?.role === 'MANAGER' && !officeId) {
+      officeId = user.officeId;
+    }
     return this.svc.findAll({
       page: page ? +page : undefined,
       limit: limit ? +limit : undefined,
@@ -36,7 +48,7 @@ export class CasesController {
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  create(@Body() dto: any, @Request() req: any) {
+  create(@Body() dto: CreateCaseDto, @Request() req: any) {
     return this.svc.createCase(dto, req.user?.id);
   }
 
@@ -66,7 +78,7 @@ export class CasesController {
 
   @Patch(':id/assign')
   @RequireRoles('ADMIN', 'MANAGER')
-  assign(@Param('id') id: string, @Body('officerId') officerId: string) {
-    return this.svc.assignOfficer(id, officerId);
+  assign(@Param('id') id: string, @Body('officerId') officerId: string, @Request() req: any) {
+    return this.svc.assignOfficer(id, officerId, req.user?.id);
   }
 }

@@ -1,67 +1,45 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 
-let _token: string | null = null;
-
-export function setToken(t: string | null) {
-  _token = t;
-  if (typeof window !== 'undefined') {
-    if (t) localStorage.setItem('dlr_token', t);
-    else localStorage.removeItem('dlr_token');
-  }
-}
-
-export function getToken(): string | null {
-  if (_token) return _token;
-  if (typeof window !== 'undefined') {
-    _token = localStorage.getItem('dlr_token');
-  }
-  return _token;
-}
+// All requests include credentials so the httpOnly cookie is sent automatically.
+// There is no token in JavaScript memory or localStorage — it lives only in the cookie.
 
 let _refreshing: Promise<void> | null = null;
 
 async function tryRefresh(): Promise<boolean> {
-  if (_refreshing) { await _refreshing; return !!getToken(); }
+  if (_refreshing) { await _refreshing; return true; }
   _refreshing = (async () => {
     try {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: 'include',
       });
-      if (res.ok) {
-        const { accessToken } = await res.json();
-        setToken(accessToken);
-      } else {
-        setToken(null);
-      }
+      if (!res.ok) throw new Error('refresh failed');
     } catch {
-      setToken(null);
+      // Refresh failed — session is gone
     } finally {
       _refreshing = null;
     }
   })();
   await _refreshing;
-  return !!getToken();
+  return true;
 }
 
 async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Promise<T> {
-  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...opts,
+    credentials: 'include', // sends the httpOnly cookie automatically
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(opts.headers ?? {}),
     },
   });
 
   if (res.status === 401) {
-    // Try a silent token refresh once before redirecting to login
     if (_retry && path !== '/auth/login' && path !== '/auth/refresh') {
-      const ok = await tryRefresh();
-      if (ok) return req<T>(path, opts, false);
+      await tryRefresh();
+      // Retry once — if cookie was refreshed the next call succeeds, otherwise 401 again
+      return req<T>(path, opts, false);
     }
-    setToken(null);
     if (typeof window !== 'undefined') window.location.href = '/login';
     throw new Error('Unauthorized');
   }
@@ -77,12 +55,12 @@ async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Prom
 // Auth
 export const auth = {
   login: (username: string, password: string) =>
-    req<{ accessToken: string; user: any }>('/auth/login', {
+    req<{ user: any }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     }),
+  logout: () => req('/auth/logout', { method: 'POST' }),
   me: () => req<any>('/auth/me'),
-  refresh: () => req<{ accessToken: string }>('/auth/refresh', { method: 'POST' }),
   changePassword: (currentPassword: string, newPassword: string) =>
     req('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
 };
@@ -160,18 +138,6 @@ export const legal = {
   update: (id: string, data: any) => req(`/legal/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
-// Tasks
-export const tasks = {
-  list: (params: Record<string, string | number | undefined> = {}) => {
-    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString();
-    return req<{ data: any[]; meta: any }>(`/tasks${qs ? `?${qs}` : ''}`);
-  },
-  create: (data: any) => req('/tasks', { method: 'POST', body: JSON.stringify(data) }),
-  complete: (id: string) => req(`/tasks/${id}/complete`, { method: 'PATCH' }),
-  uncomplete: (id: string) => req(`/tasks/${id}/uncomplete`, { method: 'PATCH' }),
-  update: (id: string, data: any) => req(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-};
-
 // Users
 export const users = {
   list: (params?: { officeId?: string; isActive?: boolean }) => {
@@ -202,25 +168,24 @@ export const offices = {
   create: (data: any) => req('/offices', { method: 'POST', body: JSON.stringify(data) }),
 };
 
-// Documents
+// Documents — file upload uses FormData, still needs credentials: 'include'
 export const documents = {
   listByCase: (caseId: string) => req<any[]>(`/documents/case/${caseId}`),
   upload: (caseId: string, file: File, documentType: string, notes?: string): Promise<any> => {
-    const token = getToken();
     const form = new FormData();
     form.append('file', file);
     form.append('documentType', documentType);
     if (notes) form.append('notes', notes);
     return fetch(`${API_BASE}/documents/case/${caseId}/upload`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
       body: form,
+      // No Content-Type header — browser sets it with the boundary for multipart
     }).then(async (r) => {
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message ?? `Upload failed (${r.status})`); }
       return r.json();
     });
   },
-  downloadUrl: (documentId: string) => `${API_BASE}/documents/${documentId}/download?token=${getToken()}`,
   delete: (documentId: string) => req(`/documents/${documentId}`, { method: 'DELETE' }),
 };
 
@@ -233,5 +198,14 @@ export const performance = {
   offices: (params?: { from?: string; to?: string }) => {
     const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
     return req<any[]>(`/performance/offices${qs ? `?${qs}` : ''}`);
+  },
+};
+
+// Reports — PDF download via fetch with credentials
+export const reports = {
+  downloadCase: async (caseId: string) => {
+    const res = await fetch(`${API_BASE}/reports/case/${caseId}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Report generation failed');
+    return res.blob();
   },
 };

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, setToken } from "@/lib/api";
+import { auth } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await auth.login(username, password);
-      setToken(res.accessToken);
+      // Cookie is set by the server — no token handling needed here
       if (typeof window !== "undefined") {
         localStorage.setItem("dlr_user", JSON.stringify(res.user));
       }
@@ -159,8 +159,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: 24, padding: "12px 16px", background: "#f9fafb", borderRadius: 8, fontSize: 12, color: "#6b7280" }}>
-          <strong>Kredencialet demo:</strong> admin / admin123
+        <div style={{ marginTop: 24, padding: "12px 16px", background: "#f9fafb", borderRadius: 8, fontSize: 12, color: "#6b7280", textAlign: "center" }}>
+          Nëse keni harruar fjalëkalimin, kontaktoni menaxherin ose administratorin tuaj.
         </div>
       </div>
     </div>

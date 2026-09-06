@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi } from "@/lib/api";
+import { formatEnum } from "@/lib/utils";
 import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { AccessGuard } from "@/components/AccessGuard";
@@ -10,8 +11,8 @@ import { AccessGuard } from "@/components/AccessGuard";
 const REPORTS = [
   {
     code: "PORTFOLIO_SUMMARY",
-    name: "Pasqyra e Portofolit",
-    desc: "Gjendjet debitore dhe numri i dosjeve sipas statusit dhe fazës",
+    name: "Gjendja e Dosjeve",
+    desc: "Të gjitha dosjet aktuale me balancën, statusin dhe fazën e arkëtimit",
     icon: BarChart3,
     columns: ["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Gjendja Debitore (EUR)", "DPD"],
     info: "Eksporton të gjitha dosjet me gjendjen aktuale debitore, ditët me vonesë, statusin dhe fazën e arkëtimit. Pa filtër datash — pasqyron gjithmonë portofolin aktual.",
@@ -89,8 +90,8 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
             c.caseReference,
             `${c.loan?.borrower?.firstName ?? ""} ${c.loan?.borrower?.lastName ?? ""}`.trim(),
             c.loan?.institution?.shortName ?? "",
-            c.status,
-            c.collectionStage,
+            formatEnum(c.status),
+            formatEnum(c.collectionStage),
             String(Number(c.loan?.currentOutstandingBalance ?? 0).toFixed(2)),
             String(c.loan?.daysPastDue ?? 0),
           ]);
@@ -106,9 +107,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
             p.paymentReference,
             p.case?.caseReference ?? "",
             `${p.case?.loan?.borrower?.firstName ?? ""} ${p.case?.loan?.borrower?.lastName ?? ""}`.trim(),
-            p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-GB") : "",
+            p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("sq-AL") : "",
             String(Number(p.amount).toFixed(2)),
-            p.paymentMethod,
+            formatEnum(p.paymentMethod),
           ]);
         }
       } else if (report.code === "AGREEMENT_STATUS") {
@@ -119,11 +120,11 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
             a.agreementReference,
             a.case?.caseReference ?? "",
             `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
-            a.status,
+            formatEnum(a.status),
             String(Number(a.totalAmount).toFixed(2)),
             String(a.installmentCount),
             String(a.paidInstallments ?? 0),
-            a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString("en-GB") : "",
+            a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString("sq-AL") : "",
           ]);
         }
       } else if (report.code === "OVERDUE_INSTALLMENTS") {
@@ -136,9 +137,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
                 a.agreementReference,
                 `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
                 String(ins.installmentNumber),
-                ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("en-GB") : "",
+                ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("sq-AL") : "",
                 String(Number(ins.amount).toFixed(2)),
-                ins.status,
+                formatEnum(ins.status),
               ]);
             }
           }
@@ -152,9 +153,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
             lp.case?.caseReference ?? "",
             `${lp.case?.loan?.borrower?.firstName ?? ""} ${lp.case?.loan?.borrower?.lastName ?? ""}`.trim(),
             lp.court ?? "",
-            lp.status,
-            lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB") : "",
-            lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("en-GB") : "",
+            formatEnum(lp.status),
+            lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("sq-AL") : "",
+            lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("sq-AL") : "",
             lp.judgmentAmount != null ? String(Number(lp.judgmentAmount).toFixed(2)) : "",
           ]);
         }
@@ -166,12 +167,12 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         rows = [["Lloji", "Ref. Dosje", "Debitor", "Oficer", "Datë", "Rezultat", "Shënime"]];
         for (const a of res.data) {
           rows.push([
-            a.activityType,
+            formatEnum(a.activityType),
             a.case?.caseReference ?? "",
             `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
             a.officer?.fullName ?? "",
-            a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("en-GB") : "",
-            a.outcome ?? "",
+            a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
+            a.outcome ? formatEnum(a.outcome) : "",
             a.notes ?? "",
           ]);
         }

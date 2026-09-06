@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { setToken } from "@/lib/api";
+import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Permission } from "@/lib/permissions";
 import {
@@ -108,8 +108,10 @@ export default function Sidebar() {
   }, []);
 
   function logout() {
-    setToken(null);
-    router.push("/login");
+    auth.logout().catch(() => {}).finally(() => {
+      localStorage.removeItem("dlr_user");
+      router.push("/login");
+    });
   }
 
   const initials = user?.fullName

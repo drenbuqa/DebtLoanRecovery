@@ -51,6 +51,31 @@ export class SchedulerService {
     this.log.log(`DPD recalculation complete — ${updated}/${loans.length} loans updated`);
   }
 
+  // Runs every night at 01:30 — mark unpaid installments whose due date has passed as OVERDUE
+  @Cron('30 1 * * *')
+  async markOverdueInstallments() {
+    this.log.log('Installment OVERDUE sweep started');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const result = await this.prisma.agreementInstallment.updateMany({
+      where: { status: 'PENDING', dueDate: { lt: today } },
+      data: { status: 'OVERDUE' },
+    });
+    this.log.log(`Installment OVERDUE sweep complete — ${result.count} installments marked OVERDUE`);
+  }
+
+  @Cron('45 1 * * *')
+  async markBrokenPromises() {
+    this.log.log('Broken promises sweep started');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const result = await this.prisma.promiseToPay.updateMany({
+      where: { status: 'PENDING', promiseDate: { lt: today } },
+      data: { status: 'BROKEN' },
+    });
+    this.log.log(`Broken promises sweep complete — ${result.count} promises marked BROKEN`);
+  }
+
   // Runs every night at 02:00 server time
   @Cron('0 2 * * *')
   runBackup() {

@@ -14,7 +14,6 @@ import { ActivitiesModule } from './activities/activities.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AgreementsModule } from './agreements/agreements.module';
 import { LegalModule } from './legal/legal.module';
-import { TasksModule } from './tasks/tasks.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { OfficesModule } from './offices/offices.module';
 import { PerformanceModule } from './performance/performance.module';
@@ -36,7 +35,6 @@ import { RolesGuard } from './auth/roles.guard';
     PaymentsModule,
     AgreementsModule,
     LegalModule,
-    TasksModule,
     InstitutionsModule,
     OfficesModule,
     PerformanceModule,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { AgreementStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -58,7 +58,6 @@ export class AgreementsService {
     startDate: string;
     notes?: string;
   }) {
-    const ref = `AGR-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
     const start = new Date(dto.startDate);
     const installmentAmount = dto.totalAmount / dto.installmentCount;
 
@@ -69,8 +68,14 @@ export class AgreementsService {
     const installments = Array.from({ length: dto.installmentCount }, (_, i) => {
       const due = new Date(start);
       due.setMonth(due.getMonth() + i);
-      return { dueDate: due, amount: parseFloat(installmentAmount.toFixed(2)), currency: dto.currency ?? 'EUR' };
+      return { installmentNumber: i + 1, dueDate: due, amount: parseFloat(installmentAmount.toFixed(2)), currency: dto.currency ?? 'EUR' };
     });
+
+    const year = new Date().getFullYear();
+    const [{ count }] = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*)::bigint AS count FROM agreements WHERE EXTRACT(YEAR FROM created_at) = ${year}
+    `;
+    const ref = `AGR-${year}-${String(Number(count) + 1).padStart(4, '0')}`;
 
     return this.prisma.agreement.create({
       data: {
@@ -92,13 +97,40 @@ export class AgreementsService {
   async markInstallmentPaid(installmentId: string, paidAmount?: number) {
     const inst = await this.prisma.agreementInstallment.findUnique({ where: { id: installmentId } });
     if (!inst) throw new NotFoundException('Installment not found');
-    return this.prisma.agreementInstallment.update({
-      where: { id: installmentId },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
-        paidAmount: paidAmount ?? inst.amount,
-      },
+    if (inst.status === 'PAID') throw new BadRequestException('Installment is already paid');
+
+    const amount = Number(inst.amount);
+    const paid = paidAmount !== undefined ? Number(paidAmount) : amount;
+
+    if (paid <= 0) throw new BadRequestException('Paid amount must be greater than zero');
+    if (paid > amount) throw new BadRequestException(`Paid amount (${paid}) exceeds installment amount (${amount})`);
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.agreementInstallment.update({
+        where: { id: installmentId },
+        data: {
+          status: 'PAID',
+          paidAt: new Date(),
+          paidAmount: paid,
+        },
+      });
+
+      // Check if all installments for this agreement are now settled (PAID or WAIVED)
+      const remaining = await tx.agreementInstallment.count({
+        where: {
+          agreementId: inst.agreementId,
+          status: { notIn: ['PAID', 'WAIVED'] },
+        },
+      });
+
+      if (remaining === 0) {
+        await tx.agreement.update({
+          where: { id: inst.agreementId },
+          data: { status: AgreementStatus.COMPLETED },
+        });
+      }
+
+      return updated;
     });
   }
 

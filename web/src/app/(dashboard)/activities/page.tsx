@@ -16,7 +16,7 @@ import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatEnum } from "@/lib/utils";
 import {
   RefreshCw, Phone, MapPin, CreditCard, FileText,
-  CheckSquare, Clock, Mail, MessageSquare, ChevronRight,
+  CheckSquare, Clock, Mail, MessageSquare, ChevronLeft, ChevronRight,
   Activity, Search, X, Plus, LayoutGrid, List,
 } from "lucide-react";
 
@@ -636,9 +636,16 @@ export default function ActivitiesPage() {
               {pages > 1 && (
                 <div className="flex items-center justify-between text-[12px] text-gray-500 px-1">
                   <span>{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
-                  <div className="flex gap-2">
-                    <button disabled={page <= 1} onClick={() => load(page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
-                    <button disabled={page >= pages} onClick={() => load(page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                  <div className="flex items-center gap-2">
+                    <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
+                    <button disabled={page >= pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
               )}
@@ -737,11 +744,18 @@ export default function ActivitiesPage() {
                 </Tbody>
               </Table>
               {meta && meta.pages > 1 && (
-                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
-                  <span>{((page - 1) * 24) + 1}–{Math.min(page * 24, meta.total)} nga {meta.total}</span>
-                  <div className="flex gap-2">
-                    <button disabled={page <= 1} onClick={() => load(page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
-                    <button disabled={page >= meta.pages} onClick={() => load(page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-[12px] text-gray-400">{((page - 1) * 24) + 1}–{Math.min(page * 24, meta.total)} nga {meta.total.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={15} />
+                    </button>
+                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {meta.pages}</span>
+                    <button disabled={page >= meta.pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={15} />
+                    </button>
                   </div>
                 </div>
               )}

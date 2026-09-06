@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { setToken } from "@/lib/api";
+import { auth } from "@/lib/api";
 import {
   CreditCard, FileText,
   Scale, Building2, BarChart3, TrendingUp, Users,
@@ -51,8 +51,10 @@ export default function MorePage() {
   };
 
   function logout() {
-    setToken(null);
-    router.push("/login");
+    auth.logout().catch(() => {}).finally(() => {
+      localStorage.removeItem("dlr_user");
+      router.push("/login");
+    });
   }
 
   return (

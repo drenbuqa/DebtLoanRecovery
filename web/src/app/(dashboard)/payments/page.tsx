@@ -134,14 +134,14 @@ export default function PaymentsPage() {
         )}
 
         {/* Filter bar */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Kërko debitor ose dosje…"
-              className="w-full pl-7 pr-3 py-2 md:py-1.5 text-[13px] border border-gray-200 rounded-xl md:rounded-lg bg-white focus:outline-none focus:border-brand-400"
+              className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400"
             />
           </div>
           <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
@@ -175,14 +175,14 @@ export default function PaymentsPage() {
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1} onClick={() => load(page - 1)}
-                      className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
-                      <ChevronLeft size={14} /> Mëparshme
+                    <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={15} />
                     </button>
-                    <span className="text-[12px] text-gray-400">{page} / {pages}</span>
-                    <button disabled={page >= pages} onClick={() => load(page + 1)}
-                      className="flex items-center gap-1 px-4 py-2 rounded-xl border border-gray-200 disabled:opacity-40 bg-white text-[13px] text-gray-600">
-                      Tjetër <ChevronRight size={14} />
+                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
+                    <button disabled={page >= pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={15} />
                     </button>
                   </div>
                 )}
@@ -271,13 +271,18 @@ export default function PaymentsPage() {
                 </Table>
 
                 {pages > 1 && (
-                  <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
-                    <span>{((page - 1) * 25) + 1}–{Math.min(page * 25, total)} of {total}</span>
-                    <div className="flex gap-2">
-                      <button disabled={page <= 1} onClick={() => load(page - 1)}
-                        className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
-                      <button disabled={page >= pages} onClick={() => load(page + 1)}
-                        className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>
+                  <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-[12px] text-gray-400">{((page - 1) * 25) + 1}–{Math.min(page * 25, total)} nga {total.toLocaleString()}</span>
+                    <div className="flex items-center gap-2">
+                      <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                        <ChevronLeft size={15} />
+                      </button>
+                      <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
+                      <button disabled={page >= pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                        <ChevronRight size={15} />
+                      </button>
                     </div>
                   </div>
                 )}

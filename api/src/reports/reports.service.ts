@@ -72,7 +72,7 @@ export class ReportsService {
     this.twoCol(doc, [
       ['Borrower', `${b.firstName} ${b.lastName}`],
       ['Personal ID', b.personalId],
-      ['Phone', b.phone1 ?? '—'],
+      ['Phone', (b as any).phones?.[0]?.phoneNumber ?? '—'],
       ['Address', b.address ?? '—'],
     ]);
     this.twoCol(doc, [

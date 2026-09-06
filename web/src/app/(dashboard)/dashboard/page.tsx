@@ -7,13 +7,13 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
-import { cases as casesApi, payments as paymentsApi, tasks as tasksApi, performance as perfApi, offices as officesApi } from "@/lib/api";
+import { cases as casesApi, payments as paymentsApi, performance as perfApi, offices as officesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatEnum } from "@/lib/utils";
 import {
-  TrendingUp, AlertTriangle, CheckCircle2, Clock, Scale,
+  TrendingUp, AlertTriangle, Clock, Scale,
   FileText, Users, ArrowUpRight, RefreshCw, FolderOpen,
-  MapPin, Circle, ChevronRight, BarChart3,
+  MapPin, Circle, ChevronRight, BarChart3, CheckCircle2,
 } from "lucide-react";
 
 const MONTHS = ["Janar","Shkurt","Mars","Prill","Maj","Qershor","Korrik","Gusht","Shtator","Tetor","Nëntor","Dhjetor"];
@@ -203,25 +203,16 @@ function KpiCard({ label, value, sub, alert, href }: { label: string; value: str
 function OfficerDashboard({ user }: { user: any }) {
   const router = useRouter();
   const [cases, setCases] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
 
   useEffect(() => {
     if (!user?.id) return;
-    Promise.all([
-      casesApi.list({ officerId: user.id, limit: 8, page: 1 }),
-      tasksApi.list({ assignedToId: user.id, completed: "false", limit: 8 }),
-    ]).then(([c, t]) => {
-      setCases(c.data ?? []);
-      setTasks(t.data ?? []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    casesApi.list({ officerId: user.id, limit: 8, page: 1 })
+      .then((c) => setCases(c.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [user?.id]);
-
-  const pendingTasks = tasks.filter((t) => !t.completedAt);
-  const overdueTasks = pendingTasks.filter((t) => t.dueDate && t.dueDate.slice(0, 10) < todayStr);
-  const dueTodayTasks = pendingTasks.filter((t) => t.dueDate && t.dueDate.slice(0, 10) === todayStr);
 
   const hour = now.getHours();
   const greeting = hour < 12 ? "Mirëmëngjes" : hour < 17 ? "Mirëdita" : "Mirëmbrëma";
@@ -234,7 +225,6 @@ function OfficerDashboard({ user }: { user: any }) {
         subtitle={`${greeting}, ${firstName} · ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`}
         help={[
           { title: "Dosjet tuaja", body: "Këtu shfaqen vetëm dosjet që ju janë caktuar. Klikoni mbi çdo rresht për të hapur detajet e plota — informacionin e debitorit, historikun e pagesave dhe veprimet e ndërmarra." },
-          { title: "Detyrat tuaja", body: "Këto janë gjërat që duhet të ndiqni. Detyrat e theksuara me të kuq janë me vonesë — merreni me to fillimisht. Klikoni kutinë e kontrollit kur një detyrë është kryer." },
           { title: "Si të regjistroni një telefonatë ose pagesë", body: "Klikoni mbi një dosje për ta hapur, pastaj përdorni butonat e veprimit në të djathtën e sipërme — 'Regjistro Aktivitet' për telefonata dhe vizita, 'Shto Pagesë' kur është marrë para." },
         ]}
       />
@@ -242,10 +232,9 @@ function OfficerDashboard({ user }: { user: any }) {
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Summary strip */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <KpiCard label="Dosjet e Mia" value={loading ? "—" : fmtNum(cases.length)} sub="Caktuar tek ju" href="/cases" />
-          <KpiCard label="Detyra për Sot" value={loading ? "—" : String(dueTodayTasks.length)} sub={dueTodayTasks.length > 0 ? "Kërkon vëmendje" : "Gjithçka në rregull"} alert={dueTodayTasks.length > 0} href="/tasks" />
-          <KpiCard label="Detyra me Vonesë" value={loading ? "—" : String(overdueTasks.length)} sub={overdueTasks.length > 0 ? "Afati ka kaluar" : "Asgjë me vonesë"} alert={overdueTasks.length > 0} href="/tasks" />
+          <KpiCard label="Aktivitete Sot" value="→" sub="Shto aktivitet të ri" href="/activities" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -299,54 +288,13 @@ function OfficerDashboard({ user }: { user: any }) {
             </Card>
           </div>
 
-          {/* My tasks */}
+          {/* Quick links */}
           <div className="flex flex-col gap-4">
-            <Card padding="none">
-              <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-[13px] font-semibold text-gray-900">Detyrat e Mia</h3>
-                <button onClick={() => router.push("/tasks")}
-                  className="text-[12px] text-brand-600 font-medium hover:underline transition-colors flex items-center gap-1">
-                  Të gjitha detyrat <ArrowUpRight size={12} />
-                </button>
-              </div>
-              {loading ? <div className="py-8 flex justify-center"><RefreshCw size={16} className="animate-spin text-gray-300" /></div>
-                : pendingTasks.length === 0 ? (
-                  <div className="px-5 py-8 text-center">
-                    <CheckCircle2 size={22} className="text-emerald-400 mx-auto mb-2" />
-                    <p className="text-[12px] text-gray-400">Të gjitha detyrat janë kryer!</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-50">
-                    {pendingTasks.slice(0, 6).map((t) => {
-                      const due = t.dueDate ? t.dueDate.slice(0, 10) : null;
-                      const isOverdueT = due && due < todayStr;
-                      const isTodayT = due === todayStr;
-                      return (
-                        <div key={t.id} onClick={() => router.push("/tasks")}
-                          className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${PRIORITY_DOT[t.priority] ?? "bg-gray-300"}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[12.5px] font-medium text-gray-900 truncate">{t.title}</div>
-                            {due && (
-                              <div className={`text-[11px] mt-0.5 ${isOverdueT ? "text-red-500 font-medium" : isTodayT ? "text-amber-600 font-medium" : "text-gray-400"}`}>
-                                {isOverdueT ? "Me vonesë" : isTodayT ? "Afat sot" : `Afat ${new Date(due).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" })}`}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-            </Card>
-
-            {/* Quick links */}
             <Card>
               <h3 className="text-[12px] font-semibold text-gray-700 mb-3 uppercase tracking-wide">Veprime të shpejta</h3>
               <div className="space-y-1">
                 {[
                   { label: "Dosjet e mia", href: "/cases", icon: FolderOpen },
-                  { label: "Detyrat e mia", href: "/tasks", icon: CheckCircle2 },
                   { label: "Vizita në terren", href: "/field-visits", icon: MapPin },
                   { label: "Aktivitete të fundit", href: "/activities", icon: Clock },
                 ].map((l) => (

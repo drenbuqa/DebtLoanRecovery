@@ -93,9 +93,13 @@ export class PaymentsService {
     notes?: string;
     externalReference?: string;
   }) {
-    const ref = `PAY-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
-
     const payment = await this.prisma.$transaction(async (tx) => {
+      // Collision-safe reference: count within the year inside the transaction
+      const year = new Date().getFullYear();
+      const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM payments WHERE EXTRACT(YEAR FROM payment_date) = ${year}
+      `;
+      const ref = `PAY-${year}-${String(Number(count) + 1).padStart(5, '0')}`;
       const created = await tx.payment.create({
         data: {
           caseId: dto.caseId,
@@ -123,10 +127,10 @@ export class PaymentsService {
           _sum: { amount: true },
         });
         const paid = totalPaid._sum.amount ?? 0;
-        const outstanding = Number(loan.originalLoanAmount) - Number(paid);
-        await tx.loan.update({
-          where: { id: loan.id },
-          data: { currentOutstandingBalance: Math.max(0, outstanding) },
+        const outstanding = Math.max(0, Number(loan.originalLoanAmount) - Number(paid));
+        await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: outstanding } });
+        await tx.loanBalanceHistory.create({
+          data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: outstanding, source: 'PAYMENT', recordedById: dto.officerId },
         });
       }
 

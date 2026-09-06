@@ -44,9 +44,20 @@ export class ActivitiesService {
     if (dto.nextActionDate) {
       await this.prisma.case.update({
         where: { id: dto.caseId },
+        data: { nextActionDate: new Date(dto.nextActionDate), nextActionNote: dto.notes },
+      });
+    }
+
+    // Track promises_to_pay separately for structured reporting
+    if (dto.activityType === 'PROMISE_TO_PAY' && dto.promiseAmount && dto.promiseAmount > 0) {
+      await this.prisma.promiseToPay.create({
         data: {
-          nextActionDate: new Date(dto.nextActionDate),
-          nextActionNote: dto.notes,
+          caseId: dto.caseId,
+          activityId: activity.id,
+          createdById: dto.officerId,
+          promisedAmount: dto.promiseAmount,
+          currency: dto.promiseCurrency ?? 'EUR',
+          promiseDate: dto.nextActionDate ? new Date(dto.nextActionDate) : new Date(),
         },
       });
     }

@@ -57,7 +57,10 @@ export class UsersService {
     if (dto.role !== undefined) data.role = dto.role;
     if (dto.officeId !== undefined) data.officeId = dto.officeId || null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
-    if (dto.password) data.passwordHash = await bcrypt.hash(dto.password, 12);
+    if (dto.password) {
+      data.passwordHash = await bcrypt.hash(dto.password, 12);
+      (data as any).tokenVersion = { increment: 1 };
+    }
     return this.prisma.user.update({ where: { id }, data, select: USER_PUBLIC });
   }
 

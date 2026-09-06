@@ -126,15 +126,21 @@ export class DocumentsController {
   }
 
   @Get(':id/download')
+  @RequireRoles('ADMIN', 'MANAGER', 'OFFICER', 'VIEWER')
   async download(@Param('id') id: string, @Request() req: any, @Res() res: Response) {
     const { filePath, fileName, mimeType } = await this.svc.getFilePath(id);
+    // Prevent path traversal: the resolved path must stay inside UPLOADS_DIR
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(UPLOADS_DIR + path.sep) && resolved !== UPLOADS_DIR) {
+      throw new BadRequestException('Invalid file path');
+    }
     await this.audit.log({
       userId: req.user.id, username: req.user.username,
       action: 'DOCUMENT_DOWNLOAD', entity: 'Document', entityId: id,
     });
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
-    res.sendFile(path.resolve(filePath));
+    res.sendFile(resolved);
   }
 
   @Delete(':id')

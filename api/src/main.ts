@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cookieParser = require('cookie-parser');
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -19,14 +21,22 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  // Cookie parser — required for httpOnly cookie auth
+  app.use(cookieParser());
+
   // Security headers — HSTS, XSS protection, content-type sniffing, etc.
   app.use(helmet({
     contentSecurityPolicy: false, // disabled — frontend is served separately
     hsts: { maxAge: 31536000, includeSubDomains: true },
   }));
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
+  if (!allowedOrigins && process.env.NODE_ENV === 'production') {
+    console.error('[FATAL] ALLOWED_ORIGINS is not set. In production this restricts CORS to localhost only, locking out the real frontend. Set it to your frontend URL(s) before deploying.');
+    process.exit(1);
+  }
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:3001', 'http://localhost:3000'],
+    origin: allowedOrigins ?? ['http://localhost:3001', 'http://localhost:3000'],
     credentials: true,
   });
 
