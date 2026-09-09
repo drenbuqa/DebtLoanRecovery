@@ -37,16 +37,16 @@ const DEFAULT_PRESETS: { key: DatePreset; label: string }[] = [
   { key: "today",      label: "Sot" },
   { key: "week",       label: "Kjo javë" },
   { key: "month",      label: "Ky muaj" },
-  { key: "last_month", label: "Muaji i kaluar" },
+  { key: "last_month", label: "Muaji kaluar" },
   { key: "3months",    label: "3 muajt e fundit" },
 ];
 
 export const PERFORMANCE_PRESETS: { key: DatePreset; label: string }[] = [
   { key: "month",      label: "Ky muaj" },
-  { key: "last_month", label: "Muaji i kaluar" },
+  { key: "last_month", label: "Muaji kaluar" },
   { key: "3months",    label: "3 muajt e fundit" },
   { key: "6months",    label: "6 muajt e fundit" },
-  { key: "year",       label: "Këtë vit" },
+  { key: "year",       label: "Ky vit" },
 ];
 
 interface Props {
@@ -76,7 +76,7 @@ export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, l
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ fontFamily: "inherit", fontSize: 13, fontWeight: 400 }}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all bg-white text-left
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all bg-white text-left cursor-pointer
           ${open
             ? "border-brand-400 shadow-[0_0_0_3px_rgba(167,139,250,0.15)]"
             : "border-gray-200 hover:border-gray-300"
@@ -91,14 +91,14 @@ export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, l
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden" style={{ minWidth: "160px" }}>
+        <div className="absolute z-50 top-full mt-1 left-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-full">
           <div className="py-1">
             {presets.map(({ key, label }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => { onChange(key, presetToRange(key)); setOpen(false); }}
-                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors
+                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
                   ${key === value ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
               >
                 <span>{label}</span>

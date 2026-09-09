@@ -126,6 +126,8 @@ export class CasesService {
     officeId?: string;
     officerId?: string;
     view?: string;
+    from?: string;
+    to?: string;
   }) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 25, 100);
@@ -134,6 +136,11 @@ export class CasesService {
     const where: any = { deletedAt: null };
     if (query.status) where.status = query.status;
     if (query.stage) where.collectionStage = query.stage;
+    if (query.from || query.to) {
+      where.createdAt = {};
+      if (query.from) where.createdAt.gte = new Date(query.from);
+      if (query.to) { const d = new Date(query.to); d.setHours(23, 59, 59, 999); where.createdAt.lte = d; }
+    }
     if (query.officeId) where.officeId = query.officeId;
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.institutionId) where.loan = { institutionId: query.institutionId };

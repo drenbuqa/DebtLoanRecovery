@@ -12,6 +12,7 @@ import { cases as casesApi, institutions as instApi, offices as officesApi, user
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useRefreshing } from "@/lib/useRefreshing";
@@ -452,6 +453,9 @@ function CasesPageInner() {
   const initialSearch = searchParams.get("search") ?? "";
   const [search, setSearch] = useState(initialSearch);
   const [searchInput, setSearchInput] = useState(initialSearch);
+  const [datePreset, setDatePreset] = useState<DatePreset>("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
@@ -478,6 +482,7 @@ function CasesPageInner() {
       const res = await casesApi.list({
         page, limit: 25, search: search || undefined,
         view: view || undefined, status: status || undefined, stage: stage || undefined,
+        from: dateFrom || undefined, to: dateTo || undefined,
         ...(scopedToSelf   && user?.id       ? { officerId: user.id }       : {}),
         ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}),
       });
@@ -488,7 +493,7 @@ function CasesPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, view, status, stage]);
+  }, [page, search, view, status, stage, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -628,6 +633,8 @@ function CasesPageInner() {
               onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
+
+          <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); setPage(1); }} />
 
           <Select value={stageStatus} onChange={applyStageStatus} label="Faza" placeholder="Të gjitha"
             className="w-44"

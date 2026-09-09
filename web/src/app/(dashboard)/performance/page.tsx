@@ -54,9 +54,9 @@ function OfficerBarChart({ officers }: { officers: any[] }) {
 }
 
 function PerformancePageInner() {
-  const [datePreset, setDatePreset] = useState<DatePreset>("3months");
-  const [dateFrom, setDateFrom] = useState(() => presetToRange("3months").from);
-  const [dateTo,   setDateTo]   = useState(() => presetToRange("3months").to);
+  const [datePreset, setDatePreset] = useState<DatePreset>("month");
+  const [dateFrom, setDateFrom] = useState(() => presetToRange("month").from);
+  const [dateTo,   setDateTo]   = useState(() => presetToRange("month").to);
   const [officeFilter, setOfficeFilter] = useState("");
   const [officers, setOfficers] = useState<any[]>([]);
   const [officeStats, setOfficeStats] = useState<any[]>([]);
@@ -98,20 +98,18 @@ function PerformancePageInner() {
             presets={PERFORMANCE_PRESETS}
             onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }}
           />
-          <div className="flex items-center gap-2 ml-auto">
-            <div className="w-44 md:w-52">
-              <Select
-                label="Zyra"
-                value={officeFilter}
-                onChange={setOfficeFilter}
-                placeholder="Të gjitha"
-                options={offices.map((o: any) => ({ value: o.id, label: o.name }))}
-              />
-            </div>
-            <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-            </button>
+          <div className="w-44 md:w-52">
+            <Select
+              label="Zyra"
+              value={officeFilter}
+              onChange={setOfficeFilter}
+              placeholder="Të gjitha"
+              options={offices.map((o: any) => ({ value: o.id, label: o.name }))}
+            />
           </div>
+          <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-auto">
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
 
         {/* Summary KPIs */}

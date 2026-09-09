@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { useToast } from "@/components/ui/Toast";
+import { Select } from "@/components/ui/Select";
 
 const ROLE_STYLES: Record<string, string> = {
   ADMIN:   "bg-gray-800 text-white",
@@ -283,6 +284,7 @@ function UsersAdminPageInner() {
   }
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   const activeCount   = data.filter((u) => u.isActive).length;
   const inactiveCount = data.filter((u) => !u.isActive).length;
@@ -291,7 +293,8 @@ function UsersAdminPageInner() {
   const filtered = data.filter((u) => {
     const matchesTab = filter === "all" ? true : filter === "active" ? u.isActive : !u.isActive;
     const matchesSearch = !uq || (u.fullName ?? "").toLowerCase().includes(uq) || (u.email ?? "").toLowerCase().includes(uq) || (u.username ?? "").toLowerCase().includes(uq);
-    return matchesTab && matchesSearch;
+    const matchesRole = !roleFilter || u.role === roleFilter;
+    return matchesTab && matchesSearch && matchesRole;
   });
 
   return (
@@ -307,13 +310,25 @@ function UsersAdminPageInner() {
 
         {/* Filter bar */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 max-w-xs">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Kërko sipas emrit ose emailit…"
-                className="w-full pl-7 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
             </div>
+            <Select
+              label="Roli"
+              value={roleFilter}
+              onChange={setRoleFilter}
+              placeholder="Të gjithë"
+              options={[
+                { value: "ADMIN",   label: "Administrator" },
+                { value: "MANAGER", label: "Menaxher" },
+                { value: "OFFICER", label: "Oficer" },
+                { value: "VIEWER",  label: "Vëzhgues" },
+              ]}
+            />
             {can("user:create") && (
               <button onClick={() => setModal("create")}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto">

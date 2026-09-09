@@ -433,12 +433,12 @@ export default function ActivitiesPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1 max-w-xs">
-                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Kërko aktivitete…"
-                    className="w-full pl-7 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400"
+                    className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400"
                   />
                 </div>
                 <DatePresetPicker label="Periudha" value={actDatePreset} onChange={(p, r) => { setActDatePreset(p); setActDateFrom(r.from); setActDateTo(r.to); }} />
@@ -478,53 +478,47 @@ export default function ActivitiesPage() {
 
         {/* ── VISITS FILTERS ───────────────────────────────────────────────── */}
         {tab === "visits" && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  value={visitSearch} onChange={(e) => setVisitSearch(e.target.value)}
-                  placeholder="Kërko debitor ose dosje…"
-                  className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 bg-white"
-                />
-                {visitSearch && (
-                  <button onClick={() => setVisitSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-              {can("field-visit:create") && (
-                <button onClick={openLogModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
-                  <Plus size={14} /> <span className="hidden sm:inline">Regjistro Vizitë</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                value={visitSearch} onChange={(e) => setVisitSearch(e.target.value)}
+                placeholder="Kërko debitor ose dosje…"
+                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 bg-white"
+              />
+              {visitSearch && (
+                <button onClick={() => setVisitSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X size={12} />
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="w-36 md:w-44">
-                <Select label="Rezultati" value={outcomeFilter} onChange={setOutcomeFilter} options={VISIT_OUTCOME_OPTIONS} placeholder="Të gjitha" />
-              </div>
-              <DatePresetPicker label="Periudha" value={visitDatePreset} onChange={(p, r) => { setVisitDatePreset(p); setVisitDateFrom(r.from); setVisitDateTo(r.to); }} />
-              {hasVisitFilters && (
-                <button onClick={() => { setVisitDatePreset(""); setVisitDateFrom(""); setVisitDateTo(""); setVisitSearch(""); setOutcomeFilter(""); }}
-                  className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
-                  <X size={12} /> Pastro
-                </button>
-              )}
+            <DatePresetPicker label="Periudha" value={visitDatePreset} onChange={(p, r) => { setVisitDatePreset(p); setVisitDateFrom(r.from); setVisitDateTo(r.to); }} />
+            <Select label="Rezultati" value={outcomeFilter} onChange={setOutcomeFilter} options={VISIT_OUTCOME_OPTIONS} placeholder="Të gjitha" />
+            {hasVisitFilters && (
+              <button onClick={() => { setVisitDatePreset(""); setVisitDateFrom(""); setVisitDateTo(""); setVisitSearch(""); setOutcomeFilter(""); }}
+                className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
+                <X size={12} /> Pastro
+              </button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
               {!loading && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-1">
-                    <button onClick={() => setVisitView("cards")}
-                      className={`p-1.5 rounded-md transition-colors ${visitView === "cards" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-                      title="Pamja me karta"><LayoutGrid size={14} /></button>
-                    <button onClick={() => setVisitView("table")}
-                      className={`p-1.5 rounded-md transition-colors ${visitView === "table" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
-                      title="Pamja si tabelë"><List size={14} /></button>
-                  </div>
-                  <button onClick={() => triggerRefresh(() => load(1))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                  </button>
+                <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-1">
+                  <button onClick={() => setVisitView("cards")}
+                    className={`p-1.5 rounded-md transition-colors ${visitView === "cards" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+                    title="Pamja me karta"><LayoutGrid size={14} /></button>
+                  <button onClick={() => setVisitView("table")}
+                    className={`p-1.5 rounded-md transition-colors ${visitView === "table" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+                    title="Pamja si tabelë"><List size={14} /></button>
                 </div>
+              )}
+              <button onClick={() => triggerRefresh(() => load(1))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+              </button>
+              {can("field-visit:create") && (
+                <button onClick={openLogModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
+                  <Plus size={14} /> Regjistro Vizitë
+                </button>
               )}
             </div>
           </div>

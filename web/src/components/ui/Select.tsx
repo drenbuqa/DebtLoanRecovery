@@ -73,7 +73,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
               <button
                 type="button"
                 onClick={() => pick("")}
-                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors
+                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
                   ${value === ""
                     ? "bg-brand-50 text-brand-700 font-medium"
                     : "text-gray-400 hover:bg-gray-50"
@@ -88,7 +88,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
                 key={opt.value}
                 type="button"
                 onClick={() => pick(opt.value)}
-                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors
+                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
                   ${opt.value === value
                     ? "bg-brand-50 text-brand-700 font-medium"
                     : "text-gray-700 hover:bg-gray-50"

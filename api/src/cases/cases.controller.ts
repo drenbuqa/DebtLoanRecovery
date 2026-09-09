@@ -28,6 +28,8 @@ export class CasesController {
     @Query('officeId') officeId?: string,
     @Query('officerId') officerId?: string,
     @Query('view') view?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     const user = req.user;
     // Officers can only see their own cases regardless of query params
@@ -42,7 +44,7 @@ export class CasesController {
     return this.svc.findAll({
       page: page ? +page : undefined,
       limit: limit ? +limit : undefined,
-      search, status, stage, institutionId, officeId, officerId, view,
+      search, status, stage, institutionId, officeId, officerId, view, from, to,
     });
   }
 
