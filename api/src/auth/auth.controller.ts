@@ -11,7 +11,7 @@ function cookieOpts() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'none' as const,
     maxAge: 8 * 60 * 60 * 1000, // 8 hours
     path: '/',
   };
