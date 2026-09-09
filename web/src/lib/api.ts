@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 // All requests include credentials so the httpOnly cookie is sent automatically.
 // There is no token in JavaScript memory or localStorage — it lives only in the cookie.
