@@ -35,9 +35,12 @@ async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Prom
   });
 
   if (res.status === 401) {
-    if (_retry && path !== '/auth/login' && path !== '/auth/refresh') {
+    if (path === '/auth/login') {
+      const err = await res.json().catch(() => ({ message: 'Kredencialet janë të pasakta' }));
+      throw new Error(err.message ?? 'Kredencialet janë të pasakta');
+    }
+    if (_retry && path !== '/auth/refresh') {
       await tryRefresh();
-      // Retry once — if cookie was refreshed the next call succeeds, otherwise 401 again
       return req<T>(path, opts, false);
     }
     if (typeof window !== 'undefined') window.location.href = '/login';
