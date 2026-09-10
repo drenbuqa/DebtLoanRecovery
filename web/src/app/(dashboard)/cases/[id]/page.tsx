@@ -748,13 +748,13 @@ export default function CaseDetailPage() {
           {can("payment:create") && (
             <button onClick={() => setShowAddPayment(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <CreditCard size={13} /> Shto Pagesë
+              <CreditCard size={13} /> <span className="hidden md:inline">Shto Pagesë</span>
             </button>
           )}
           {can("activity:create") && (
             <button onClick={() => setShowLogActivity(true)}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
-              <Phone size={13} /> Regjistro Aktivitet
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
+              <Phone size={13} /> <span className="hidden md:inline">Regjistro Aktivitet</span>
             </button>
           )}
         </div>

@@ -30,19 +30,18 @@
   to   { transform: translateY(0); }
 }
 @media (max-width: 767px) {
-  /* Modal backdrop becomes bottom-sheet container, sitting above the nav bar */
+  /* Modal backdrop becomes bottom-sheet container */
   .modal-backdrop {
     align-items: flex-end !important;
     padding: 0 !important;
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
     z-index: 110 !important;
   }
-  /* Modal panel becomes a full-width bottom sheet */
+  /* Modal panel becomes a full-width bottom sheet, extends to screen edge */
   .modal-panel {
     max-width: 100% !important;
     width: 100% !important;
     border-radius: 20px 20px 0 0 !important;
-    max-height: 80vh !important;
+    max-height: 88vh !important;
     animation: sheet-in 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
     margin: 0 !important;
     padding-bottom: 0 !important;
@@ -67,10 +66,10 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
-  /* Footer always visible, never clipped */
+  /* Footer always visible — clears the nav bar + safe area */
   .modal-panel > div:last-child {
     flex-shrink: 0;
-    padding-bottom: 8px;
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
