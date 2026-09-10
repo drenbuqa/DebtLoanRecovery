@@ -22,7 +22,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import {
   ChevronLeft, Phone, MessageSquare, MapPin, CreditCard,
   FileText, CheckSquare, Clock, Scale, RefreshCw,
-  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download,
+  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList,
 } from "lucide-react";
 
 // ── Shared empty state ───────────────────────────────────────
@@ -754,7 +754,7 @@ export default function CaseDetailPage() {
           {can("activity:create") && (
             <button onClick={() => setShowLogActivity(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
-              <Phone size={13} /> <span className="hidden md:inline">Regjistro Aktivitet</span>
+              <ClipboardList size={13} /> <span className="hidden md:inline">Regjistro Aktivitet</span>
             </button>
           )}
         </div>
