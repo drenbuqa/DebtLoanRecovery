@@ -444,7 +444,9 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
               </div>
             </div>
             <div className="px-3 pt-1 pb-3">
-              {loading ? <div className="h-[160px] animate-pulse bg-gray-100 rounded-lg" /> : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
+              {loading
+                ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
+                : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
 
@@ -452,7 +454,13 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             <Card>
               <CardHeader title="Alarmet e Ditës" />
               <div className="space-y-2.5">
-                {loading || !stats ? <div className="h-24 animate-pulse bg-gray-50 rounded-lg" /> : [
+                {loading || !stats ? Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 py-1">
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 animate-pulse shrink-0" />
+                    <div className="flex-1 h-3 bg-gray-100 animate-pulse rounded" />
+                    <div className="w-6 h-4 bg-gray-100 animate-pulse rounded" />
+                  </div>
+                )) : [
                   { icon: Clock,        label: "Premtime pagese për sot",  val: stats.promisesToday,       color: "text-brand-600", bg: "bg-brand-50",   href: "/cases?view=promises_today" },
                   { icon: FileText,     label: "Këste me vonesë",          val: stats.overdueInstallments, color: "text-red-500",   bg: "bg-red-50",     href: "/agreements" },
                   { icon: Scale,        label: "Dosje juridike",           val: stats.legalCases,          color: "text-brand-600", bg: "bg-brand-50",   href: "/legal" },
@@ -474,7 +482,12 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             <Card>
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="space-y-2">
-                {loading || !stats ? <div className="h-20 animate-pulse bg-gray-50 rounded-lg" /> :
+                {loading || !stats ? Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-3 w-24 bg-gray-100 animate-pulse rounded" />
+                    <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
+                  </div>
+                )) :
                   (stats.officeStats ?? []).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
@@ -647,14 +660,21 @@ function ViewerDashboard() {
               </div>
             </div>
             <div className="px-3 pt-1 pb-3">
-              {loading ? <div className="h-[160px] animate-pulse bg-gray-100 rounded-lg" /> : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
+              {loading
+                ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
+                : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
           <div className="flex flex-col gap-4">
             <Card>
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="space-y-2">
-                {loading ? <div className="h-20 animate-pulse bg-gray-50 rounded-lg" /> :
+                {loading ? Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-3 w-24 bg-gray-100 animate-pulse rounded" />
+                    <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
+                  </div>
+                )) :
                   (stats?.officeStats ?? []).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
