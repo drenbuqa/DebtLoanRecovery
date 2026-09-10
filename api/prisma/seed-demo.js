@@ -19,14 +19,19 @@ async function main() {
 
   // ── Users ─────────────────────────────────────────────────────────────────
   const hash = (pw) => bcrypt.hash(pw, 10);
+  async function upsertUser(data) {
+    const existing = await p.user.findUnique({ where: { username: data.username } });
+    if (existing) return p.user.update({ where: { username: data.username }, data: { officeId: data.officeId ?? null } });
+    return p.user.create({ data });
+  }
   const [uAdmin, uManager1, uManager2, uOfficer1, uOfficer2, uOfficer3, uViewer] = await Promise.all([
-    p.user.upsert({ where: { username: 'admin' }, update: {}, create: { username: 'admin', passwordHash: await hash('Admin123!'), fullName: 'Administrator', email: 'admin@dlr.com', role: 'ADMIN', isActive: true } }),
-    p.user.upsert({ where: { username: 'manager.tirana' }, update: {}, create: { username: 'manager.tirana', passwordHash: await hash('Manager123!'), fullName: 'Arben Hoxha', email: 'a.hoxha@dlr.com', role: 'MANAGER', isActive: true, officeId: offTirana.id } }),
-    p.user.upsert({ where: { username: 'manager.shkoder' }, update: {}, create: { username: 'manager.shkoder', passwordHash: await hash('Manager123!'), fullName: 'Mirela Gashi', email: 'm.gashi@dlr.com', role: 'MANAGER', isActive: true, officeId: offShkoder.id } }),
-    p.user.upsert({ where: { username: 'officer.besnik' }, update: {}, create: { username: 'officer.besnik', passwordHash: await hash('Officer123!'), fullName: 'Besnik Kelmendi', email: 'b.kelmendi@dlr.com', role: 'OFFICER', isActive: true, officeId: offTirana.id } }),
-    p.user.upsert({ where: { username: 'officer.diana' }, update: {}, create: { username: 'officer.diana', passwordHash: await hash('Officer123!'), fullName: 'Diana Shehu', email: 'd.shehu@dlr.com', role: 'OFFICER', isActive: true, officeId: offTirana.id } }),
-    p.user.upsert({ where: { username: 'officer.fatos' }, update: {}, create: { username: 'officer.fatos', passwordHash: await hash('Officer123!'), fullName: 'Fatos Lleshi', email: 'f.lleshi@dlr.com', role: 'OFFICER', isActive: true, officeId: offShkoder.id } }),
-    p.user.upsert({ where: { username: 'viewer1' }, update: {}, create: { username: 'viewer1', passwordHash: await hash('Viewer123!'), fullName: 'Elsa Dervishi', email: 'e.dervishi@dlr.com', role: 'VIEWER', isActive: true, officeId: offTirana.id } }),
+    upsertUser({ username: 'admin', passwordHash: await hash('Admin123!'), fullName: 'Administrator', email: 'admin@dlr.com', role: 'ADMIN', isActive: true }),
+    upsertUser({ username: 'manager.tirana', passwordHash: await hash('Manager123!'), fullName: 'Arben Hoxha', email: 'a.hoxha@dlr.com', role: 'MANAGER', isActive: true, officeId: offTirana.id }),
+    upsertUser({ username: 'manager.shkoder', passwordHash: await hash('Manager123!'), fullName: 'Mirela Gashi', email: 'm.gashi@dlr.com', role: 'MANAGER', isActive: true, officeId: offShkoder.id }),
+    upsertUser({ username: 'officer.besnik', passwordHash: await hash('Officer123!'), fullName: 'Besnik Kelmendi', email: 'b.kelmendi@dlr.com', role: 'OFFICER', isActive: true, officeId: offTirana.id }),
+    upsertUser({ username: 'officer.diana', passwordHash: await hash('Officer123!'), fullName: 'Diana Shehu', email: 'd.shehu@dlr.com', role: 'OFFICER', isActive: true, officeId: offTirana.id }),
+    upsertUser({ username: 'officer.fatos', passwordHash: await hash('Officer123!'), fullName: 'Fatos Lleshi', email: 'f.lleshi@dlr.com', role: 'OFFICER', isActive: true, officeId: offShkoder.id }),
+    upsertUser({ username: 'viewer1', passwordHash: await hash('Viewer123!'), fullName: 'Elsa Dervishi', email: 'e.dervishi@dlr.com', role: 'VIEWER', isActive: true, officeId: offTirana.id }),
   ]);
   console.log('Users done');
 
