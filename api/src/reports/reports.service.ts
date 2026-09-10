@@ -253,9 +253,9 @@ export class ReportsService {
     ];
 
     const filename = `payments-${new Date().toISOString().slice(0, 10)}.csv`;
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(rows.map(r => r.join(',')).join('\n'));
+    res.send('﻿' + rows.map(r => r.join(',')).join('\n'));
   }
 
   async activitiesCsv(query: { dateFrom?: string; dateTo?: string; officeId?: string; officerId?: string }, res: Response) {
@@ -300,9 +300,9 @@ export class ReportsService {
     ];
 
     const filename = `activities-${new Date().toISOString().slice(0, 10)}.csv`;
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(rows.map(r => r.join(',')).join('\n'));
+    res.send('﻿' + rows.map(r => r.join(',')).join('\n'));
   }
 
   // ─── PDF helpers ─────────────────────────────────────────────────────────────

@@ -24,9 +24,9 @@ export class ImportController {
   @Get('template')
   template(@Res() res: Response) {
     const csv = this.svc.templateCsv();
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="dlr-import-template.csv"');
-    res.send(csv);
+    res.send('﻿' + csv);
   }
 
   /** Upload a CSV or Excel file to bulk-import loan portfolios */

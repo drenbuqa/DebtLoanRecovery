@@ -394,8 +394,8 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                 <p className="text-[13px] text-brand-700 mb-3">Filloni duke konfiguruar platformën tuaj. Ndiqni hapat më poshtë për të nisur gjurmimin e rikuperimit të borxheve.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
-                    { step: "1", label: "Shto Institucione", desc: "Regjistroni institucionet financiare kredidhënëse që menaxhoni.", href: "/admin/institutions" },
-                    { step: "2", label: "Konfiguro Zyret dhe Përdoruesit", desc: "Krijoni zyra dhe ftoni oficerët në platformë.", href: "/admin/offices" },
+                    { step: "1", label: "Shto Institucione", desc: "Regjistroni institucionet financiare kredidhënëse që menaxhoni.", href: "/institutions" },
+                    { step: "2", label: "Konfiguro Zyret dhe Përdoruesit", desc: "Krijoni zyra dhe ftoni oficerët në platformë.", href: "/admin/reference" },
                     { step: "3", label: "Importo Dosjet e Kredive", desc: "Përdorni importin masiv në Raporte për të ngarkuar portofolio fillestar.", href: "/reports" },
                   ].map((s) => (
                     <button key={s.step} onClick={() => router.push(s.href)}
@@ -444,7 +444,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
               </div>
             </div>
             <div className="px-3 pt-1 pb-3">
-              {!loading && <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
+              {loading ? <div className="h-[160px] animate-pulse bg-gray-100 rounded-lg" /> : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
 
@@ -647,7 +647,7 @@ function ViewerDashboard() {
               </div>
             </div>
             <div className="px-3 pt-1 pb-3">
-              {!loading && <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
+              {loading ? <div className="h-[160px] animate-pulse bg-gray-100 rounded-lg" /> : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
           <div className="flex flex-col gap-4">

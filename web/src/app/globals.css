@@ -63,10 +63,13 @@
   .modal-panel > div:not(:first-child):not(:last-child) {
     flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   /* Ensure footer stays at bottom */
   .modal-panel > div:last-child {
     flex-shrink: 0;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
   }
 }
 

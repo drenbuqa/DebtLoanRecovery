@@ -156,8 +156,8 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
@@ -248,8 +248,8 @@ function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
@@ -315,8 +315,8 @@ function CreateAgreementModal({ caseId, onClose, onSuccess }: { caseId: string; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Krijo Marrëveshje</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
@@ -620,8 +620,8 @@ export default function CaseDetailPage() {
       {showAgreement && <CreateAgreementModal caseId={caseId} onClose={() => setShowAgreement(false)} onSuccess={() => { loadCase(); toast("Marrëveshja u krijua"); }} />}
 
       {showStatusUpdate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowStatusUpdate(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Statusin / Fazën</h2>
               <button onClick={() => setShowStatusUpdate(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
@@ -659,8 +659,8 @@ export default function CaseDetailPage() {
 
       {/* ── Edit Case modal ── */}
       {showEditCase && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowEditCase(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Detajet e Dosjes</h2>
               <button onClick={() => setShowEditCase(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
@@ -825,9 +825,9 @@ export default function CaseDetailPage() {
 
         {/* OVERVIEW */}
         {activeTab === "Pasqyrë" && (
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
             {/* Timeline */}
-            <div className="col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-5 py-3.5 border-b border-gray-100">
                 <h3 className="text-[13px] font-semibold text-gray-900">Kronologjia e Dosjes</h3>
               </div>
@@ -917,7 +917,7 @@ export default function CaseDetailPage() {
         {/* FINANCIAL */}
         {activeTab === "Financiar" && (
           <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {[
                 { label: "Kredia Origjinale", val: formatCurrency(Number(caseData?.loan?.originalLoanAmount ?? 0)) },
                 { label: "E Disbursuar", val: formatCurrency(disbursed) },
@@ -930,7 +930,7 @@ export default function CaseDetailPage() {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
                 <h3 className="text-[12px] font-semibold text-gray-900 mb-3">Detajet e Kredisë</h3>
                 <div className="space-y-2.5">
@@ -1081,7 +1081,7 @@ export default function CaseDetailPage() {
                     </div>
                     {p.court && <span className="text-[12px] text-gray-400">{p.court}</span>}
                   </div>
-                  <div className="px-5 py-4 grid grid-cols-4 gap-4">
+                  <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {[
                       { label: "Data e Depozitimit", val: p.filingDate ? new Date(p.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
                       { label: "Seanca Tjetër", val: p.nextHearingDate ? new Date(p.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
@@ -1111,8 +1111,8 @@ export default function CaseDetailPage() {
           <div className="bg-white rounded-xl border border-gray-200">
             {/* Upload modal */}
             {showUpload && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowUpload(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
                   <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-[15px] font-semibold text-gray-900">Ngarko Dokument</h2>
                     <button onClick={() => setShowUpload(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
