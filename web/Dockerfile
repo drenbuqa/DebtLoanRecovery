@@ -7,6 +7,8 @@ RUN npm ci
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# standalone output is required for Docker but breaks Vercel — set only here
+ENV NEXT_OUTPUT=standalone
 RUN npm run build
 
 # ── Production image ──────────────────────────────────────
