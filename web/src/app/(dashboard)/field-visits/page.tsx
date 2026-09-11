@@ -194,7 +194,7 @@ export default function FieldVisitsPage() {
                   onChange={setLogCaseId}
                   options={myCases.map((c) => ({
                     value: c.id,
-                    label: `${c.caseReference} — ${c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "Unknown"}`,
+                    label: `${c.caseReference} — ${c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "I panjohur"}`,
                   }))}
                   placeholder="Zgjidhni një dosje…"
                 />
@@ -367,7 +367,7 @@ export default function FieldVisitsPage() {
                   {hasPromise && (
                     <div className="mt-2 px-2.5 py-1.5 bg-emerald-50 rounded-lg flex items-center gap-1.5">
                       <CheckSquare size={11} className="text-emerald-500" />
-                      <span className="text-[11px] text-emerald-700 font-medium">Promise: €{Number(v.promiseAmount).toLocaleString()}</span>
+                      <span className="text-[11px] text-emerald-700 font-medium">Premtim: €{Number(v.promiseAmount).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -411,7 +411,7 @@ export default function FieldVisitsPage() {
             </Table>
             {meta && meta.pages > 1 && (
               <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-gray-500">
-                <span>{((page - 1) * 24) + 1}–{Math.min(page * 24, meta.total)} of {meta.total}</span>
+                <span>{((page - 1) * 24) + 1}–{Math.min(page * 24, meta.total)} nga {meta.total}</span>
                 <div className="flex gap-2">
                   <button disabled={page <= 1} onClick={() => load(page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Mëparshme</button>
                   <button disabled={page >= meta.pages} onClick={() => load(page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">Tjetër</button>

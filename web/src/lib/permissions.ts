@@ -75,6 +75,7 @@ const MANAGER_PERMS: Permission[] = [
   "field-visit:create",
   // Managers can see user list and reset passwords but cannot create/deactivate
   "user:reset-password",
+  "institution:edit",
   "document:delete",
   "report:export",
 ];
@@ -95,6 +96,7 @@ const VIEWER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal", "page:field-visits",
   "page:institutions", "page:reports", "page:performance",
+  "page:settings",
   "report:export",
 ];
 
