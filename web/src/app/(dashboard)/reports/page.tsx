@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Topbar from "@/components/layout/Topbar";
-import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi } from "@/lib/api";
+import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi, fetchAllPages } from "@/lib/api";
 import { formatEnum } from "@/lib/utils";
 import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -83,9 +83,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
       let rows: string[][] = [];
 
       if (report.code === "PORTFOLIO_SUMMARY") {
-        const res = await casesApi.list({ limit: 200 });
+        const data = await fetchAllPages((p) => casesApi.list(p));
         rows = [["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Gjendja Debitore (EUR)", "DPD"]];
-        for (const c of res.data) {
+        for (const c of data) {
           rows.push([
             c.caseReference,
             `${c.loan?.borrower?.firstName ?? ""} ${c.loan?.borrower?.lastName ?? ""}`.trim(),
@@ -97,12 +97,12 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           ]);
         }
       } else if (report.code === "COLLECTIONS") {
-        const params: any = { limit: 200 };
-        if (dateFrom) params.dateFrom = dateFrom;
-        if (dateTo) params.dateTo = dateTo;
-        const res = await paymentsApi.list(params);
+        const extra: any = {};
+        if (dateFrom) extra.dateFrom = dateFrom;
+        if (dateTo) extra.dateTo = dateTo;
+        const data = await fetchAllPages((p) => paymentsApi.list(p), extra);
         rows = [["Referencë", "Ref. Dosje", "Debitor", "Datë", "Shumë (EUR)", "Metodë"]];
-        for (const p of res.data) {
+        for (const p of data) {
           rows.push([
             p.paymentReference,
             p.case?.caseReference ?? "",
@@ -113,9 +113,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           ]);
         }
       } else if (report.code === "AGREEMENT_STATUS") {
-        const res = await agreementsApi.list({ limit: 200 });
+        const data = await fetchAllPages((p) => agreementsApi.list(p));
         rows = [["Ref. Marrëveshje", "Ref. Dosje", "Debitor", "Status", "Totali (EUR)", "Këste", "Paguar", "Kësti i Ardhshëm"]];
-        for (const a of res.data) {
+        for (const a of data) {
           rows.push([
             a.agreementReference,
             a.case?.caseReference ?? "",
@@ -128,9 +128,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           ]);
         }
       } else if (report.code === "OVERDUE_INSTALLMENTS") {
-        const res = await agreementsApi.list({ status: "ACTIVE", limit: 200 });
+        const data = await fetchAllPages((p) => agreementsApi.list({ ...p, status: "ACTIVE" }));
         rows = [["Ref. Marrëveshje", "Debitor", "Kësti #", "Data e Maturimit", "Shuma (EUR)", "Status"]];
-        for (const a of res.data) {
+        for (const a of data) {
           for (const ins of a.installments ?? []) {
             if (ins.status === "OVERDUE") {
               rows.push([
@@ -145,9 +145,9 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           }
         }
       } else if (report.code === "LEGAL_CASES") {
-        const res = await legalApi.list({ limit: 200 });
+        const data = await fetchAllPages((p) => legalApi.list(p));
         rows = [["Referencë", "Ref. Dosje", "Debitor", "Gjykatë", "Status", "Dorëzuar", "Seanca e Ardhshme", "Vendim (EUR)"]];
-        for (const lp of res.data) {
+        for (const lp of data) {
           rows.push([
             lp.proceedingRef,
             lp.case?.caseReference ?? "",
@@ -160,12 +160,12 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           ]);
         }
       } else if (report.code === "ACTIVITY_LOG") {
-        const params: any = { limit: 200 };
-        if (dateFrom) params.from = dateFrom;
-        if (dateTo) params.to = dateTo;
-        const res = await activitiesApi.listAll(params);
+        const extra: any = {};
+        if (dateFrom) extra.from = dateFrom;
+        if (dateTo) extra.to = dateTo;
+        const data = await fetchAllPages((p) => activitiesApi.listAll(p), extra);
         rows = [["Lloji", "Ref. Dosje", "Debitor", "Oficer", "Datë", "Rezultat", "Shënime"]];
-        for (const a of res.data) {
+        for (const a of data) {
           rows.push([
             formatEnum(a.activityType),
             a.case?.caseReference ?? "",

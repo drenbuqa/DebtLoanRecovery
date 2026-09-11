@@ -55,6 +55,23 @@ async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Prom
   return res.json();
 }
 
+// Fetches every page of a paginated endpoint and returns all items combined.
+// Used by reports so exports are never silently truncated at an arbitrary limit.
+export async function fetchAllPages<T>(
+  fetcher: (params: { page: number; limit: number }) => Promise<{ data: T[]; meta: { pages: number } }>,
+  extra: Record<string, any> = {},
+  pageSize = 500,
+): Promise<T[]> {
+  const first = await fetcher({ ...extra, page: 1, limit: pageSize });
+  const all: T[] = [...first.data];
+  const total = first.meta.pages;
+  for (let p = 2; p <= total; p++) {
+    const res = await fetcher({ ...extra, page: p, limit: pageSize });
+    all.push(...res.data);
+  }
+  return all;
+}
+
 // Auth
 export const auth = {
   login: (username: string, password: string) =>

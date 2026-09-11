@@ -22,7 +22,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import {
   ChevronLeft, Phone, MessageSquare, MapPin, CreditCard,
   FileText, CheckSquare, Clock, Scale, RefreshCw,
-  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList,
+  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList, Ban,
 } from "lucide-react";
 
 // ── Shared empty state ───────────────────────────────────────
@@ -361,6 +361,51 @@ function CreateAgreementModal({ caseId, onClose, onSuccess }: { caseId: string; 
   );
 }
 
+// ── Void payment modal ───────────────────────────────────────
+function CaseVoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!reason.trim()) { setError("Arsyeja është e detyrueshme."); return; }
+    setLoading(true); setError("");
+    try {
+      await paymentsApi.void(payment.id, reason.trim());
+      onVoided();
+    } catch (e: any) { setError(e.message); setLoading(false); }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
+            Kjo do të anulojë <strong>{formatCurrency(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
+              placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
+          </div>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
+          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke anuluar…" : "Konfirmo Anulimin"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── More actions dropdown ────────────────────────────────────
 function MoreMenu({ onAgreement, onStatusUpdate, onEdit }: { onAgreement?: () => void; onStatusUpdate?: () => void; onEdit?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -429,6 +474,7 @@ export default function CaseDetailPage() {
 
   const [showLogActivity, setShowLogActivity] = useState(false);
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [caseVoidTarget, setCaseVoidTarget] = useState<any>(null);
   const [showAgreement, setShowAgreement] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [statusForm, setStatusForm] = useState({ status: "", collectionStage: "", note: "" });
@@ -618,6 +664,7 @@ export default function CaseDetailPage() {
       {showLogActivity && <LogActivityModal caseId={caseId} onClose={() => setShowLogActivity(false)} onSuccess={() => { loadCase(); toast("Aktiviteti u regjistrua"); }} />}
       {showAddPayment && <AddPaymentModal caseId={caseId} onClose={() => setShowAddPayment(false)} onSuccess={() => { loadCase(); toast("Pagesa u regjistrua"); }} />}
       {showAgreement && <CreateAgreementModal caseId={caseId} onClose={() => setShowAgreement(false)} onSuccess={() => { loadCase(); toast("Marrëveshja u krijua"); }} />}
+      {caseVoidTarget && <CaseVoidModal payment={caseVoidTarget} onClose={() => setCaseVoidTarget(null)} onVoided={() => { setCaseVoidTarget(null); loadCase(); toast("Pagesa u anulua"); }} />}
 
       {showStatusUpdate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowStatusUpdate(false)}>
@@ -987,7 +1034,7 @@ export default function CaseDetailPage() {
                 <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë dosje." action={{ label: "Shto Pagesë", onClick: () => setShowAddPayment(true) }} />
               ) : (
                 <Table>
-                  <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Metoda</Th><Th>Shënim</Th></tr></Thead>
+                  <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Metoda</Th><Th>Shënim</Th>{(user?.role === "ADMIN" || user?.role === "MANAGER") && <Th />}</tr></Thead>
                   <Tbody>
                     {payments.map((p: any) => (
                       <Tr key={p.id}>
@@ -996,6 +1043,17 @@ export default function CaseDetailPage() {
                         <Td><span className="font-semibold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span></Td>
                         <Td><span className="text-[12px] text-gray-500">{formatEnum(p.paymentMethod)}</span></Td>
                         <Td><span className="text-[12px] text-gray-400">{p.notes ?? "—"}</span></Td>
+                        {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
+                          <Td>
+                            <button
+                              onClick={() => setCaseVoidTarget(p)}
+                              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
+                              title="Anulo pagesën"
+                            >
+                              <Ban size={13} />
+                            </button>
+                          </Td>
+                        )}
                       </Tr>
                     ))}
                   </Tbody>
