@@ -75,26 +75,26 @@ ALTER TABLE loan_parties
 
 -- ── 6. Missing indexes ────────────────────────────────────────────────────────
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_loans_institution_id
+CREATE INDEX IF NOT EXISTS idx_loans_institution_id
   ON loans(institution_id);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_loans_borrower_id
+CREATE INDEX IF NOT EXISTS idx_loans_borrower_id
   ON loans(borrower_id);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_cases_collection_stage
+CREATE INDEX IF NOT EXISTS idx_cases_collection_stage
   ON cases(collection_stage);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_cases_status_office_id
+CREATE INDEX IF NOT EXISTS idx_cases_status_office_id
   ON cases(status, office_id);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_agreements_case_id_status
+CREATE INDEX IF NOT EXISTS idx_agreements_case_id_status
   ON agreements(case_id, status);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_installments_status_due_date
+CREATE INDEX IF NOT EXISTS idx_installments_status_due_date
   ON agreement_installments(status, due_date);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_promises_status_promise_date
+CREATE INDEX IF NOT EXISTS idx_promises_status_promise_date
   ON promises_to_pay(status, promise_date);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_payments_voided_at
+CREATE INDEX IF NOT EXISTS idx_payments_voided_at
   ON payments(voided_at);
