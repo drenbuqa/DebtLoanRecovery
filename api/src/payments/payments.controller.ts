@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 import { RegisterPaymentDto } from './dto/register-payment.dto';
@@ -29,5 +29,11 @@ export class PaymentsController {
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
   register(@Body() body: RegisterPaymentDto, @Request() req: any) {
     return this.svc.register({ ...body, officerId: req.user?.id });
+  }
+
+  @Patch(':id/void')
+  @RequireRoles('ADMIN', 'MANAGER')
+  void(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
+    return this.svc.voidPayment(id, reason, req.user.id);
   }
 }

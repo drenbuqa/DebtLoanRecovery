@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { LegalService } from './legal.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
@@ -8,8 +8,11 @@ export class LegalController {
   constructor(private svc: LegalService) {}
 
   @Get()
-  findAll(@Query() q: any) {
-    return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, status: q.status, officeId: q.officeId });
+  findAll(@Query() q: any, @Request() req: any) {
+    const user = req.user;
+    let { officeId } = q;
+    if (user?.role === 'OFFICER' || (user?.role === 'MANAGER' && !officeId)) { officeId = user.officeId; }
+    return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, status: q.status, officeId });
   }
 
   @Get(':id')

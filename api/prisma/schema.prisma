@@ -33,6 +33,7 @@ model User {
   assignedCases            Case[]               @relation("AssignedOfficer")
   documents                Document[]
   payments                 Payment[]
+  paymentsVoided           Payment[]            @relation("PaymentVoidedBy")
   caseAssignments          CaseAssignment[]     @relation("AssignmentOfficer")
   assignmentsMade          CaseAssignment[]     @relation("AssignmentCreatedBy")
   promisesCreated          PromiseToPay[]
@@ -51,6 +52,7 @@ model Office {
   code      String   @unique @db.VarChar(10)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   cases Case[]
   users User[]
@@ -68,6 +70,7 @@ model Institution {
   shortName String   @map("short_name") @db.VarChar(20)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   loans      Loan[]
   importJobs ImportJob[]
@@ -144,15 +147,18 @@ model Loan {
   institution    Institution        @relation(fields: [institutionId], references: [id])
   balanceHistory LoanBalanceHistory[]
 
+  @@index([institutionId])
+  @@index([borrowerId])
   @@index([daysPastDue(sort: Desc)])
   @@map("loans")
 }
 
 model LoanParty {
-  id       String        @id @default(uuid()) @db.Uuid
-  loanId   String        @map("loan_id") @db.Uuid
-  personId String        @map("person_id") @db.Uuid
-  role     LoanPartyRole
+  id        String        @id @default(uuid()) @db.Uuid
+  loanId    String        @map("loan_id") @db.Uuid
+  personId  String        @map("person_id") @db.Uuid
+  role      LoanPartyRole
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 
   loan   Loan   @relation(fields: [loanId], references: [id])
   person Person @relation(fields: [personId], references: [id])
@@ -163,14 +169,13 @@ model LoanParty {
 
 // Tracks the outstanding balance over time — each payment or import creates a snapshot
 model LoanBalanceHistory {
-  id                 String   @id @default(uuid()) @db.Uuid
-  loanId             String   @map("loan_id") @db.Uuid
-  balanceDate        DateTime @map("balance_date") @db.Date
-  outstandingBalance Decimal  @map("outstanding_balance") @db.Decimal(18, 2)
-  // PAYMENT | IMPORT | MANUAL
-  source             String   @db.VarChar(20)
-  recordedById       String?  @map("recorded_by_id") @db.Uuid
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                 String         @id @default(uuid()) @db.Uuid
+  loanId             String         @map("loan_id") @db.Uuid
+  balanceDate        DateTime       @map("balance_date") @db.Date
+  outstandingBalance Decimal        @map("outstanding_balance") @db.Decimal(18, 2)
+  source             BalanceSource
+  recordedById       String?        @map("recorded_by_id") @db.Uuid
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
 
   loan       Loan  @relation(fields: [loanId], references: [id])
   recordedBy User? @relation(fields: [recordedById], references: [id])
@@ -212,9 +217,11 @@ model Case {
   promises         PromiseToPay[]
 
   @@index([status])
+  @@index([collectionStage])
   @@index([officeId])
   @@index([assignedOfficerId])
   @@index([deletedAt])
+  @@index([status, officeId])
   @@map("cases")
 }
 
@@ -246,7 +253,7 @@ model Activity {
   officerId       String           @map("officer_id") @db.Uuid
   activityType    ActivityType     @map("activity_type")
   channel         String?          @db.VarChar(30)
-  notes           String?
+  notes           String?          @db.Text
   outcome         ActivityOutcome?
   promiseAmount   Decimal?         @map("promise_amount") @db.Decimal(18, 2)
   promiseCurrency String?          @map("promise_currency") @db.VarChar(3)
@@ -288,8 +295,7 @@ model PromiseToPay {
   createdBy User      @relation(fields: [createdById], references: [id])
 
   @@index([caseId])
-  @@index([promiseDate])
-  @@index([status])
+  @@index([status, promiseDate])
   @@map("promises_to_pay")
 }
 
@@ -309,13 +315,19 @@ model Payment {
   paymentChannel    String?       @map("payment_channel") @db.VarChar(30)
   externalReference String?       @map("external_reference") @db.VarChar(100)
   notes             String?       @db.VarChar(500)
+  // Void — payments are never deleted, only voided with a reason and who did it
+  voidedAt          DateTime?     @map("voided_at") @db.Timestamptz(6)
+  voidedById        String?       @map("voided_by_id") @db.Uuid
+  voidReason        String?       @map("void_reason") @db.VarChar(500)
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  case    Case @relation(fields: [caseId], references: [id])
-  officer User @relation(fields: [officerId], references: [id])
+  case     Case  @relation(fields: [caseId], references: [id])
+  officer  User  @relation(fields: [officerId], references: [id])
+  voidedBy User? @relation("PaymentVoidedBy", fields: [voidedById], references: [id])
 
   @@index([caseId, paymentDate(sort: Desc)])
   @@index([paymentDate])
+  @@index([voidedAt])
   @@map("payments")
 }
 
@@ -342,7 +354,7 @@ model Agreement {
   createdBy    User?                  @relation(fields: [createdById], references: [id])
   installments AgreementInstallment[]
 
-  @@index([caseId])
+  @@index([caseId, status])
   @@map("agreements")
 }
 
@@ -361,6 +373,7 @@ model AgreementInstallment {
   agreement Agreement @relation(fields: [agreementId], references: [id])
 
   @@index([agreementId])
+  @@index([status, dueDate])
   @@map("agreement_installments")
 }
 
@@ -488,6 +501,7 @@ model ImportJob {
   startedAt      DateTime?    @map("started_at") @db.Timestamptz(6)
   completedAt    DateTime?    @map("completed_at") @db.Timestamptz(6)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   institution Institution? @relation(fields: [institutionId], references: [id])
   uploadedBy  User         @relation(fields: [uploadedById], references: [id])
@@ -533,7 +547,7 @@ enum CaseStatus {
   ACTIVE
   CLOSED
   SUSPENDED
-  LEGAL
+  WRITTEN_OFF
 }
 
 enum CollectionStage {
@@ -658,4 +672,11 @@ enum ImportStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum BalanceSource {
+  PAYMENT
+  IMPORT
+  MANUAL
+  VOID
 }

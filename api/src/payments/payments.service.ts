@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -44,7 +44,7 @@ export class PaymentsService {
     const limit = Math.min(query.limit ?? 25, 100);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { voidedAt: null }; // exclude voided payments by default
     if (query.caseId)   where.caseId    = query.caseId;
     if (query.officerId) where.officerId = query.officerId;
     if (query.officeId) where.case       = { officeId: query.officeId };
@@ -119,18 +119,15 @@ export class PaymentsService {
       // Reconcile outstanding balance from all payments — prevents drift from decrement/increment
       const loan = await tx.loan.findFirst({
         where: { case: { id: dto.caseId } },
-        select: { id: true, originalLoanAmount: true },
+        select: { id: true, currentOutstandingBalance: true },
       });
       if (loan) {
-        const totalPaid = await tx.payment.aggregate({
-          where: { caseId: dto.caseId },
-          _sum: { amount: true },
-        });
-        const paid = totalPaid._sum.amount ?? 0;
-        const outstanding = Math.max(0, Number(loan.originalLoanAmount) - Number(paid));
-        await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: outstanding } });
+        // Subtract from current outstanding — correct for imported portfolios
+        // where pre-import payment history is not in the system
+        const newBalance = Math.max(0, Number(loan.currentOutstandingBalance) - Number(dto.amount));
+        await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: newBalance, lastPaymentDate: new Date(dto.paymentDate) } });
         await tx.loanBalanceHistory.create({
-          data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: outstanding, source: 'PAYMENT', recordedById: dto.officerId },
+          data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: newBalance, source: 'PAYMENT', recordedById: dto.officerId },
         });
       }
 
@@ -138,5 +135,34 @@ export class PaymentsService {
     });
 
     return payment;
+  }
+
+  async voidPayment(id: string, reason: string, voidedById: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (payment.voidedAt) throw new BadRequestException('Payment is already voided');
+
+    return this.prisma.$transaction(async (tx) => {
+      const voided = await tx.payment.update({
+        where: { id },
+        data: { voidedAt: new Date(), voidedById, voidReason: reason },
+        select: { id: true, paymentReference: true, amount: true, voidedAt: true },
+      });
+
+      // Restore the outstanding balance
+      const loan = await tx.loan.findFirst({
+        where: { case: { id: payment.caseId } },
+        select: { id: true, currentOutstandingBalance: true },
+      });
+      if (loan) {
+        const restored = Number(loan.currentOutstandingBalance) + Number(payment.amount);
+        await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: restored } });
+        await tx.loanBalanceHistory.create({
+          data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: restored, source: 'VOID', recordedById: voidedById },
+        });
+      }
+
+      return voided;
+    });
   }
 }

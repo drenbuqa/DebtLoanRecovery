@@ -60,17 +60,23 @@ export class LegalService {
     nextHearingDate?: string;
     notes?: string;
   }) {
-    const ref = `LP-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`;
-    return this.prisma.legalProceeding.create({
-      data: {
-        caseId: dto.caseId,
-        proceedingRef: ref,
-        court: dto.court,
-        filingDate: new Date(dto.filingDate),
-        nextHearingDate: dto.nextHearingDate ? new Date(dto.nextHearingDate) : undefined,
-        notes: dto.notes,
-      },
-      select: LP_SELECT,
+    return this.prisma.$transaction(async (tx) => {
+      const year = new Date().getFullYear();
+      const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM legal_proceedings WHERE EXTRACT(YEAR FROM created_at) = ${year}
+      `;
+      const ref = `LP-${year}-${String(Number(count) + 1).padStart(5, '0')}`;
+      return tx.legalProceeding.create({
+        data: {
+          caseId: dto.caseId,
+          proceedingRef: ref,
+          court: dto.court,
+          filingDate: new Date(dto.filingDate),
+          nextHearingDate: dto.nextHearingDate ? new Date(dto.nextHearingDate) : undefined,
+          notes: dto.notes,
+        },
+        select: LP_SELECT,
+      });
     });
   }
 
