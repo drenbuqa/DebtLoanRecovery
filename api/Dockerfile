@@ -14,7 +14,9 @@ FROM node:22-alpine AS runner
 RUN apk add --no-cache openssl
 WORKDIR /app
 
-RUN addgroup -S dlr && adduser -S dlr -G dlr
+RUN addgroup -S dlr && adduser -S dlr -G dlr && \
+    mkdir -p /app/uploads /app/backups && \
+    chown -R dlr:dlr /app
 
 COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev
