@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import * as path from 'path';
 import { exec } from 'child_process';
+import * as https from 'https';
 
 function dpdToNplClass(dpd: number): string {
   if (dpd <= 0)   return 'PERFORMING';
@@ -17,6 +18,16 @@ export class SchedulerService {
   private readonly log = new Logger(SchedulerService.name);
 
   constructor(private prisma: PrismaService) {}
+
+  // Ping self every 5 minutes to prevent Railway from sleeping the service
+  @Cron('*/5 * * * *')
+  keepAlive() {
+    const url = process.env.RAILWAY_PUBLIC_DOMAIN
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/api/health`
+      : null;
+    if (!url) return;
+    https.get(url, (res) => res.resume()).on('error', () => { /* silent */ });
+  }
 
   // Runs every night at 01:00 server time
   @Cron('0 1 * * *')
