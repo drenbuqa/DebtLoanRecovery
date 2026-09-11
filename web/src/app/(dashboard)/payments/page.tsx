@@ -9,9 +9,59 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban } from "lucide-react";
 import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
 import { useIsMobile } from "@/lib/useIsMobile";
+
+function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    if (!reason.trim()) { setError("Arsyeja është e detyrueshme."); return; }
+    setLoading(true); setError(null);
+    try {
+      await paymentsApi.void(payment.id, reason.trim());
+      onVoided();
+    } catch (e: any) { setError(e.message); setLoading(false); }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
+            Kjo do të anulojë <strong>{formatCurrency(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none"
+            />
+          </div>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">
+            Anulo
+          </button>
+          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke anuluar…" : "Konfirmo Anulimin"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const METHOD_LABELS: Record<string, string> = {
   CASH: "Kesh", BANK_TRANSFER: "Transfertë Bankare", CHECK: "Çek",
@@ -59,6 +109,9 @@ export default function PaymentsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [voidTarget, setVoidTarget] = useState<any>(null);
+
+  const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
   const [searchQuery, setSearchQuery] = useState("");
 
   const load = useCallback(async (p = 1) => {
@@ -99,6 +152,13 @@ export default function PaymentsPage() {
 
   return (
     <div className="flex flex-col">
+      {voidTarget && (
+        <VoidModal
+          payment={voidTarget}
+          onClose={() => setVoidTarget(null)}
+          onVoided={() => { setVoidTarget(null); load(page); }}
+        />
+      )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
         { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha dosjet. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
         { title: "Si të regjistroni një pagesë", body: "Shkoni te dosja e debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Shto Pagesë' brenda dosjes. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
@@ -242,6 +302,7 @@ export default function PaymentsPage() {
                       <Th>Metoda</Th>
                       <Th>Data</Th>
                       {!scopedToSelf && <Th>Oficeri</Th>}
+                      {canVoid && <Th />}
                     </tr>
                   </Thead>
                   <Tbody>
@@ -265,6 +326,17 @@ export default function PaymentsPage() {
                           </span>
                         </Td>
                         {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{p.officer?.fullName ?? "—"}</span></Td>}
+                        {canVoid && (
+                          <Td>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setVoidTarget(p); }}
+                              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
+                              title="Anulo pagesën"
+                            >
+                              <Ban size={13} />
+                            </button>
+                          </Td>
+                        )}
                       </Tr>
                     ))}
                   </Tbody>

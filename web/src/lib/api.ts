@@ -114,6 +114,8 @@ export const payments = {
   },
   register: (data: any) =>
     req('/payments', { method: 'POST', body: JSON.stringify(data) }),
+  void: (id: string, reason: string) =>
+    req(`/payments/${id}/void`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
 };
 
 // Agreements
