@@ -307,7 +307,7 @@ export default function ActivitiesPage() {
                   onChange={setLogCaseId}
                   options={myCases.map((c) => ({
                     value: c.id,
-                    label: `${c.caseReference} — ${c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "Unknown"}`,
+                    label: `${c.caseReference} — ${c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "I panjohur"}`,
                   }))}
                   placeholder="Zgjidhni një dosje…"
                 />

@@ -25,6 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_DOT: Record<string, string> = {
   ACTIVE:    "bg-emerald-400",
   COMPLETED: "bg-gray-300",
+  DEFAULTED: "bg-orange-400",
   BROKEN:    "bg-red-400",
   CANCELLED: "bg-gray-200",
 };
@@ -342,7 +343,7 @@ export default function AgreementsPage() {
                     const nextDueDate = nextInst ? new Date(nextInst.dueDate) : null;
                     const nextIsOverdue = nextDueDate && nextDueDate < new Date();
                     return (
-                      <Tr key={a.id} onClick={() => window.location.href = `/cases/${a.case?.id}?tab=Agreements`}>
+                      <Tr key={a.id} onClick={() => window.location.href = `/cases/${a.case?.id}?tab=Marrëveshjet`}>
                         <Td><span className="font-mono text-[12px] text-gray-500">{a.agreementReference}</span></Td>
                         <Td>
                           <span className="font-medium text-gray-900">
