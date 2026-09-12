@@ -253,10 +253,10 @@ export class CasesService {
 
       // Update phones if provided
       if (dto.phone1 !== undefined && c.loan?.borrowerId) {
-        await tx.phone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: true }, data: { phoneNumber: dto.phone1 } });
+        await tx.personPhone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: true }, data: { phoneNumber: dto.phone1 } });
       }
       if (dto.phone2 !== undefined && c.loan?.borrowerId) {
-        await tx.phone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: false, isActive: true }, data: { phoneNumber: dto.phone2 } });
+        await tx.personPhone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: false, isActive: true }, data: { phoneNumber: dto.phone2 } });
       }
     });
 
