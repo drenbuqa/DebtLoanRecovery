@@ -445,7 +445,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
         </div>
 
         {/* Chart + Alerts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-stretch">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -466,7 +466,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 h-full">
             <Card>
               <CardHeader title="Alarmet e Ditës" />
               <div className="space-y-1.5">
@@ -495,9 +495,9 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
               </div>
             </Card>
 
-            <Card>
+            <Card className="flex-1 flex flex-col">
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
-              <div className="space-y-2">
+              <div className="flex-1 space-y-2">
                 {loading || !stats ? Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-0.5">
                     <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
@@ -661,7 +661,7 @@ function ViewerDashboard() {
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -681,10 +681,10 @@ function ViewerDashboard() {
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
-          <div className="flex flex-col gap-4">
-            <Card>
+          <div className="flex flex-col gap-4 h-full">
+            <Card className="flex-1 flex flex-col">
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
-              <div className="space-y-2">
+              <div className="flex-1 space-y-2">
                 {loading ? Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-0.5">
                     <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
