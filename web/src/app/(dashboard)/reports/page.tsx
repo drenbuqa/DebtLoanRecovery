@@ -61,9 +61,11 @@ const REPORTS = [
 
 function downloadCSV(filename: string, rows: string[][]) {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
-  // UTF-8 BOM + sep= directive forces Excel to use commas regardless of regional locale
-  const BOM = "﻿";
-  const blob = new Blob([BOM + "sep=,\r\n" + csv], { type: "text/csv;charset=utf-8;" });
+  // Explicit UTF-8 BOM bytes (EF BB BF) — the only reliable way to make Excel open
+  // special characters (ë, ç, etc.) correctly on both Windows and Mac.
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const body = new TextEncoder().encode(csv);
+  const blob = new Blob([bom, body], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
