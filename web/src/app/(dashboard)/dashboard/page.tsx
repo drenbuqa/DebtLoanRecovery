@@ -69,7 +69,7 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
   const [hovered, setHovered] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const W = 600; const H = 300;
+  const W = 600; const H = 400;
   const PL = 36; const PR = 16; const PT = 28; const PB = 30;
   const chartW = W - PL - PR;
   const chartH = H - PT - PB;
@@ -445,7 +445,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             </div>
             <div className="px-3 pt-1 pb-3">
               {loading
-                ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
+                ? <div className="aspect-[3/2] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
@@ -453,12 +453,12 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
           <div className="flex flex-col gap-4">
             <Card>
               <CardHeader title="Alarmet e Ditës" />
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {loading || !stats ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-1">
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 animate-pulse shrink-0" />
+                  <div key={i} className="flex items-center gap-2.5 py-0.5">
+                    <div className="w-6 h-6 rounded-md bg-gray-100 animate-pulse shrink-0" />
                     <div className="flex-1 h-3 bg-gray-100 animate-pulse rounded" />
-                    <div className="w-6 h-4 bg-gray-100 animate-pulse rounded" />
+                    <div className="w-6 h-3 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) : [
                   { icon: Clock,        label: "Premtime pagese për sot",  val: stats.promisesToday,       color: "text-brand-600", bg: "bg-brand-50",   href: "/cases?view=promises_today" },
@@ -661,7 +661,7 @@ function ViewerDashboard() {
             </div>
             <div className="px-3 pt-1 pb-3">
               {loading
-                ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
+                ? <div className="aspect-[3/2] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
