@@ -57,12 +57,29 @@ function fmtAxis(v: number) {
   return `€${v}`;
 }
 
-function niceMax(raw: number) {
-  if (raw <= 0) return 100;
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-  const n = raw / mag;
-  const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
-  return nice * mag;
+function computeYAxis(maxRaw: number): { max: number; ticks: number[] } {
+  if (maxRaw <= 0) return { max: 1000, ticks: [250, 500, 750, 1000] };
+
+  // Target ~4 ticks with a "nice" step size
+  const roughStep = maxRaw / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const norm = roughStep / mag;
+
+  // Round norm UP to nearest nice multiplier so labels are always whole numbers
+  let niceMult: number;
+  if (norm <= 1) niceMult = 1;
+  else if (norm <= 1.5) niceMult = 1.5;
+  else if (norm <= 2) niceMult = 2;
+  else if (norm <= 2.5) niceMult = 2.5;
+  else if (norm <= 5) niceMult = 5;
+  else niceMult = 10;
+
+  const step = niceMult * mag;
+  // Enough ticks so the axis top exceeds maxRaw by at least 5% (breathing room)
+  const nTicks = Math.ceil((maxRaw * 1.05) / step);
+  const max = nTicks * step;
+  const ticks = Array.from({ length: nTicks }, (_, i) => step * (i + 1));
+  return { max, ticks };
 }
 
 function CollectionsChart({ data, currentMonth }: { data: { month: string; total: number }[]; currentMonth: string }) {
@@ -70,7 +87,7 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
   const containerRef = useRef<HTMLDivElement>(null);
 
   const W = 600; const H = 360;
-  const PL = 36; const PR = 16; const PT = 28; const PB = 30;
+  const PL = 46; const PR = 16; const PT = 28; const PB = 30;
   const chartW = W - PL - PR;
   const chartH = H - PT - PB;
   const n = data.length;
@@ -78,8 +95,7 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
   const barW = Math.max(Math.floor(colW * 0.5), 8);
 
   const maxRaw = Math.max(...data.map((d) => d.total), 1);
-  const mx = niceMax(maxRaw);
-  const gridRatios = [0.25, 0.5, 0.75, 1];
+  const { max: mx, ticks: yTicks } = computeYAxis(maxRaw);
 
   const now = new Date();
   const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -107,13 +123,13 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
         </defs>
 
         {/* Grid */}
-        {gridRatios.map((r) => {
-          const y = PT + chartH * (1 - r);
+        {yTicks.map((tick) => {
+          const y = PT + chartH * (1 - tick / mx);
           return (
-            <g key={r}>
+            <g key={tick}>
               <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#f3f4f6" strokeWidth={1} />
               <text x={PL - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="#d1d5db" fontFamily="system-ui, sans-serif">
-                {fmtAxis(mx * r)}
+                {fmtAxis(tick)}
               </text>
             </g>
           );
