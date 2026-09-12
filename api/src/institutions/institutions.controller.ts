@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { InstitutionsService } from './institutions.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
@@ -18,4 +18,8 @@ export class InstitutionsController {
   @Patch(':id')
   @RequireRoles('ADMIN')
   update(@Param('id') id: string, @Body() dto: any) { return this.svc.update(id, dto); }
+
+  @Delete(':id')
+  @RequireRoles('ADMIN')
+  remove(@Param('id') id: string) { return this.svc.delete(id); }
 }

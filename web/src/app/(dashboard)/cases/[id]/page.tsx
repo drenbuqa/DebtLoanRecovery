@@ -586,6 +586,33 @@ export default function CaseDetailPage() {
     });
   }
 
+  function deleteActivity(actId: string) {
+    openConfirm({
+      title: "Fshi aktivitetin",
+      message: "Ky aktivitet do të fshihet përgjithmonë nga kronologjia e dosjes.",
+      confirmLabel: "Fshi",
+      variant: "danger",
+      onConfirm: async () => {
+        await activitiesApi.delete(actId);
+        setActivities((prev) => prev.filter((a: any) => a.id !== actId));
+      },
+    });
+  }
+
+  function deleteCase() {
+    openConfirm({
+      title: "Fshi dosjen",
+      message: `Dosja ${caseData?.caseReference} dhe të gjitha të dhënat e saj (aktivitete, dokumente, pagesa) do të fshihen përgjithmonë. Ky veprim nuk mund të zhbëhet.`,
+      confirmLabel: "Fshi Dosjen",
+      variant: "danger",
+      onConfirm: async () => {
+        await casesApi.delete(caseId);
+        router.push("/cases");
+        toast("Dosja u fshi");
+      },
+    });
+  }
+
   async function submitStatusUpdate() {
     if (!statusForm.status && !statusForm.collectionStage) return;
     setStatusSaving(true);
@@ -785,6 +812,13 @@ export default function CaseDetailPage() {
             <ChevronLeft size={14} /> Dosjet
           </button>
           <div className="flex-1" />
+          {can("case:delete") && (
+            <button onClick={deleteCase}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors"
+              title="Fshi dosjen">
+              <Trash2 size={13} /> <span className="hidden md:inline">Fshi Dosjen</span>
+            </button>
+          )}
           {(can("agreement:create") || can("case:edit")) && (
             <MoreMenu
               onEdit={can("case:edit") ? openEditCase : undefined}
@@ -887,7 +921,7 @@ export default function CaseDetailPage() {
                     const label = ACT_LABEL[a.activityType] ?? a.activityType;
                     const dateStr = a.occurredAt ?? a.date;
                     return (
-                      <div key={a.id ?? i} className="flex gap-3.5 px-5 py-3.5">
+                      <div key={a.id ?? i} className="flex gap-3.5 px-5 py-3.5 group">
                         <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
                           <Icon size={13} className="text-gray-500" />
                         </div>
@@ -899,8 +933,17 @@ export default function CaseDetailPage() {
                           <p className="text-[12.5px] text-gray-600 leading-snug">{a.notes ?? a.text}</p>
                           {a.outcome && <p className="text-[11px] text-gray-400 mt-0.5">{formatEnum(a.outcome)}</p>}
                         </div>
-                        <div className="text-[11px] text-gray-400 shrink-0 mt-0.5">
-                          {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                        <div className="flex items-start gap-2 shrink-0">
+                          <div className="text-[11px] text-gray-400 mt-0.5">
+                            {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                          </div>
+                          {can("activity:delete") && a.id && (
+                            <button onClick={() => deleteActivity(a.id)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 mt-0.5"
+                              title="Fshi aktivitetin">
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

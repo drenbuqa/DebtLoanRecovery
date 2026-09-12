@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -53,6 +53,14 @@ export class InstitutionsService {
       where: { id },
       data: dto,
     });
+  }
+
+  async delete(id: string) {
+    const count = await this.prisma.loan.count({ where: { institutionId: id } });
+    if (count > 0)
+      throw new BadRequestException(`Ky institucion ka ${count} kredi të lidhura dhe nuk mund të fshihet`);
+    await this.prisma.institution.delete({ where: { id } });
+    return { success: true };
   }
 
   async stats() {

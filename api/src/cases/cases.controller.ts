@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Request, UseGuards } from '@nestjs/common';
 import { CasesService } from './cases.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 import { CreateCaseDto } from './dto/create-case.dto';
@@ -82,5 +82,11 @@ export class CasesController {
   @RequireRoles('ADMIN', 'MANAGER')
   assign(@Param('id') id: string, @Body('officerId') officerId: string, @Request() req: any) {
     return this.svc.assignOfficer(id, officerId, req.user?.id);
+  }
+
+  @Delete(':id')
+  @RequireRoles('ADMIN')
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.svc.deleteCase(id, req.user?.id);
   }
 }

@@ -214,7 +214,19 @@ export class CasesService {
     interestRate?: number;
     productType?: string;
     nplClassification?: string;
+    // Borrower contact info
+    phone1?: string;
+    phone2?: string;
+    email?: string;
+    address?: string;
+    city?: string;
   }) {
+    const c = await this.prisma.case.findUnique({
+      where: { id },
+      select: { loanId: true, loan: { select: { borrowerId: true } } },
+    });
+    if (!c) throw new Error('Dosja nuk u gjet');
+
     const loanData: any = {};
     if (dto.currentOutstandingBalance !== undefined) loanData.currentOutstandingBalance = dto.currentOutstandingBalance;
     if (dto.maturityDate !== undefined) loanData.maturityDate = dto.maturityDate ? new Date(dto.maturityDate) : null;
@@ -226,11 +238,36 @@ export class CasesService {
     if (dto.assignedOfficerId !== undefined) caseData.assignedOfficerId = dto.assignedOfficerId || null;
     if (dto.officeId !== undefined) caseData.officeId = dto.officeId || null;
 
-    if (Object.keys(loanData).length) {
-      const c = await this.prisma.case.findUnique({ where: { id }, select: { loanId: true } });
-      if (c?.loanId) await this.prisma.loan.update({ where: { id: c.loanId }, data: loanData });
-    }
-    return this.prisma.case.update({ where: { id }, data: caseData, select: { id: true } });
+    const borrowerData: any = {};
+    if (dto.email !== undefined) borrowerData.email = dto.email || null;
+    if (dto.address !== undefined) borrowerData.address = dto.address || null;
+    if (dto.city !== undefined) borrowerData.city = dto.city || null;
+
+    await this.prisma.$transaction(async (tx) => {
+      if (Object.keys(loanData).length && c.loanId)
+        await tx.loan.update({ where: { id: c.loanId }, data: loanData });
+      if (Object.keys(borrowerData).length && c.loan?.borrowerId)
+        await tx.person.update({ where: { id: c.loan.borrowerId }, data: borrowerData });
+      if (Object.keys(caseData).length)
+        await tx.case.update({ where: { id }, data: caseData });
+
+      // Update phones if provided
+      if (dto.phone1 !== undefined && c.loan?.borrowerId) {
+        await tx.phone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: true }, data: { phoneNumber: dto.phone1 } });
+      }
+      if (dto.phone2 !== undefined && c.loan?.borrowerId) {
+        await tx.phone.updateMany({ where: { personId: c.loan.borrowerId, isPrimary: false, isActive: true }, data: { phoneNumber: dto.phone2 } });
+      }
+    });
+
+    return { id };
+  }
+
+  async deleteCase(id: string, deletedById: string) {
+    const c = await this.prisma.case.findUnique({ where: { id, deletedAt: null }, select: { id: true } });
+    if (!c) throw new Error('Dosja nuk u gjet');
+    await this.prisma.case.update({ where: { id }, data: { deletedAt: new Date() } });
+    return { success: true };
   }
 
   async assignOfficer(id: string, officerId: string, assignedById: string) {

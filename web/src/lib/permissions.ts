@@ -28,6 +28,10 @@ export type Permission =
   | "legal:create"
   // Field visit actions
   | "field-visit:create"
+  // Delete actions (ADMIN only)
+  | "case:delete"
+  | "activity:delete"
+  | "institution:delete"
   // Institution actions
   | "institution:create"
   | "institution:edit"
@@ -55,6 +59,7 @@ const ADMIN_PERMS: Permission[] = [
   "agreement:create",
   "legal:create",
   "field-visit:create",
+  "case:delete", "activity:delete", "institution:delete",
   "institution:create", "institution:edit",
   "user:create", "user:edit", "user:deactivate", "user:reset-password",
   "office:create",

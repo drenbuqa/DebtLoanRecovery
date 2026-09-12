@@ -112,4 +112,9 @@ export class ActivitiesService {
       },
     });
   }
+
+  async deleteActivity(id: string) {
+    await this.prisma.activity.delete({ where: { id } });
+    return { success: true };
+  }
 }

@@ -115,6 +115,7 @@ export const cases = {
   create: (data: any) => req('/cases', { method: 'POST', body: JSON.stringify(data) }),
   searchPerson: (personalId: string) => req<any>(`/cases/search-person?personalId=${encodeURIComponent(personalId)}`),
   update: (id: string, data: any) => req(`/cases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => req(`/cases/${id}`, { method: 'DELETE' }),
   updateStatus: (id: string, data: any) => req(`/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
   history: (id: string) => req<any[]>(`/cases/${id}/history`),
   dashboardStats: (officeId?: string) => req<any>(`/cases/dashboard-stats${officeId ? `?officeId=${officeId}` : ''}`),
@@ -133,6 +134,7 @@ export const activities = {
   list: (caseId: string) => req<any[]>(`/cases/${caseId}/activities`),
   log: (caseId: string, data: any) =>
     req(`/cases/${caseId}/activities`, { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => req(`/activities/${id}`, { method: 'DELETE' }),
 };
 
 // Payments
@@ -198,6 +200,7 @@ export const institutions = {
   get: (id: string) => req<any>(`/institutions/${id}`),
   create: (data: any) => req('/institutions', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => req(`/institutions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => req(`/institutions/${id}`, { method: 'DELETE' }),
 };
 
 // Offices
