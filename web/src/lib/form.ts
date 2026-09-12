@@ -12,16 +12,16 @@ export type Rules = {
 
 export function validate(value: string, rules: Rules): string | null {
   const v = value.trim();
-  if (rules.required && !v) return "This field is required";
+  if (rules.required && !v) return "Kjo fushë është e detyrueshme";
   if (!v) return null; // optional + empty → valid
   if (rules.minLength && v.length < rules.minLength)
-    return `Must be at least ${rules.minLength} characters`;
+    return `Duhet të ketë të paktën ${rules.minLength} karaktere`;
   if (rules.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
-    return "Enter a valid email address";
+    return "Vendosni një adresë emaili të vlefshme";
   if (rules.min !== undefined && parseFloat(v) < rules.min)
-    return `Must be ${rules.min} or greater`;
+    return `Vlera duhet të jetë ${rules.min} ose më e madhe`;
   if (rules.pattern && !rules.pattern.test(v))
-    return "Invalid format";
+    return "Format i pavlefshëm";
   if (rules.custom) return rules.custom(v);
   return null;
 }
