@@ -7,8 +7,8 @@ interface ConfirmModalProps {
   title: string;
   message: string;
   confirmLabel?: string;
-  /** "danger" = red, "warning" = amber, default = gray */
-  variant?: "danger" | "warning" | "default";
+  /** "danger" = red, default = gray */
+  variant?: "danger" | "default";
   onConfirm: () => Promise<void> | void;
   onClose: () => void;
 }
@@ -26,15 +26,11 @@ export function ConfirmModal({
   const btnClass =
     variant === "danger"
       ? "bg-red-600 hover:bg-red-700 text-white"
-      : variant === "warning"
-      ? "bg-amber-500 hover:bg-amber-600 text-white"
       : "bg-gray-900 hover:bg-gray-800 text-white";
 
   const iconBg =
     variant === "danger"
       ? "bg-red-50 text-red-600"
-      : variant === "warning"
-      ? "bg-amber-50 text-amber-600"
       : "bg-gray-100 text-gray-600";
 
   async function handle() {

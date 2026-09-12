@@ -268,8 +268,8 @@ function UsersAdminPageInner() {
       title: `Çaktivizo ${u.fullName}`,
       message: "Ky përdorues do të humbasë aksesin në platformë menjëherë. Mund ta riaktivizoni në çdo kohë.",
       confirmLabel: "Çaktivizo",
-      variant: "warning",
-      onConfirm: async () => { await usersApi.deactivate(u.id); load(); toast("Përdoruesi u çaktivizua", "warning"); },
+      variant: "danger",
+      onConfirm: async () => { await usersApi.deactivate(u.id); load(); toast("Përdoruesi u çaktivizua"); },
     });
   }
 
