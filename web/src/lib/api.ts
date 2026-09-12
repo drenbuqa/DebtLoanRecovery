@@ -24,17 +24,18 @@ async function tryRefresh(): Promise<boolean> {
   return true;
 }
 
-function translateApiError(raw: string, status: number): string {
-  const r = raw.toLowerCase();
+function translateApiError(raw: string | string[], status: number): string {
+  const text = Array.isArray(raw) ? raw.join(' ') : (raw ?? '');
+  const r = text.toLowerCase();
   if (r.includes('internal server error') || status === 500) return 'Ndodhi një gabim i brendshëm. Ju lutem provoni përsëri.';
   if (r.includes('not found') || status === 404) return 'Rekordi nuk u gjet.';
   if (r.includes('forbidden') || status === 403) return 'Nuk keni leje për këtë veprim.';
   if (r.includes('conflict') || status === 409) return 'Ky rekord ekziston tashmë.';
-  if (r.includes('bad request') || status === 400) return raw || 'Kërkesa nuk është e vlefshme.';
+  if (r.includes('bad request') || status === 400) return text || 'Kërkesa nuk është e vlefshme.';
   if (r.includes('unauthorized') || status === 401) return 'Sesioni juaj ka skaduar. Ju lutem hyni përsëri.';
   if (r.includes('too many requests') || status === 429) return 'Shumë kërkesa. Ju lutem prisni pak dhe provoni përsëri.';
   if (r.includes('service unavailable') || status === 503) return 'Shërbimi nuk është i disponueshëm. Provoni përsëri pas pak.';
-  return raw || 'Ndodhi një gabim i papritur. Ju lutem provoni përsëri.';
+  return text || 'Ndodhi një gabim i papritur. Ju lutem provoni përsëri.';
 }
 
 async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Promise<T> {
@@ -62,7 +63,7 @@ async function req<T>(path: string, opts: RequestInit = {}, _retry = true): Prom
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    const raw = err.message ?? '';
+    const raw: string | string[] = err.message ?? '';
     const msg = translateApiError(raw, res.status);
     throw new Error(msg);
   }
