@@ -429,7 +429,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
         </div>
 
         {/* Chart + Alerts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-start">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -443,7 +443,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                 </div>
               </div>
             </div>
-            <div className="px-3 pt-1 pb-3 flex-1">
+            <div className="px-3 pt-1 pb-3">
               {loading
                 ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
@@ -488,7 +488,9 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
-                  (stats.officeStats ?? []).map((o: any) => (
+                  (stats.officeStats ?? []).filter((o: any) => o.activeCases > 0).length === 0
+                    ? <p className="text-[12px] text-gray-400">Asnjë zyrë nuk ka dosje aktive</p>
+                    : (stats.officeStats ?? []).filter((o: any) => o.activeCases > 0).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
                       <span className="font-semibold text-gray-900 tabular">{o.activeCases}</span>
@@ -645,7 +647,7 @@ function ViewerDashboard() {
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-start">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -659,7 +661,7 @@ function ViewerDashboard() {
                 </div>
               </div>
             </div>
-            <div className="px-3 pt-1 pb-3 flex-1">
+            <div className="px-3 pt-1 pb-3">
               {loading
                 ? <div className="aspect-[2/1] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
@@ -675,7 +677,9 @@ function ViewerDashboard() {
                     <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
-                  (stats?.officeStats ?? []).map((o: any) => (
+                  (stats?.officeStats ?? []).filter((o: any) => o.activeCases > 0).length === 0
+                    ? <p className="text-[12px] text-gray-400">Asnjë zyrë nuk ka dosje aktive</p>
+                    : (stats?.officeStats ?? []).filter((o: any) => o.activeCases > 0).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
                       <span className="font-semibold text-gray-900 tabular">{o.activeCases}</span>
