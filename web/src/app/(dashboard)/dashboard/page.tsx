@@ -429,7 +429,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
         </div>
 
         {/* Chart + Alerts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-stretch">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -468,12 +468,12 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                   { icon: CheckCircle2, label: "Marrëveshje aktive",       val: stats.activeAgreements,    color: "text-gray-500",  bg: "bg-gray-50",    href: "/agreements" },
                 ].map((a) => (
                   <button key={a.label} onClick={() => router.push(a.href)}
-                    className="flex items-center gap-3 py-1 w-full hover:opacity-80 transition-opacity text-left">
-                    <div className={`w-7 h-7 rounded-lg ${a.bg} flex items-center justify-center shrink-0`}>
-                      <a.icon size={13} className={a.color} />
+                    className="flex items-center gap-2.5 py-0.5 w-full hover:opacity-80 transition-opacity text-left">
+                    <div className={`w-6 h-6 rounded-md ${a.bg} flex items-center justify-center shrink-0`}>
+                      <a.icon size={11} className={a.color} />
                     </div>
-                    <span className="flex-1 text-[12.5px] text-gray-600">{a.label}</span>
-                    <span className={`text-[14px] font-bold tabular ${a.color}`}>{a.val}</span>
+                    <span className="flex-1 text-[12px] text-gray-600">{a.label}</span>
+                    <span className={`text-[13px] font-bold tabular ${a.color}`}>{a.val}</span>
                   </button>
                 ))}
               </div>
@@ -488,12 +488,10 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
-                  (stats.officeStats ?? []).filter((o: any) => o.activeCases > 0).length === 0
-                    ? <p className="text-[12px] text-gray-400">Asnjë zyrë nuk ka dosje aktive</p>
-                    : (stats.officeStats ?? []).filter((o: any) => o.activeCases > 0).map((o: any) => (
+                  (stats.officeStats ?? []).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
-                      <span className="font-semibold text-gray-900 tabular">{o.activeCases}</span>
+                      <span className={`font-semibold tabular ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
                     </div>
                   ))}
               </div>
@@ -647,7 +645,7 @@ function ViewerDashboard() {
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -677,12 +675,10 @@ function ViewerDashboard() {
                     <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
-                  (stats?.officeStats ?? []).filter((o: any) => o.activeCases > 0).length === 0
-                    ? <p className="text-[12px] text-gray-400">Asnjë zyrë nuk ka dosje aktive</p>
-                    : (stats?.officeStats ?? []).filter((o: any) => o.activeCases > 0).map((o: any) => (
+                  (stats?.officeStats ?? []).map((o: any) => (
                     <div key={o.id} className="flex items-center justify-between text-[12px]">
                       <span className="text-gray-600">{o.name}</span>
-                      <span className="font-semibold text-gray-900 tabular">{o.activeCases}</span>
+                      <span className={`font-semibold tabular ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
                     </div>
                   ))}
               </div>
