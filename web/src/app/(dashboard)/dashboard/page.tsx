@@ -69,7 +69,7 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
   const [hovered, setHovered] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const W = 600; const H = 400;
+  const W = 600; const H = 360;
   const PL = 36; const PR = 16; const PT = 28; const PB = 30;
   const chartW = W - PL - PR;
   const chartH = H - PT - PB;
@@ -429,7 +429,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
         </div>
 
         {/* Chart + Alerts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-start">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -445,7 +445,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             </div>
             <div className="px-3 pt-1 pb-3">
               {loading
-                ? <div className="aspect-[3/2] animate-pulse bg-gray-100 rounded-lg" />
+                ? <div className="aspect-[5/3] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
@@ -482,10 +482,10 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             <Card>
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="space-y-2">
-                {loading || !stats ? Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="h-3 w-24 bg-gray-100 animate-pulse rounded" />
-                    <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
+                {loading || !stats ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between py-0.5">
+                    <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
+                    <div className="h-2.5 w-5 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
                   (stats.officeStats ?? []).map((o: any) => (
@@ -645,7 +645,7 @@ function ViewerDashboard() {
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-start">
           <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
@@ -661,7 +661,7 @@ function ViewerDashboard() {
             </div>
             <div className="px-3 pt-1 pb-3">
               {loading
-                ? <div className="aspect-[3/2] animate-pulse bg-gray-100 rounded-lg" />
+                ? <div className="aspect-[5/3] animate-pulse bg-gray-100 rounded-lg" />
                 : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
             </div>
           </div>
@@ -669,10 +669,10 @@ function ViewerDashboard() {
             <Card>
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="space-y-2">
-                {loading ? Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="h-3 w-24 bg-gray-100 animate-pulse rounded" />
-                    <div className="h-3 w-6 bg-gray-100 animate-pulse rounded" />
+                {loading ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between py-0.5">
+                    <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
+                    <div className="h-2.5 w-5 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) :
                   (stats?.officeStats ?? []).map((o: any) => (
