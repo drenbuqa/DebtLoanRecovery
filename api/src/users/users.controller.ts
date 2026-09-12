@@ -60,7 +60,7 @@ export class UsersController {
   @RequireRoles('ADMIN')
   async deactivate(@Param('id') id: string, @Request() req: any) {
     // Prevent an admin from deactivating themselves
-    if (id === req.user.id) throw new ForbiddenException('You cannot deactivate your own account');
+    if (id === req.user.id) throw new ForbiddenException('Nuk mund të çaktivizoni llogarinë tuaj');
     const user = await this.svc.deactivate(id);
     await this.audit.log({
       userId: req.user.id, username: req.user.username,

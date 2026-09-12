@@ -49,7 +49,7 @@ export class LegalService {
 
   async findOne(id: string) {
     const lp = await this.prisma.legalProceeding.findUnique({ where: { id }, select: LP_SELECT });
-    if (!lp) throw new NotFoundException('Legal proceeding not found');
+    if (!lp) throw new NotFoundException('Procedimi juridik nuk u gjet');
     return lp;
   }
 

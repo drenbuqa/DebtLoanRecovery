@@ -38,7 +38,7 @@ export class InstitutionsService {
         },
       },
     });
-    if (!inst) throw new NotFoundException('Institution not found');
+    if (!inst) throw new NotFoundException('Institucioni nuk u gjet');
     return inst;
   }
 

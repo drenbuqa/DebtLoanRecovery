@@ -191,7 +191,7 @@ export class CasesService {
       where: { OR: [{ id }, { caseReference: id }], deletedAt: null },
       select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
     });
-    if (!c) throw new NotFoundException('Case not found');
+    if (!c) throw new NotFoundException('Dosja nuk u gjet');
     return c;
   }
 
@@ -296,7 +296,7 @@ export class CasesService {
   }, createdById: string) {
     // Check loan number not already used
     const existing = await this.prisma.loan.findUnique({ where: { loanNumber: dto.loanNumber } });
-    if (existing) throw new BadRequestException(`Loan number ${dto.loanNumber} already exists`);
+    if (existing) throw new BadRequestException(`Numri i kredisë ${dto.loanNumber} ekziston tashmë`);
 
     // Upsert person (by personalId)
     const person = await this.prisma.person.upsert({
@@ -387,7 +387,7 @@ export class CasesService {
 
   async updateStatus(id: string, dto: { status?: string; collectionStage?: string; note?: string }, changedById: string) {
     const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true } });
-    if (!current) throw new NotFoundException('Case not found');
+    if (!current) throw new NotFoundException('Dosja nuk u gjet');
 
     const updates: any = {};
     const historyEntries: any[] = [];

@@ -139,8 +139,8 @@ export class PaymentsService {
 
   async voidPayment(id: string, reason: string, voidedById: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id } });
-    if (!payment) throw new NotFoundException('Payment not found');
-    if (payment.voidedAt) throw new BadRequestException('Payment is already voided');
+    if (!payment) throw new NotFoundException('Pagesa nuk u gjet');
+    if (payment.voidedAt) throw new BadRequestException('Kjo pagesë është anuluar tashmë');
 
     return this.prisma.$transaction(async (tx) => {
       const voided = await tx.payment.update({

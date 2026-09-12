@@ -9,10 +9,10 @@ const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_MINUTES = 15;
 
 function validatePasswordStrength(password: string): void {
-  if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
-  if (!/[A-Z]/.test(password)) throw new BadRequestException('Password must contain at least one uppercase letter');
-  if (!/[0-9]/.test(password)) throw new BadRequestException('Password must contain at least one number');
-  if (!/[^A-Za-z0-9]/.test(password)) throw new BadRequestException('Password must contain at least one special character');
+  if (password.length < 8) throw new BadRequestException('Fjalëkalimi duhet të ketë të paktën 8 karaktere');
+  if (!/[A-Z]/.test(password)) throw new BadRequestException('Fjalëkalimi duhet të përmbajë të paktën një shkronjë të madhe');
+  if (!/[0-9]/.test(password)) throw new BadRequestException('Fjalëkalimi duhet të përmbajë të paktën një numër');
+  if (!/[^A-Za-z0-9]/.test(password)) throw new BadRequestException('Fjalëkalimi duhet të përmbajë të paktën një karakter special');
 }
 
 @Injectable()
@@ -36,19 +36,19 @@ export class AuthService {
 
     if (!user) {
       await this.audit.log({ action: 'LOGIN_FAILED', details: `Unknown username: ${username}` });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Kredencialet janë të pasakta');
     }
 
     // Check account lockout before anything else
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const remaining = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
       await this.audit.log({ userId: user.id, username: user.username, action: 'LOGIN_BLOCKED', details: `Account locked for ${remaining} more minute(s)` });
-      throw new ForbiddenException(`Account temporarily locked. Try again in ${remaining} minute(s)`);
+      throw new ForbiddenException(`Llogaria është bllokuar përkohësisht. Provoni përsëri pas ${remaining} minutash`);
     }
 
     if (!user.isActive) {
       await this.audit.log({ userId: user.id, username: user.username, action: 'LOGIN_BLOCKED', details: 'Account inactive' });
-      throw new UnauthorizedException('Account is inactive');
+      throw new UnauthorizedException('Llogaria është joaktive');
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
@@ -66,8 +66,8 @@ export class AuthService {
         userId: user.id, username: user.username, action: 'LOGIN_FAILED',
         details: lock ? `Account locked after ${MAX_FAILED_ATTEMPTS} failed attempts` : `Failed attempt ${attempts}/${MAX_FAILED_ATTEMPTS}`,
       });
-      if (lock) throw new ForbiddenException(`Too many failed attempts. Account locked for ${LOCKOUT_MINUTES} minutes`);
-      throw new UnauthorizedException('Invalid credentials');
+      if (lock) throw new ForbiddenException(`Shumë tentativa të dështuara. Llogaria është bllokuar për ${LOCKOUT_MINUTES} minuta`);
+      throw new UnauthorizedException('Kredencialet janë të pasakta');
     }
 
     // Successful — reset lockout counters
@@ -92,7 +92,7 @@ export class AuthService {
 
   async me(userId: string) {
     const user = await this.users.findOne(userId);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new Error('Përdoruesi nuk u gjet');
     return { id: user.id, username: user.username, fullName: user.fullName, role: user.role, officeId: user.officeId, email: user.email, office: (user as any).office };
   }
 
@@ -101,15 +101,15 @@ export class AuthService {
     try {
       payload = this.jwt.verify(token, { ignoreExpiration: true });
     } catch {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Sesioni është i pavlefshëm');
     }
-    if (!payload?.sub) throw new UnauthorizedException('Invalid token');
+    if (!payload?.sub) throw new UnauthorizedException('Sesioni është i pavlefshëm');
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, username: true, role: true, officeId: true, isActive: true, tokenVersion: true },
     });
-    if (!user || !user.isActive) throw new UnauthorizedException('Account inactive or not found');
+    if (!user || !user.isActive) throw new UnauthorizedException('Llogaria nuk u gjet ose është joaktive');
 
     // Reject tokens issued before a password change or forced logout
     if (payload.tv !== undefined && payload.tv !== user.tokenVersion) {
@@ -124,11 +124,11 @@ export class AuthService {
     validatePasswordStrength(newPassword);
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new UnauthorizedException('Përdoruesi nuk u gjet');
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!valid) throw new BadRequestException('Current password is incorrect');
+    if (!valid) throw new BadRequestException('Fjalëkalimi aktual është i pasaktë');
     if (await bcrypt.compare(newPassword, user.passwordHash)) {
-      throw new BadRequestException('New password must differ from the current password');
+      throw new BadRequestException('Fjalëkalimi i ri duhet të jetë i ndryshëm nga ai aktual');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);

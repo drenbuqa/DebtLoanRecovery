@@ -28,10 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
       select: { id: true, username: true, role: true, officeId: true, isActive: true, tokenVersion: true },
     });
-    if (!user || !user.isActive) throw new UnauthorizedException('Account inactive');
+    if (!user || !user.isActive) throw new UnauthorizedException('Llogaria është joaktive');
     // Reject tokens issued before a password change (tokenVersion mismatch)
     if (payload.tv !== undefined && payload.tv !== user.tokenVersion) {
-      throw new UnauthorizedException('Token has been invalidated');
+      throw new UnauthorizedException('Sesioni është i pavlefshëm. Ju lutem hyni përsëri');
     }
     return { id: user.id, username: user.username, role: user.role, officeId: user.officeId };
   }

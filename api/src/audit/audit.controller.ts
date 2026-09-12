@@ -15,7 +15,7 @@ export class AuditController {
     @Query('take') take?: string,
     @Query('skip') skip?: string,
   ) {
-    if (req.user.role !== 'ADMIN') throw new ForbiddenException('Audit log is admin-only');
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException('Regjistri i auditimit është vetëm për administratorët');
     return this.svc.list({
       userId, action, from, to,
       take: take ? parseInt(take) : undefined,

@@ -46,7 +46,7 @@ export class AgreementsService {
 
   async findOne(id: string) {
     const a = await this.prisma.agreement.findUnique({ where: { id }, select: AGR_SELECT });
-    if (!a) throw new NotFoundException('Agreement not found');
+    if (!a) throw new NotFoundException('Marrëveshja nuk u gjet');
     return a;
   }
 
@@ -96,14 +96,14 @@ export class AgreementsService {
 
   async markInstallmentPaid(installmentId: string, paidAmount?: number) {
     const inst = await this.prisma.agreementInstallment.findUnique({ where: { id: installmentId } });
-    if (!inst) throw new NotFoundException('Installment not found');
-    if (inst.status === 'PAID') throw new BadRequestException('Installment is already paid');
+    if (!inst) throw new NotFoundException('Kësti nuk u gjet');
+    if (inst.status === 'PAID') throw new BadRequestException('Ky këst është paguar tashmë');
 
     const amount = Number(inst.amount);
     const paid = paidAmount !== undefined ? Number(paidAmount) : amount;
 
-    if (paid <= 0) throw new BadRequestException('Paid amount must be greater than zero');
-    if (paid > amount) throw new BadRequestException(`Paid amount (${paid}) exceeds installment amount (${amount})`);
+    if (paid <= 0) throw new BadRequestException('Shuma e paguar duhet të jetë më e madhe se zero');
+    if (paid > amount) throw new BadRequestException(`Shuma e paguar (${paid}) tejkalon shumën e këstit (${amount})`);
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.agreementInstallment.update({

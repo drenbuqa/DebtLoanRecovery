@@ -25,7 +25,7 @@ export class UsersService {
 
   async findOne(id: string) {
     const u = await this.prisma.user.findUnique({ where: { id }, select: USER_PUBLIC });
-    if (!u) throw new NotFoundException('User not found');
+    if (!u) throw new NotFoundException('Përdoruesi nuk u gjet');
     return u;
   }
 
@@ -35,7 +35,7 @@ export class UsersService {
 
   async create(dto: { username: string; password: string; fullName: string; email: string; role: string; officeId?: string }) {
     const exists = await this.prisma.user.findUnique({ where: { username: dto.username } });
-    if (exists) throw new ConflictException('Username already taken');
+    if (exists) throw new ConflictException('Ky emër përdoruesi është i zënë');
     const passwordHash = await bcrypt.hash(dto.password, 12);
     return this.prisma.user.create({
       data: {

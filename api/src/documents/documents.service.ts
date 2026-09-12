@@ -48,13 +48,13 @@ export class DocumentsService {
 
   async getFilePath(documentId: string): Promise<{ filePath: string; fileName: string; mimeType: string }> {
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
-    if (!doc) throw new NotFoundException('Document not found');
+    if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
     return { filePath: doc.storagePath, fileName: doc.fileName, mimeType: doc.mimeType };
   }
 
   async delete(documentId: string) {
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
-    if (!doc) throw new NotFoundException('Document not found');
+    if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
     if (doc.storagePath && fs.existsSync(doc.storagePath)) {
       fs.unlinkSync(doc.storagePath);
     }

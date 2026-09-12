@@ -104,7 +104,7 @@ export class DocumentsController {
     // Validate actual file content against declared MIME type
     if (!validateMagicBytes(file.path, file.mimetype)) {
       fs.unlinkSync(file.path); // delete the suspicious file immediately
-      throw new BadRequestException('File content does not match its declared type');
+      throw new BadRequestException('Lloji i skedarit nuk përputhet me përmbajtjen e tij');
     }
 
     const doc = await this.svc.create({
@@ -132,7 +132,7 @@ export class DocumentsController {
     // Prevent path traversal: the resolved path must stay inside UPLOADS_DIR
     const resolved = path.resolve(filePath);
     if (!resolved.startsWith(UPLOADS_DIR + path.sep) && resolved !== UPLOADS_DIR) {
-      throw new BadRequestException('Invalid file path');
+      throw new BadRequestException('Rruga e skedarit është e pavlefshme');
     }
     await this.audit.log({
       userId: req.user.id, username: req.user.username,

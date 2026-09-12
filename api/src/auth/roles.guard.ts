@@ -19,7 +19,7 @@ export class RolesGuard implements CanActivate {
     if (!roles || roles.length === 0) return true; // no restriction
     const { user } = ctx.switchToHttp().getRequest();
     if (!user || !roles.includes(user.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new ForbiddenException('Nuk keni leje të mjaftueshme për këtë veprim');
     }
     return true;
   }
