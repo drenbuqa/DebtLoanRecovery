@@ -30,32 +30,14 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
 
-  // Compute portal position from the trigger button's bounding rect
-  useEffect(() => {
-    if (!open || !ref.current) return;
+  function computeStyle(): React.CSSProperties {
+    if (!ref.current) return {};
     const rect = ref.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const openUp = dropUp || spaceBelow < 220;
-
-    if (openUp) {
-      setDropdownStyle({
-        position: "fixed",
-        left: rect.left,
-        bottom: window.innerHeight - rect.top + 4,
-        width: rect.width,
-        zIndex: 9999,
-      });
-    } else {
-      setDropdownStyle({
-        position: "fixed",
-        left: rect.left,
-        top: rect.bottom + 4,
-        width: rect.width,
-        zIndex: 9999,
-      });
-    }
-  }, [open, dropUp]);
+    const openUp = dropUp || (window.innerHeight - rect.bottom) < 220;
+    return openUp
+      ? { position: "fixed", left: rect.left, bottom: window.innerHeight - rect.top + 4, width: rect.width, zIndex: 9999 }
+      : { position: "fixed", left: rect.left, top: rect.bottom + 4, width: rect.width, zIndex: 9999 };
+  }
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -88,10 +70,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
-  const openUp = dropUp || (() => {
-    if (!ref.current) return false;
-    return window.innerHeight - ref.current.getBoundingClientRect().bottom < 220;
-  })();
+  const openUp = dropUp || (ref.current ? (window.innerHeight - ref.current.getBoundingClientRect().bottom) < 220 : false);
 
   const dropdown = open ? (
     <div
@@ -148,7 +127,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { if (!open) setDropdownStyle(computeStyle()); setOpen((o) => !o); }}
         style={{ fontFamily: "inherit", fontSize: 13, fontWeight: 400 }}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all
           ${open
