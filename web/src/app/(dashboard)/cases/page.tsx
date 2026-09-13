@@ -161,31 +161,47 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Step 1 — ID search */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <FL label="Numri Letërnjoftimit / Biznesit" required error={E.personalId}>
-                <input value={personalId} onChange={(e) => setPersonalId(e.target.value)}
-                  onBlur={() => touch("personalId")}
-                  onKeyDown={(e) => e.key === "Enter" && searchPerson()}
-                  placeholder="p.sh. 1234567890"
-                  className={inp(!!E.personalId)} />
-              </FL>
+          <div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <FL label="Numri Letërnjoftimit / Biznesit" required error={E.personalId}>
+                  <input value={personalId} onChange={(e) => { setPersonalId(e.target.value); setPersonResult(null); }}
+                    onBlur={() => touch("personalId")}
+                    onKeyDown={(e) => e.key === "Enter" && searchPerson()}
+                    placeholder="p.sh. 1234567890"
+                    className={inp(!!E.personalId)} />
+                </FL>
+              </div>
+              <div className="flex items-start pt-6">
+                <button onClick={searchPerson} disabled={searching}
+                  className="h-[34px] px-4 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap flex items-center gap-1.5">
+                  {searching ? (
+                    <><span className="animate-spin inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full" />Duke kërkuar…</>
+                  ) : "Kërko"}
+                </button>
+              </div>
             </div>
-            <div className="flex items-start pt-6">
-              <button onClick={searchPerson} disabled={searching}
-                className="h-[34px] px-4 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap">
-                {searching ? "…" : "Kërko"}
-              </button>
-            </div>
-          </div>
 
-          {personResult && (
-            <div className={`p-3 rounded-lg text-[12px] border ${personResult.person ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-gray-50 border-gray-200 text-gray-500"}`}>
-              {personResult.person
-                ? `✓ U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese`
-                : "Nuk u gjet asnjë rekord — plotëso të dhënat manualisht"}
-            </div>
-          )}
+            {/* Hint shown before any search */}
+            {!personResult && !searching && (
+              <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed">
+                Shtyp numrin e letërnjoftimit ose NIPT-in dhe kliko <strong className="font-medium text-gray-500">Kërko</strong> — nëse ekziston, të dhënat plotësohen automatikisht.
+              </p>
+            )}
+
+            {/* Result banner */}
+            {personResult && (
+              <div className={`mt-2 p-3 rounded-lg text-[12px] border flex items-start gap-2
+                ${personResult.person ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+                <span className="text-base leading-none mt-px">{personResult.person ? "✓" : "ℹ"}</span>
+                <span>
+                  {personResult.person
+                    ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese. Të dhënat u plotësuan automatikisht.`
+                    : "Nuk u gjet asnjë rekord për këtë numër. Plotëso të dhënat manualisht më poshtë."}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Core required fields */}
           <div className="grid grid-cols-2 gap-3">
