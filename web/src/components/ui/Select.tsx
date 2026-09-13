@@ -2,6 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
 import { ChevronDown, Check, Search } from "lucide-react";
 
 export interface SelectOption {
@@ -22,6 +28,7 @@ interface SelectProps {
 }
 
 export function Select({ value, onChange, options, placeholder = "Select…", label, className = "", disabled = false, dropUp = false, searchable = false }: SelectProps) {
+  const mounted = useMounted();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -149,7 +156,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         />
       </button>
 
-      {typeof window !== "undefined" && createPortal(dropdown, document.body)}
+      {mounted && createPortal(dropdown, document.body)}
     </div>
   );
 }

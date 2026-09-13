@@ -165,30 +165,30 @@ export default function PaymentsPage() {
       <div className="p-3 md:p-6 space-y-4 md:space-y-5">
 
         {/* Stats */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              {
-                label: scopedToSelf ? "Arkëtimet e Mia Sot" : "Arkëtime Sot",
-                value: formatCurrency(stats.todayTotal ?? 0),
-              },
-              {
-                label: scopedToSelf ? "Arkëtimet e Mia Këtë Muaj" : "Arkëtime Këtë Muaj",
-                value: formatCurrency(stats.monthTotal ?? 0),
-              },
-              {
-                label: scopedToSelf ? "Transaksionet e Mia" : "Gjithsej Transaksione",
-                value: total.toLocaleString(),
-              },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
-                <div className="text-[22px] font-bold text-gray-900 tabular leading-tight mt-1.5">{s.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            {
+              label: scopedToSelf ? "Arkëtimet e Mia Sot" : "Arkëtime Sot",
+              value: stats ? formatCurrency(stats.todayTotal ?? 0) : null,
+            },
+            {
+              label: scopedToSelf ? "Arkëtimet e Mia Këtë Muaj" : "Arkëtime Këtë Muaj",
+              value: stats ? formatCurrency(stats.monthTotal ?? 0) : null,
+            },
+            {
+              label: scopedToSelf ? "Transaksionet e Mia" : "Gjithsej Transaksione",
+              value: stats ? total.toLocaleString() : null,
+            },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
+              {s.value !== null
+                ? <div className="text-[22px] font-bold text-gray-900 tabular leading-tight mt-1.5">{s.value}</div>
+                : <div className="h-7 w-28 bg-gray-100 rounded-lg mt-1.5 animate-pulse" />}
+            </div>
+          ))}
+        </div>
 
         {/* Filter bar */}
         <div className="flex items-center gap-3 flex-wrap">

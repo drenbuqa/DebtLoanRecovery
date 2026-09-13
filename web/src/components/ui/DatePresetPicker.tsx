@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
 import { ChevronDown, Check, Calendar } from "lucide-react";
 
 export type DatePreset = "" | "today" | "week" | "month" | "last_month" | "3months" | "6months" | "year";
@@ -59,6 +65,7 @@ interface Props {
 }
 
 export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, label, className = "" }: Props) {
+  const mounted = useMounted();
   const [open, setOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
@@ -127,7 +134,7 @@ export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, l
         <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {typeof window !== "undefined" && createPortal(dropdown, document.body)}
+      {mounted && createPortal(dropdown, document.body)}
     </div>
   );
 }
