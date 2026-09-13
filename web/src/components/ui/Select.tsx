@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check, Search } from "lucide-react";
 
 export interface SelectOption {
@@ -23,13 +24,45 @@ interface SelectProps {
 export function Select({ value, onChange, options, placeholder = "Select…", label, className = "", disabled = false, dropUp = false, searchable = false }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const searchRef = useRef<HTMLInputElement>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.value === value);
+
+  // Compute portal position from the trigger button's bounding rect
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = dropUp || spaceBelow < 220;
+
+    if (openUp) {
+      setDropdownStyle({
+        position: "fixed",
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 4,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    } else {
+      setDropdownStyle({
+        position: "fixed",
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+  }, [open, dropUp]);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const clickedTrigger = ref.current?.contains(target);
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      if (!clickedTrigger && !clickedDropdown) {
         setOpen(false);
         setQuery("");
       }
@@ -54,6 +87,61 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
   const filtered = searchable && query.trim()
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
+
+  const openUp = dropUp || (() => {
+    if (!ref.current) return false;
+    return window.innerHeight - ref.current.getBoundingClientRect().bottom < 220;
+  })();
+
+  const dropdown = open ? (
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+    >
+      {searchable && !openUp && (
+        <div className="p-2 border-b border-gray-100">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
+            <Search size={12} className="text-gray-400 shrink-0" />
+            <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Kërko…"
+              className="flex-1 text-[13px] bg-transparent outline-none text-gray-700 placeholder-gray-400" />
+          </div>
+        </div>
+      )}
+      <div className="max-h-52 overflow-y-auto py-1">
+        {placeholder && !query && (
+          <button type="button" onClick={() => pick("")}
+            className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
+              ${value === "" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-400 hover:bg-gray-50"}`}>
+            <span>{placeholder}</span>
+            {value === "" && <Check size={13} className="text-brand-600 shrink-0" />}
+          </button>
+        )}
+        {filtered.length === 0 && (
+          <div className="px-3.5 py-4 text-[12px] text-gray-400 text-center">Nuk u gjet asgjë</div>
+        )}
+        {filtered.map((opt) => (
+          <button key={opt.value} type="button" onClick={() => pick(opt.value)}
+            className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
+              ${opt.value === value ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}>
+            <span>{opt.label}</span>
+            {opt.value === value && <Check size={13} className="text-brand-600 shrink-0" />}
+          </button>
+        ))}
+      </div>
+      {searchable && openUp && (
+        <div className="p-2 border-t border-gray-100">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
+            <Search size={12} className="text-gray-400 shrink-0" />
+            <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="Kërko…"
+              className="flex-1 text-[13px] bg-transparent outline-none text-gray-700 placeholder-gray-400" />
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div ref={ref} className={`relative ${className}`}>
@@ -82,54 +170,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         />
       </button>
 
-      {open && (
-        <div className={`absolute z-50 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden ${dropUp ? "bottom-full mb-1" : "top-full mt-1"}`}
-          style={{ minWidth: "100%" }}>
-          {/* In dropUp mode: list first, search at bottom (closest to button) */}
-          {/* In dropDown mode: search first, list below */}
-          {searchable && !dropUp && (
-            <div className="p-2 border-b border-gray-100">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
-                <Search size={12} className="text-gray-400 shrink-0" />
-                <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Kërko…"
-                  className="flex-1 text-[13px] bg-transparent outline-none text-gray-700 placeholder-gray-400" />
-              </div>
-            </div>
-          )}
-          <div className="max-h-44 overflow-y-auto py-1">
-            {placeholder && !query && (
-              <button type="button" onClick={() => pick("")}
-                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
-                  ${value === "" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-400 hover:bg-gray-50"}`}>
-                <span>{placeholder}</span>
-                {value === "" && <Check size={13} className="text-brand-600 shrink-0" />}
-              </button>
-            )}
-            {filtered.length === 0 && (
-              <div className="px-3.5 py-4 text-[12px] text-gray-400 text-center">Nuk u gjet asgjë</div>
-            )}
-            {filtered.map((opt) => (
-              <button key={opt.value} type="button" onClick={() => pick(opt.value)}
-                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
-                  ${opt.value === value ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}>
-                <span>{opt.label}</span>
-                {opt.value === value && <Check size={13} className="text-brand-600 shrink-0" />}
-              </button>
-            ))}
-          </div>
-          {searchable && dropUp && (
-            <div className="p-2 border-t border-gray-100">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
-                <Search size={12} className="text-gray-400 shrink-0" />
-                <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Kërko…"
-                  className="flex-1 text-[13px] bg-transparent outline-none text-gray-700 placeholder-gray-400" />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {typeof window !== "undefined" && createPortal(dropdown, document.body)}
     </div>
   );
 }
