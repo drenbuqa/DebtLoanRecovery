@@ -323,7 +323,7 @@ export class CasesService {
     loanNumber: string;
     institutionId: string;
     originalLoanAmount: number;
-    disbursedAmount: number;
+    disbursedAmount?: number;
     currentOutstandingBalance: number;
     currency?: string;
     interestRate?: number;
