@@ -130,8 +130,12 @@ const OUTCOME_MAP: Record<string, { value: string; label: string }[]> = {
   MEETING_GUARANTOR: MEETING_OUTCOMES,
 };
 
-const PROMISE_TYPES = new Set(["PROMISE_TO_PAY", "CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
+const PROMISE_TYPES  = new Set(["PROMISE_TO_PAY", "CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
 const FOLLOWUP_TYPES = new Set(["CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
+// Address relevant when physically present; phone when any contact made; doc upload for formal interactions
+const SHOW_ADDRESS_TYPES = new Set(["VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
+const SHOW_PHONE_TYPES   = new Set(["CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
+const SHOW_DOC_TYPES     = new Set(["WARNING_LETTER", "MEETING_BORROWER", "MEETING_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "OTHER"]);
 
 // ── Modal: Log Activity ──────────────────────────────────────
 function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onClose: () => void; onSuccess: () => void }) {
@@ -248,11 +252,13 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
             </div>
           )}
 
-          {/* Case category */}
-          <div>
-            <label className={lbl}>Kategoria e Rastit</label>
-            <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
-          </div>
+          {/* Case category — always shown once a type is selected */}
+          {type && (
+            <div>
+              <label className={lbl}>Kategoria e Rastit</label>
+              <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
+            </div>
+          )}
 
           {/* Notes */}
           <div>
@@ -262,28 +268,34 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
               className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
           </div>
 
-          {/* Updated address & phone */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Address — only for visits & meetings */}
+          {SHOW_ADDRESS_TYPES.has(type) && (
             <div>
               <label className={lbl}>Adresa e Re e Siguruar</label>
               <input value={updatedAddress} onChange={(e) => setUpdatedAddress(e.target.value)}
                 placeholder="Adresa e re e verifikuar…" className={tinp} />
             </div>
+          )}
+
+          {/* Phone — for calls, visits & meetings */}
+          {SHOW_PHONE_TYPES.has(type) && (
             <div>
               <label className={lbl}>Numri i Telefonit i Siguruar</label>
               <input value={updatedPhone} onChange={(e) => setUpdatedPhone(e.target.value)}
                 placeholder="+383 44 …" className={tinp} />
             </div>
-          </div>
+          )}
 
-          {/* Document upload */}
-          <div>
-            <label className={lbl}>Ngarko Dokument (PDF / Word)</label>
-            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
-              className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
-            {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
-          </div>
+          {/* Document upload — for formal interactions */}
+          {SHOW_DOC_TYPES.has(type) && (
+            <div>
+              <label className={lbl}>Ngarko Dokument (PDF / Word)</label>
+              <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+                className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+              {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
+            </div>
+          )}
         </div>
         <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
