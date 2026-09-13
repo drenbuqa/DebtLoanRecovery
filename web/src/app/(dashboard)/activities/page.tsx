@@ -417,7 +417,7 @@ export default function ActivitiesPage() {
                         { value: "last_month", label: "Muaji i Kaluar" },
                       ],
                     },
-                    ...(!scopedToSelf && officers.length > 0 ? [{
+                    ...(!scopedToSelf ? [{
                       key: "officerFilter",
                       label: "Oficeri",
                       value: officerFilter,
@@ -442,7 +442,7 @@ export default function ActivitiesPage() {
                   />
                 </div>
                 <DatePresetPicker label="Periudha" value={actDatePreset} onChange={(p, r) => { setActDatePreset(p); setActDateFrom(r.from); setActDateTo(r.to); }} />
-                {!scopedToSelf && officers.length > 0 && (
+                {!scopedToSelf && (
                   <Select
                     value={officerFilter}
                     onChange={setOfficerFilter}
