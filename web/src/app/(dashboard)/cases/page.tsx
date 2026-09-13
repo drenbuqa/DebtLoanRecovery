@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, Suspense } from "react";
+import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
@@ -74,6 +74,15 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [registrationDate, setRegistrationDate] = useState(today);
 
   const { touch, touchAll, fieldError } = useFormErrors();
+
+  const institutionOptions = useMemo(
+    () => institutions.map((i: any) => ({ value: i.id, label: i.name })),
+    [institutions]
+  );
+  const officerOptions = useMemo(
+    () => officers.map((o: any) => ({ value: o.id, label: o.fullName })),
+    [officers]
+  );
 
   useEffect(() => {
     Promise.all([instApi.list(), usersApi.list({ isActive: true })]).then(([i, u]) => {
@@ -188,7 +197,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <div onBlur={() => touch("institutionId")}>
                 <Select value={institutionId} onChange={(v) => { setInstitutionId(v); touch("institutionId"); }}
                   placeholder="Zgjidhni…" searchable
-                  options={institutions.map((i: any) => ({ value: i.id, label: i.name }))} />
+                  options={institutionOptions} />
               </div>
             </FL>
             <FL label="Emri" required error={E.firstName}>
@@ -241,7 +250,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                       options={KOSOVO_CITIES.map((c) => ({ value: c, label: c }))} />
                   </FL>
                   <FL label="Kategoria / Procedura" error={null}>
-                    <Select value={collectionStage} onChange={setCollectionStage}
+                    <Select value={collectionStage} onChange={setCollectionStage} dropUp
                       options={[
                         { value: "D1", label: "D1" },
                         { value: "D2", label: "D2" },
@@ -253,11 +262,11 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                   </FL>
                   <FL label="Zyrtari Primar" error={null}>
                     <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim" searchable dropUp
-                      options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))} />
+                      options={officerOptions} />
                   </FL>
                   <FL label="Zyrtari Sekondar" error={null}>
                     <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId} placeholder="Pa caktim" searchable dropUp
-                      options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))} />
+                      options={officerOptions} />
                   </FL>
                   <FL label="Kategoria / Performanca" error={null}>
                     <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori" dropUp
