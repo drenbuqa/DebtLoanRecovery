@@ -37,7 +37,7 @@ const nav: NavGroup[] = [
   {
     label: "Operacione",
     items: [
-      { href: "/cases",        label: "Dosjet",        icon: FolderOpen,   permission: "page:cases" },
+      { href: "/cases",        label: "Klientët",      icon: FolderOpen,   permission: "page:cases" },
       { href: "/activities",   label: "Aktivitetet",   icon: Activity,     permission: "page:activities" },
       { href: "/payments",     label: "Pagesat",       icon: CreditCard,   permission: "page:payments" },
       { href: "/agreements",   label: "Marrëveshjet",  icon: FileText,     permission: "page:agreements" },

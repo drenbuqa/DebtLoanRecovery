@@ -403,7 +403,7 @@ function CasesPageInner() {
   return (
     <div className="flex flex-col">
       {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={load} />}
-      <Topbar title="Dosjet" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej dosje`} help={[
+      <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej dosje`} help={[
         { title: "Si të gjeni një dosje", body: "Shkruani emrin e debitorit, numrin personal ose referencën e dosjes në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm dosjet me premtime të vonuara ose vetëm dosjet juridike." },
         { title: "Çfarë do të thotë D1, D2, D3, D4?", body: "Këto tregojnë sa gjatë ka qenë borxhi i vonuar. D1 nënkupton 30–60 ditë vonesë (fazë fillestare), D2 është 60–90 ditë, D3 është 90–180 ditë (serioz) dhe D4 është mbi 180 ditë (risk më i lartë). Sa më i madh numri, aq më e vështirë është rikuperimi i borxhit." },
         { title: "Si të hapni një dosje", body: "Klikoni çdo rresht për të hapur dosjen e plotë — do të shihni të dhënat e debitorit, informacionin e kredisë, të gjitha thirrjet dhe vizitat e regjistruara, pagesat e marra dhe çdo procedurë juridike." },

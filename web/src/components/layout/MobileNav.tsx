@@ -8,7 +8,7 @@ import { LayoutDashboard, FolderOpen, Activity, Grid3X3 } from "lucide-react";
 const tabs = [
   { href: "/dashboard",  label: "Ballina",    icon: LayoutDashboard },
   { href: "/activities", label: "Aktivitete", icon: Activity },
-  { href: "/cases",      label: "Dosjet",     icon: FolderOpen },
+  { href: "/cases",      label: "Klientët",   icon: FolderOpen },
   { href: "/more",       label: "Më shumë",   icon: Grid3X3 },
 ];
 
