@@ -52,10 +52,7 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src="/logo.png" alt="DLR" style={{ height: 64, width: "auto", margin: "0 auto 4px" }} />
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-            Operacione Arkëtimi &amp; Rimëkëmbje
-          </div>
+          <img src="/logo.png" alt="DLR" style={{ height: 64, width: "auto", margin: "0 auto" }} />
         </div>
 
         <form onSubmit={handleSubmit}>
