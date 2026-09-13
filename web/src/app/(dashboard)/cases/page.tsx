@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useFormErrors, validate } from "@/lib/form";
+import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency, formatEnum } from "@/lib/utils";
-import { cases as casesApi, institutions as instApi, offices as officesApi, users as usersApi } from "@/lib/api";
+import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -37,50 +37,47 @@ function inp(hasError: boolean) {
   return `w-full px-3 py-2 text-[13px] border rounded-lg focus:outline-none transition-colors ${hasError ? "border-red-400 focus:border-red-400 bg-red-50/30" : "border-gray-200 focus:border-brand-400"}`;
 }
 
-// ── Create Case Modal ────────────────────────────────────────────
+const KOSOVO_CITIES = [
+  "Prishtinë","Prizren","Pejë","Mitrovicë","Ferizaj","Gjakova","Gjilan",
+  "Podujeva","Vushtrri","Suharekë","Rahovec","Klinë","Skenderaj","Malishevë",
+  "Istog","Deçan","Dragash","Shtime","Lipjan","Kaçanik","Shtërpcë","Novo Brdo",
+  "Junik","Mamusha","Hani i Elezit","Graçanicë","Ranillug","Partesh","Klokot","Tjetër",
+];
+
+// ── Create Client Modal ────────────────────────────────────────────
 function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
   const [searching, setSearching] = useState(false);
   const [personResult, setPersonResult] = useState<any>(null);
   const [institutions, setInstitutions] = useState<any[]>([]);
-  const [offices, setOffices] = useState<any[]>([]);
   const [officers, setOfficers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const today = new Date().toISOString().slice(0, 10);
+
   // Form values
+  const [loanNumber, setLoanNumber] = useState("");
   const [personalId, setPersonalId] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [phone1, setPhone1] = useState("");
-  const [phone2, setPhone2] = useState("");
-  const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-
-  const [loanNumber, setLoanNumber] = useState("");
-  const [institutionId, setInstitutionId] = useState("");
+  const [phone1, setPhone1] = useState("");
   const [originalAmount, setOriginalAmount] = useState("");
-  const [disbursedAmount, setDisbursedAmount] = useState("");
   const [currentBalance, setCurrentBalance] = useState("");
-  const [daysPastDue, setDaysPastDue] = useState("");
-  const [disbursementDate, setDisbursementDate] = useState("");
-  const [maturityDate, setMaturityDate] = useState("");
-  const [interestRate, setInterestRate] = useState("");
-  const [productType, setProductType] = useState("");
-  const [nplClass, setNplClass] = useState("");
-
-  const [officeId, setOfficeId] = useState("");
-  const [officerId, setOfficerId] = useState("");
+  const [city, setCity] = useState("");
   const [collectionStage, setCollectionStage] = useState("D1");
+  const [officerId, setOfficerId] = useState("");
+  const [secondaryOfficerId, setSecondaryOfficerId] = useState("");
+  const [institutionId, setInstitutionId] = useState("");
+  const [nplClass, setNplClass] = useState("");
+  const [registrationDate, setRegistrationDate] = useState(today);
 
   const { touch, touchAll, fieldError } = useFormErrors();
 
   useEffect(() => {
-    Promise.all([instApi.list(), officesApi.list(), usersApi.list({ isActive: true })]).then(([i, o, u]) => {
+    Promise.all([instApi.list(), usersApi.list({ isActive: true })]).then(([i, u]) => {
       setInstitutions(i);
-      setOffices(o);
       setOfficers((u as any[]).filter((u: any) => u.role === "OFFICER" || u.role === "MANAGER"));
     }).catch(() => {});
   }, []);
@@ -97,100 +94,56 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
         setFirstName(person.firstName);
         setLastName(person.lastName);
         setPhone1(person.phones?.[0]?.phoneNumber ?? "");
-        setPhone2(person.phones?.[1]?.phoneNumber ?? "");
-        setEmail(person.email ?? "");
         setAddress(person.address ?? "");
         setCity(person.city ?? "");
       }
     } catch { setPersonResult(null); } finally { setSearching(false); }
   }
 
-  // Step validation rules
-  const step1Rules = [
-    { field: "personalId", value: personalId, rules: { required: true } },
-    { field: "firstName",  value: firstName,  rules: { required: true } },
-    { field: "lastName",   value: lastName,   rules: { required: true } },
-    { field: "email",      value: email,      rules: { email: true } },
-  ];
-  const step2Rules = [
-    { field: "loanNumber",       value: loanNumber,       rules: { required: true } },
-    { field: "institutionId",    value: institutionId,    rules: { required: true } },
-    { field: "currentBalance",   value: currentBalance,   rules: { required: true, min: 0 } },
-    { field: "daysPastDue",      value: daysPastDue,      rules: { required: true, min: 0 } },
-    { field: "disbursementDate", value: disbursementDate, rules: { required: true } },
-  ];
-
-  function tryNext() {
-    const rules = step === 1 ? step1Rules : step2Rules;
-    const allFields = rules.map((r) => r.field);
-    touchAll(allFields);
-    const hasError = rules.some(({ value, rules: r }) => validate(value, r) !== null);
-    if (hasError) return;
-    setSubmitError("");
-    setStep((s) => s + 1);
-  }
+  const E = {
+    loanNumber:    fieldError("loanNumber",    loanNumber,    { required: true }),
+    personalId:    fieldError("personalId",    personalId,    { required: true }),
+    firstName:     fieldError("firstName",     firstName,     { required: true }),
+    lastName:      fieldError("lastName",      lastName,      { required: true }),
+    originalAmount:fieldError("originalAmount",originalAmount,{ required: true, min: 0 }),
+    currentBalance:fieldError("currentBalance",currentBalance,{ required: true, min: 0 }),
+    institutionId: fieldError("institutionId", institutionId, { required: true }),
+  };
 
   async function submit() {
+    touchAll(["loanNumber","personalId","firstName","lastName","originalAmount","currentBalance","institutionId"]);
+    if (Object.values(E).some(Boolean)) return;
     setLoading(true); setSubmitError("");
     try {
       await casesApi.create({
-        personalId, firstName, lastName,
-        phone1: phone1 || undefined, phone2: phone2 || undefined,
-        email: email || undefined, address: address || undefined, city: city || undefined,
-        loanNumber, institutionId,
-        originalLoanAmount: originalAmount ? parseFloat(originalAmount) : parseFloat(currentBalance),
-        disbursedAmount: disbursedAmount ? parseFloat(disbursedAmount) : parseFloat(currentBalance),
+        loanNumber,
+        personalId,
+        firstName,
+        lastName,
+        address: address || undefined,
+        phone1: phone1 || undefined,
+        originalLoanAmount: parseFloat(originalAmount),
         currentOutstandingBalance: parseFloat(currentBalance),
-        daysPastDue: parseInt(daysPastDue),
-        disbursementDate,
-        maturityDate: maturityDate || undefined,
-        interestRate: interestRate ? parseFloat(interestRate) : undefined,
-        productType: productType || undefined,
-        nplClassification: nplClass || undefined,
-        officeId: officeId || undefined,
-        assignedOfficerId: officerId || undefined,
+        city: city || undefined,
         collectionStage,
+        assignedOfficerId: officerId || undefined,
+        secondaryOfficerId: secondaryOfficerId || undefined,
+        institutionId,
+        nplClassification: nplClass || undefined,
+        registrationDate: registrationDate || undefined,
       });
-      toast("Dosja u krijua me sukses", "success");
+      toast("Klienti u regjistrua me sukses", "success");
       onCreated();
       onClose();
     } catch (e: any) { setSubmitError(e.message); } finally { setLoading(false); }
   }
-
-  // Per-field errors (only shown when touched)
-  const E = {
-    personalId:      fieldError("personalId",      personalId,      { required: true }),
-    firstName:       fieldError("firstName",        firstName,       { required: true }),
-    lastName:        fieldError("lastName",         lastName,        { required: true }),
-    email:           fieldError("email",            email,           { email: true }),
-    loanNumber:      fieldError("loanNumber",       loanNumber,      { required: true }),
-    institutionId:   fieldError("institutionId",    institutionId,   { required: true }),
-    currentBalance:  fieldError("currentBalance",   currentBalance,  { required: true, min: 0 }),
-    daysPastDue:     fieldError("daysPastDue",      daysPastDue,     { required: true, min: 0 }),
-    disbursementDate:fieldError("disbursementDate", disbursementDate,{ required: true }),
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-panel">
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Krijo Dosje të Re</h2>
-            <div className="flex items-center gap-2 mt-1">
-              {["Debitori", "Detajet e Kredisë", "Caktimi"].map((s, i) => (
-                <div key={s} className="flex items-center gap-2">
-                  {i > 0 && <div className="w-6 h-px bg-gray-200" />}
-                  <div className={`flex items-center gap-1.5 text-[11px] font-medium ${step === i + 1 ? "text-brand-700" : step > i + 1 ? "text-brand-600" : "text-gray-400"}`}>
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${step === i + 1 ? "bg-brand-600 text-white" : step > i + 1 ? "bg-brand-200 text-brand-700" : "bg-gray-100 text-gray-400"}`}>
-                      {step > i + 1 ? "✓" : i + 1}
-                    </div>
-                    {s}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <h2 className="text-[15px] font-semibold text-gray-900">Klient i Ri</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
 
@@ -198,181 +151,131 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
-          {/* ── Step 1: Person ── */}
-          {step === 1 && (
-            <>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <FL label="Numër Personal" required error={E.personalId}>
-                    <input value={personalId} onChange={(e) => setPersonalId(e.target.value)}
-                      onBlur={() => touch("personalId")}
-                      onKeyDown={(e) => e.key === "Enter" && searchPerson()}
-                      placeholder="p.sh. 1234567890"
-                      className={inp(!!E.personalId)} />
-                  </FL>
-                </div>
-                <div className="flex items-start pt-6">
-                  <button onClick={searchPerson} disabled={searching}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50">
-                    {searching ? "Duke kërkuar…" : "Kërko"}
-                  </button>
-                </div>
-              </div>
-              {personResult && (
-                <div className={`p-3 rounded-lg text-[12px] border ${personResult.person ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-gray-50 border-gray-200 text-gray-500"}`}>
-                  {personResult.person
-                    ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese. Fushat u plotësuan automatikisht — mund të përditësoni të dhënat e kontaktit.`
-                    : "Nuk u gjet asnjë rekord. Plotësoni të dhënat më poshtë për të krijuar një person të ri."}
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <FL label="Emri" required error={E.firstName}>
-                  <input value={firstName} onChange={(e) => setFirstName(e.target.value)} onBlur={() => touch("firstName")}
-                    className={inp(!!E.firstName)} placeholder="p.sh. Arton" />
-                </FL>
-                <FL label="Mbiemri" required error={E.lastName}>
-                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} onBlur={() => touch("lastName")}
-                    className={inp(!!E.lastName)} placeholder="p.sh. Berisha" />
-                </FL>
-                <FL label="Telefon 1" error={null}>
-                  <input value={phone1} onChange={(e) => setPhone1(e.target.value)} className={inp(false)} placeholder="+383 44 000 000" />
-                </FL>
-                <FL label="Telefon 2" error={null}>
-                  <input value={phone2} onChange={(e) => setPhone2(e.target.value)} className={inp(false)} placeholder="Numër alternativ" />
-                </FL>
-                <FL label="Email" error={E.email}>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => touch("email")}
-                    className={inp(!!E.email)} placeholder="shembull@email.com" />
-                </FL>
-                <FL label="Qyteti" error={null}>
-                  <input value={city} onChange={(e) => setCity(e.target.value)} className={inp(false)} placeholder="p.sh. Prishtinë" />
-                </FL>
-              </div>
-              <FL label="Adresa" error={null}>
-                <input value={address} onChange={(e) => setAddress(e.target.value)} className={inp(false)} placeholder="Rruga, ndërtesa…" />
+          {/* Search by ID */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <FL label="Numri Letërnjoftimit / Biznesit" required error={E.personalId}>
+                <input value={personalId} onChange={(e) => setPersonalId(e.target.value)}
+                  onBlur={() => touch("personalId")}
+                  onKeyDown={(e) => e.key === "Enter" && searchPerson()}
+                  placeholder="p.sh. 1234567890"
+                  className={inp(!!E.personalId)} />
               </FL>
-            </>
-          )}
-
-          {/* ── Step 2: Loan Details ── */}
-          {step === 2 && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <FL label="Numër Kredie" required error={E.loanNumber}>
-                  <input value={loanNumber} onChange={(e) => setLoanNumber(e.target.value)} onBlur={() => touch("loanNumber")}
-                    className={inp(!!E.loanNumber)} placeholder="p.sh. PCB-00412" />
-                </FL>
-                <FL label="Institucion Financiar" required error={E.institutionId}>
-                  <div onBlur={() => touch("institutionId")}>
-                    <Select value={institutionId} onChange={(v) => { setInstitutionId(v); touch("institutionId"); }}
-                      placeholder="Zgjidhni institucionin…"
-                      options={institutions.map((i: any) => ({ value: i.id, label: i.name }))} />
-                  </div>
-                </FL>
-                <FL label="Gjendja Debitore Aktuale (EUR)" required error={E.currentBalance}>
-                  <input type="number" min="0" step="0.01" value={currentBalance}
-                    onChange={(e) => setCurrentBalance(e.target.value)} onBlur={() => touch("currentBalance")}
-                    className={inp(!!E.currentBalance)} placeholder="0.00" />
-                </FL>
-                <FL label="Ditë Vonesë" required error={E.daysPastDue}>
-                  <input type="number" min="0" value={daysPastDue}
-                    onChange={(e) => setDaysPastDue(e.target.value)} onBlur={() => touch("daysPastDue")}
-                    className={inp(!!E.daysPastDue)} placeholder="p.sh. 90" />
-                </FL>
-                <FL label="Data e Disbursimit" required error={E.disbursementDate}>
-                  <div onBlur={() => touch("disbursementDate")}>
-                    <DatePicker value={disbursementDate} onChange={(v) => { setDisbursementDate(v); touch("disbursementDate"); }} placeholder="Zgjidhni datën" />
-                  </div>
-                  {E.disbursementDate && <p className="mt-1 text-[11px] text-red-500">↑ {E.disbursementDate}</p>}
-                </FL>
-                <FL label="Data e Maturimit" error={null}>
-                  <DatePicker value={maturityDate} onChange={setMaturityDate} placeholder="Zgjidhni datën" />
-                </FL>
-                <FL label="Shuma Origjinale e Kredisë (EUR)" error={null}>
-                  <input type="number" min="0" step="0.01" value={originalAmount}
-                    onChange={(e) => setOriginalAmount(e.target.value)} className={inp(false)} placeholder="0.00" />
-                </FL>
-                <FL label="Shuma e Disbursuar (EUR)" error={null}>
-                  <input type="number" min="0" step="0.01" value={disbursedAmount}
-                    onChange={(e) => setDisbursedAmount(e.target.value)} className={inp(false)} placeholder="0.00" />
-                </FL>
-                <FL label="Norma e Interesit (%)" error={null}>
-                  <input type="number" min="0" step="0.01" value={interestRate}
-                    onChange={(e) => setInterestRate(e.target.value)} className={inp(false)} placeholder="p.sh. 12.5" />
-                </FL>
-                <FL label="Klasifikimi NPL" error={null}>
-                  <Select value={nplClass} onChange={setNplClass} placeholder="Asnjë" dropUp
-                    options={[
-                      { value: "PERFORMING",  label: "Në Performancë" },
-                      { value: "WATCH",       label: "Nën Vëzhgim" },
-                      { value: "SUBSTANDARD", label: "Nënstandard" },
-                      { value: "DOUBTFUL",    label: "Dyshimtë" },
-                      { value: "LOSS",        label: "Humbje" },
-                    ]} />
-                </FL>
-              </div>
-              <FL label="Lloji i Produktit" error={null}>
-                <input value={productType} onChange={(e) => setProductType(e.target.value)}
-                  className={inp(false)} placeholder="p.sh. Kredi Konsumatore, Hipotekë, NVM…" />
-              </FL>
-            </>
-          )}
-
-          {/* ── Step 3: Assignment ── */}
-          {step === 3 && (
-            <div className="grid grid-cols-2 gap-3">
-              <FL label="Zyra" error={null}>
-                <Select value={officeId} onChange={(v) => { setOfficeId(v); setOfficerId(""); }}
-                  placeholder="Pa zyrë specifike"
-                  options={offices.map((o: any) => ({ value: o.id, label: o.name }))} />
-              </FL>
-              <FL label="Oficer i Caktuar" error={null}>
-                <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim"
-                  options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))} />
-              </FL>
-              <div className="col-span-2">
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
-                  Faza Fillestare e Arkëtimit <span className="text-red-500 font-bold">*</span>
-                </label>
-                <div className="grid grid-cols-6 gap-2">
-                  {["D1","D2","D3","D4","LEGAL","WRITTEN_OFF"].map((s) => (
-                    <button key={s} onClick={() => setCollectionStage(s)}
-                      className={`py-2 rounded-lg text-[12px] font-semibold border-2 transition-colors ${collectionStage === s ? "border-brand-600 bg-brand-50 text-brand-700" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
-                      {formatEnum(s)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="col-span-2 bg-gray-50 rounded-xl p-4 space-y-2 text-[12.5px]">
-                <div className="font-semibold text-gray-700 mb-2">Përmbledhja e Dosjes</div>
-                <div className="flex justify-between"><span className="text-gray-400">Debitori</span><span className="font-medium">{firstName} {lastName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Numër Personal</span><span className="font-mono">{personalId}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Kredia</span><span className="font-mono">{loanNumber}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Gjendja Debitore</span><span className="font-bold text-gray-900">EUR {parseFloat(currentBalance || "0").toLocaleString()}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ditë Vonesë</span><span className="text-amber-700 font-semibold">{daysPastDue} ditë</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Faza</span><span className="font-semibold text-brand-700">{formatEnum(collectionStage)}</span></div>
-              </div>
+            </div>
+            <div className="flex items-start pt-6">
+              <button onClick={searchPerson} disabled={searching}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap">
+                {searching ? "Duke kërkuar…" : "Kërko"}
+              </button>
+            </div>
+          </div>
+          {personResult && (
+            <div className={`p-3 rounded-lg text-[12px] border ${personResult.person ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-gray-50 border-gray-200 text-gray-500"}`}>
+              {personResult.person
+                ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese.`
+                : "Nuk u gjet asnjë rekord — plotësoni të dhënat e klientit."}
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Row 1 */}
+            <FL label="Numri i Kredisë" required error={E.loanNumber}>
+              <input value={loanNumber} onChange={(e) => setLoanNumber(e.target.value)} onBlur={() => touch("loanNumber")}
+                className={inp(!!E.loanNumber)} placeholder="p.sh. PCB-00412" />
+            </FL>
+            <FL label="Emri i Klientit" required error={E.firstName || E.lastName}>
+              <div className="flex gap-2">
+                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} onBlur={() => touch("firstName")}
+                  className={inp(!!E.firstName)} placeholder="Emri" />
+                <input value={lastName} onChange={(e) => setLastName(e.target.value)} onBlur={() => touch("lastName")}
+                  className={inp(!!E.lastName)} placeholder="Mbiemri" />
+              </div>
+            </FL>
+
+            {/* Row 2 */}
+            <FL label="Adresa në Kontratë" error={null}>
+              <input value={address} onChange={(e) => setAddress(e.target.value)}
+                className={inp(false)} placeholder="Rruga, ndërtesa, qyteti…" />
+            </FL>
+            <FL label="Numri i Telefonit" error={null}>
+              <input value={phone1} onChange={(e) => setPhone1(e.target.value)}
+                className={inp(false)} placeholder="+383 44 000 000" />
+            </FL>
+
+            {/* Row 3 */}
+            <FL label="Shuma e Financuar (EUR)" required error={E.originalAmount}>
+              <input type="number" min="0" step="0.01" value={originalAmount}
+                onChange={(e) => setOriginalAmount(e.target.value)} onBlur={() => touch("originalAmount")}
+                className={inp(!!E.originalAmount)} placeholder="0.00" />
+            </FL>
+            <FL label="Borgji Aktual (EUR)" required error={E.currentBalance}>
+              <input type="number" min="0" step="0.01" value={currentBalance}
+                onChange={(e) => setCurrentBalance(e.target.value)} onBlur={() => touch("currentBalance")}
+                className={inp(!!E.currentBalance)} placeholder="0.00" />
+            </FL>
+
+            {/* Row 4 */}
+            <FL label="Qyteti" error={null}>
+              <Select value={city} onChange={setCity} placeholder="Zgjidhni qytetin…"
+                options={KOSOVO_CITIES.map((c) => ({ value: c, label: c }))} />
+            </FL>
+            <FL label="Kategoria sipas Procedurës" error={null}>
+              <Select value={collectionStage} onChange={setCollectionStage}
+                options={[
+                  { value: "D1", label: "D1" },
+                  { value: "D2", label: "D2" },
+                  { value: "D3", label: "D3" },
+                  { value: "D4", label: "D4" },
+                  { value: "LEGAL", label: "Juridike" },
+                  { value: "WRITTEN_OFF", label: "I Shlyer" },
+                ]} />
+            </FL>
+
+            {/* Row 5 */}
+            <FL label="Zyrtari Primar" error={null}>
+              <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim"
+                options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))} />
+            </FL>
+            <FL label="Zyrtari Sekondar" error={null}>
+              <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId} placeholder="Pa caktim"
+                options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))} />
+            </FL>
+
+            {/* Row 6 */}
+            <FL label="Institucioni" required error={E.institutionId}>
+              <div onBlur={() => touch("institutionId")}>
+                <Select value={institutionId} onChange={(v) => { setInstitutionId(v); touch("institutionId"); }}
+                  placeholder="Zgjidhni institucionin…"
+                  options={institutions.map((i: any) => ({ value: i.id, label: i.name }))} />
+              </div>
+            </FL>
+            <FL label="Kategoria sipas Performancës" error={null}>
+              <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori"
+                options={[
+                  { value: "PERFORMING",  label: "Performues" },
+                  { value: "WATCH",       label: "Nën Vëzhgim" },
+                  { value: "SUBSTANDARD", label: "Nënstandard" },
+                  { value: "DOUBTFUL",    label: "I Dyshimtë" },
+                  { value: "LOSS",        label: "Humbje" },
+                ]} />
+            </FL>
+
+            {/* Row 7 */}
+            <FL label="Data e Regjistrimit" error={null}>
+              <DatePicker value={registrationDate} onChange={setRegistrationDate} placeholder="Zgjidhni datën" />
+            </FL>
+          </div>
         </div>
 
         {/* Footer */}
         <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex items-center justify-between shrink-0">
-          <button onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}
-            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
-            {step > 1 ? "← Kthehu" : "Anulo"}
+          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
+            Anulo
           </button>
-          {step < 3 ? (
-            <button onClick={tryNext}
-              className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 transition-colors">
-              Vazhdo →
-            </button>
-          ) : (
-            <button onClick={submit} disabled={loading}
-              className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-              {loading ? "Duke krijuar…" : "Krijo Dosje"}
-            </button>
-          )}
+          <button onClick={submit} disabled={loading}
+            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke regjistruar…" : "Regjistro Klientin"}
+          </button>
         </div>
       </div>
     </div>
@@ -652,7 +555,7 @@ function CasesPageInner() {
           {can("case:create") && (
             <button onClick={() => setShowCreate(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto">
-              <Plus size={14} /> Dosje e Re
+              <Plus size={14} /> Klient i Ri
             </button>
           )}
         </div>

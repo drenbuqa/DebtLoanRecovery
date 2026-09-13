@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import Topbar from "@/components/layout/Topbar";
 import { useFormErrors } from "@/lib/form";
 import { Card } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
-import { legal as legalApi, cases as casesApi } from "@/lib/api";
+import { legal as legalApi, cases as casesApi, documents as docsApi } from "@/lib/api";
 import { RefreshCw, Scale, Plus, X, Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
@@ -51,9 +51,13 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [caseAttempted, setCaseAttempted] = useState(false);
   const [court, setCourt] = useState("");
+  const [legalCaseNumber, setLegalCaseNumber] = useState("");
   const [filingDate, setFilingDate] = useState("");
+  const [initiationDate, setInitiationDate] = useState("");
   const [nextHearing, setNextHearing] = useState("");
   const [notes, setNotes] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const { touch, touchAll, fieldError } = useFormErrors();
@@ -77,13 +81,18 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
     setSaving(true); setSubmitError("");
     try {
-      await legalApi.create({
+      const lp: any = await legalApi.create({
         caseId: selectedCase.id,
         court: court.trim() || undefined,
+        legalCaseNumber: legalCaseNumber.trim() || undefined,
         filingDate,
+        initiationDate: initiationDate || undefined,
         nextHearingDate: nextHearing || undefined,
         notes: notes.trim() || undefined,
       });
+      if (docFile && lp?.caseId) {
+        try { await docsApi.upload(lp.caseId, docFile, "LEGAL"); } catch {}
+      }
       onCreated();
     } catch (e: any) {
       setSubmitError(e.message);
@@ -96,8 +105,8 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col">
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-[15px] font-semibold text-gray-900">Procedim i Ri Gjyqësor</h2>
             <p className="text-[12px] text-gray-400 mt-0.5">Inicioni një procedim gjyqësor ndaj një debitori</p>
@@ -105,7 +114,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
         </div>
 
-        <div className="p-4 md:p-6 space-y-4">
+        <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Case search */}
@@ -144,29 +153,46 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
             )}
           </LF>
 
-          <LF label="Gjykata / Juridiksioni">
-            <input value={court} onChange={(e) => setCourt(e.target.value)}
-              placeholder="p.sh. Gjykata Themelore e Prishtinës"
-              className={inp(false)} />
-          </LF>
+          <div className="grid grid-cols-2 gap-3">
+            <LF label="Numri i Lëndës">
+              <input value={legalCaseNumber} onChange={(e) => setLegalCaseNumber(e.target.value)}
+                placeholder="p.sh. C.nr.123/2026" className={inp(false)} />
+            </LF>
+            <LF label="Gjykata / Juridiksioni">
+              <input value={court} onChange={(e) => setCourt(e.target.value)}
+                placeholder="p.sh. Gjykata Themelore e Prishtinës" className={inp(false)} />
+            </LF>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <LF label="Data e Inicimit">
+              <DatePicker value={initiationDate} onChange={setInitiationDate} placeholder="Zgjidhni datën" />
+            </LF>
             <LF label="Data e Depozitimit" required error={filingDateError}>
               <DatePicker value={filingDate} onChange={(v) => { setFilingDate(v); touch("filingDate"); }} placeholder="Zgjidhni datën" />
             </LF>
-            <LF label="Seanca Tjetër">
-              <DatePicker value={nextHearing} onChange={setNextHearing} placeholder="Zgjidhni datën" />
-            </LF>
           </div>
+
+          <LF label="Seanca Tjetër">
+            <DatePicker value={nextHearing} onChange={setNextHearing} placeholder="Zgjidhni datën" />
+          </LF>
 
           <LF label="Shënime">
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
               placeholder="Shënime mbi dosjen, të dhëna të avokatit, shuma e kërkesës…"
               className={`${inp(false)} resize-none`} />
           </LF>
+
+          <LF label="Ngarko Dokument (PDF / Word)">
+            <input ref={fileRef} type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+              className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+            {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
+          </LF>
         </div>
 
-        <div className="px-6 pb-5 flex gap-3 justify-end">
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
           <button onClick={submit} disabled={saving}
             className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
@@ -364,7 +390,10 @@ export default function LegalPage() {
                     const dotCls = STATUS_DOT[lp.status] ?? "bg-gray-300";
                     return (
                       <Tr key={lp.id} className="group" onClick={() => window.location.href = `/cases/${lp.case?.id}?tab=Legal`}>
-                        <Td><span className="font-mono text-[12px] text-brand-600">{lp.case?.caseReference ?? "—"}</span></Td>
+                        <Td>
+                          <span className="font-mono text-[12px] text-brand-600">{lp.case?.caseReference ?? "—"}</span>
+                          {lp.legalCaseNumber && <div className="text-[11px] text-gray-400 mt-0.5">{lp.legalCaseNumber}</div>}
+                        </Td>
                         <Td>
                           <span className="font-medium text-gray-900">
                             {lp.case?.loan?.borrower

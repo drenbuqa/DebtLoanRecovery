@@ -31,6 +31,7 @@ model User {
   activities               Activity[]
   caseStatusChanges        CaseStatusHistory[]
   assignedCases            Case[]               @relation("AssignedOfficer")
+  secondaryCases           Case[]               @relation("SecondaryOfficer")
   documents                Document[]
   payments                 Payment[]
   paymentsVoided           Payment[]            @relation("PaymentVoidedBy")
@@ -189,22 +190,25 @@ model LoanBalanceHistory {
 // ─────────────────────────────────────────────
 
 model Case {
-  id                String          @id @default(uuid()) @db.Uuid
-  caseReference     String          @unique @map("case_reference") @db.VarChar(30)
-  loanId            String          @unique @map("loan_id") @db.Uuid
-  officeId          String?         @map("office_id") @db.Uuid
-  assignedOfficerId String?         @map("assigned_officer_id") @db.Uuid
-  status            CaseStatus      @default(ACTIVE)
-  collectionStage   CollectionStage @default(D1) @map("collection_stage")
-  priorityScore     Int             @default(0) @map("priority_score")
-  nextActionDate    DateTime?       @map("next_action_date") @db.Timestamptz(6)
-  nextActionNote    String?         @map("next_action_note") @db.VarChar(500)
-  closedAt          DateTime?       @map("closed_at") @db.Timestamptz(6)
-  deletedAt         DateTime?       @map("deleted_at") @db.Timestamptz(6)
-  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String          @id @default(uuid()) @db.Uuid
+  caseReference       String          @unique @map("case_reference") @db.VarChar(30)
+  loanId              String          @unique @map("loan_id") @db.Uuid
+  officeId            String?         @map("office_id") @db.Uuid
+  assignedOfficerId   String?         @map("assigned_officer_id") @db.Uuid
+  secondaryOfficerId  String?         @map("secondary_officer_id") @db.Uuid
+  registrationDate    DateTime?       @map("registration_date") @db.Date
+  status              CaseStatus      @default(ACTIVE)
+  collectionStage     CollectionStage @default(D1) @map("collection_stage")
+  priorityScore       Int             @default(0) @map("priority_score")
+  nextActionDate      DateTime?       @map("next_action_date") @db.Timestamptz(6)
+  nextActionNote      String?         @map("next_action_note") @db.VarChar(500)
+  closedAt            DateTime?       @map("closed_at") @db.Timestamptz(6)
+  deletedAt           DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   assignedOfficer  User?               @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+  secondaryOfficer User?               @relation("SecondaryOfficer", fields: [secondaryOfficerId], references: [id])
   loan             Loan                @relation(fields: [loanId], references: [id])
   office           Office?             @relation(fields: [officeId], references: [id])
   activities       Activity[]
@@ -259,6 +263,9 @@ model Activity {
   promiseCurrency String?          @map("promise_currency") @db.VarChar(3)
   occurredAt      DateTime         @map("occurred_at") @db.Timestamptz(6)
   nextActionDate  DateTime?        @map("next_action_date") @db.Timestamptz(6)
+  updatedAddress  String?          @map("updated_address") @db.VarChar(500)
+  updatedPhone    String?          @map("updated_phone") @db.VarChar(50)
+  caseCategory    String?          @map("case_category") @db.VarChar(100)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
 
   case    Case          @relation(fields: [caseId], references: [id])
@@ -382,19 +389,21 @@ model AgreementInstallment {
 // ─────────────────────────────────────────────
 
 model LegalProceeding {
-  id              String                @id @default(uuid()) @db.Uuid
-  caseId          String                @map("case_id") @db.Uuid
-  createdById     String?               @map("created_by_id") @db.Uuid
-  proceedingRef   String                @unique @map("proceeding_ref") @db.VarChar(30)
-  status          LegalProceedingStatus @default(INITIATED)
-  court           String?               @db.VarChar(150)
-  filingDate      DateTime              @map("filing_date") @db.Date
-  nextHearingDate DateTime?             @map("next_hearing_date") @db.Date
-  judgmentDate    DateTime?             @map("judgment_date") @db.Date
-  judgmentAmount  Decimal?              @map("judgment_amount") @db.Decimal(18, 2)
-  notes           String?
-  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String                @id @default(uuid()) @db.Uuid
+  caseId           String                @map("case_id") @db.Uuid
+  createdById      String?               @map("created_by_id") @db.Uuid
+  proceedingRef    String                @unique @map("proceeding_ref") @db.VarChar(30)
+  legalCaseNumber  String?               @map("legal_case_number") @db.VarChar(100)
+  status           LegalProceedingStatus @default(INITIATED)
+  court            String?               @db.VarChar(150)
+  filingDate       DateTime              @map("filing_date") @db.Date
+  initiationDate   DateTime?             @map("initiation_date") @db.Date
+  nextHearingDate  DateTime?             @map("next_hearing_date") @db.Date
+  judgmentDate     DateTime?             @map("judgment_date") @db.Date
+  judgmentAmount   Decimal?              @map("judgment_amount") @db.Decimal(18, 2)
+  notes            String?
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   case            Case            @relation(fields: [caseId], references: [id])
   createdBy       User?           @relation(fields: [createdById], references: [id])
@@ -570,6 +579,13 @@ enum ActivityType {
   LEGAL_ACTION
   NOTE
   FIELD_VISIT
+  CALL_BORROWER
+  CALL_GUARANTOR
+  VISIT_BORROWER
+  VISIT_GUARANTOR
+  WARNING_LETTER
+  MEETING_BORROWER
+  MEETING_GUARANTOR
 }
 
 enum ActivityOutcome {

@@ -75,38 +75,63 @@ const TABS = ["Pasqyrë", "Financiar", "Pagesa", "Marrëveshjet", "Juridike", "D
 
 // ── Activity type options ─────────────────────────────────────
 const ACT_TYPE_OPTIONS = [
-  { value: "CALL",             label: "Kontakt" },
-  { value: "VISIT",            label: "Vizitë" },
-  { value: "PROMISE_TO_PAY",   label: "Premtim Pagese" },
-  { value: "PAYMENT_RECEIVED", label: "Pagesë e Regjistruar" },
-  { value: "NOTE",             label: "Shënim" },
+  { value: "CALL_BORROWER",    label: "Telefono Huamarresin" },
+  { value: "CALL_GUARANTOR",   label: "Telefono Garantorin" },
+  { value: "VISIT_BORROWER",   label: "Vizito Huamarresin" },
+  { value: "VISIT_GUARANTOR",  label: "Vizito Garantorin" },
+  { value: "SMS",              label: "Dërgo SMS" },
+  { value: "WARNING_LETTER",   label: "Dërgo Letërvërejtje" },
+  { value: "MEETING_BORROWER", label: "Takim me Huamarresin" },
+  { value: "MEETING_GUARANTOR",label: "Takim me Garantorin" },
+  { value: "PROMISE_TO_PAY",   label: "Zotim për Pagesë" },
+  { value: "NOTE",             label: "Aktivitete Tjera" },
 ];
 
-// ── Outcome options — only for types where outcome is meaningful ──
-const OUTCOME_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  CALL: [
-    { value: "NO_ANSWER",        label: "Nuk Është Përgjigjur" },
-    { value: "CONTACTED",        label: "Kontaktuar — Pa Premtim" },
-    { value: "PROMISE_RECEIVED", label: "Kontaktuar — Me Premtim" },
-    { value: "REFUSED",          label: "Kontaktuar — Ka Refuzuar" },
-    { value: "DISPUTE",          label: "Kontaktuar — Ka Kundërshtuar" },
-    { value: "DECEASED",         label: "I/E Ndjerë" },
-  ],
-  VISIT: [
-    { value: "NO_ANSWER",        label: "Nuk Ishte në Shtëpi" },
-    { value: "CONTACTED",        label: "Kontaktuar — Pa Premtim" },
-    { value: "PROMISE_RECEIVED", label: "Kontaktuar — Me Premtim" },
-    { value: "REFUSED",          label: "Kontaktuar — Ka Refuzuar" },
-    { value: "DISPUTE",          label: "Kontaktuar — Ka Kundërshtuar" },
-  ],
-  PAYMENT_RECEIVED: [
-    { value: "FULL_PAYMENT",    label: "Pagesë e Plotë" },
-    { value: "PARTIAL_PAYMENT", label: "Pagesë e Pjesshme" },
-  ],
+const CASE_CATEGORY_OPTIONS = [
+  { value: "no_contact_yet",    label: "Nuk kemi arritur të merremi me rastin" },
+  { value: "unreachable",       label: "I Pakontaktuar / Pagjetur" },
+  { value: "no_agreement",      label: "Biseduar me kredimarresin — nuk ka marrëveshje" },
+  { value: "with_agreement",    label: "Rasti me Marrëveshje" },
+  { value: "failed_agreement",  label: "Me marrëveshje të dështuar" },
+  { value: "payment_commitment",label: "Rasti me zotim për pagesë" },
+  { value: "disputing_debt",    label: "Rasti konteston borxhin" },
+  { value: "refuses_to_pay",    label: "Rasti nuk pranon të paguajë" },
+  { value: "other",             label: "Të ndryshme" },
+];
+
+const CALL_OUTCOMES = [
+  { value: "NO_ANSWER",        label: "Nuk Është Përgjigjur" },
+  { value: "CONTACTED",        label: "Kontaktuar — Pa Premtim" },
+  { value: "PROMISE_RECEIVED", label: "Kontaktuar — Me Premtim" },
+  { value: "REFUSED",          label: "Ka Refuzuar" },
+  { value: "DISPUTE",          label: "Ka Kundërshtuar Borxhin" },
+  { value: "DECEASED",         label: "I/E Ndjerë" },
+];
+const VISIT_OUTCOMES = [
+  { value: "NO_ANSWER",        label: "Nuk Ishte në Shtëpi" },
+  { value: "CONTACTED",        label: "Kontaktuar — Pa Premtim" },
+  { value: "PROMISE_RECEIVED", label: "Kontaktuar — Me Premtim" },
+  { value: "REFUSED",          label: "Ka Refuzuar" },
+  { value: "DISPUTE",          label: "Ka Kundërshtuar Borxhin" },
+];
+const MEETING_OUTCOMES = [
+  { value: "CONTACTED",        label: "Takim i suksesshëm — Pa Premtim" },
+  { value: "PROMISE_RECEIVED", label: "Takim i suksesshëm — Me Premtim" },
+  { value: "REFUSED",          label: "Ka Refuzuar" },
+  { value: "DISPUTE",          label: "Ka Kundërshtuar Borxhin" },
+];
+
+const OUTCOME_MAP: Record<string, { value: string; label: string }[]> = {
+  CALL_BORROWER: CALL_OUTCOMES,
+  CALL_GUARANTOR: CALL_OUTCOMES,
+  VISIT_BORROWER: VISIT_OUTCOMES,
+  VISIT_GUARANTOR: VISIT_OUTCOMES,
+  MEETING_BORROWER: MEETING_OUTCOMES,
+  MEETING_GUARANTOR: MEETING_OUTCOMES,
 };
 
-const PROMISE_TYPES = new Set(["PROMISE_TO_PAY", "CALL", "VISIT"]);
-const FOLLOWUP_TYPES = new Set(["CALL", "VISIT"]);
+const PROMISE_TYPES = new Set(["PROMISE_TO_PAY", "CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
+const FOLLOWUP_TYPES = new Set(["CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
 
 // ── Modal: Log Activity ──────────────────────────────────────
 function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onClose: () => void; onSuccess: () => void }) {
@@ -118,6 +143,11 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   const [promiseAmount, setPromiseAmount] = useState("");
   const [promiseDate, setPromiseDate] = useState("");
   const [nextDate, setNextDate] = useState("");
+  const [updatedAddress, setUpdatedAddress] = useState("");
+  const [updatedPhone, setUpdatedPhone] = useState("");
+  const [caseCategory, setCaseCategory] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -129,13 +159,10 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
     setNextDate("");
   }
 
-  const outcomeOptions = OUTCOME_OPTIONS[type] ?? [];
+  const outcomeOptions = OUTCOME_MAP[type] ?? [];
   const showPromise = PROMISE_TYPES.has(type) &&
     (type === "PROMISE_TO_PAY" || outcome === "PROMISE_RECEIVED");
   const showFollowup = FOLLOWUP_TYPES.has(type) && !showPromise;
-
-  // Map VISIT to FIELD_VISIT is not needed; VISIT covers both
-  const backendType = type;
 
   async function submit() {
     if (!type) { setError("Zgjidhni llojin e aktivitetit"); return; }
@@ -144,43 +171,56 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
     setLoading(true); setError("");
     try {
       await activitiesApi.log(caseId, {
-        activityType: backendType,
+        activityType: type,
         outcome: outcome || undefined,
         notes,
         occurredAt: activityDate || undefined,
         promiseAmount: promiseAmount ? parseFloat(promiseAmount) : undefined,
         nextActionDate: (showPromise && promiseDate) ? promiseDate : (showFollowup && nextDate) ? nextDate : undefined,
+        updatedAddress: updatedAddress.trim() || undefined,
+        updatedPhone: updatedPhone.trim() || undefined,
+        caseCategory: caseCategory || undefined,
       });
+      // Upload document to case if attached
+      if (docFile) {
+        try {
+          const { documents: docsApi2 } = await import("@/lib/api");
+          await docsApi2.upload(caseId, docFile, "CORRESPONDENCE");
+        } catch {}
+      }
       onSuccess(); onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
 
+  const lbl = "text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block";
+  const tinp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
 
           {/* Type + Date row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Aktivitetit <span className="text-red-500">*</span></label>
+              <label className={lbl}>Lloji i Aktivitetit <span className="text-red-500">*</span></label>
               <Select value={type} onChange={handleTypeChange} placeholder="Zgjidhni llojin…" options={ACT_TYPE_OPTIONS} />
             </div>
             <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+              <label className={lbl}>Data</label>
               <DatePicker value={activityDate} onChange={setActivityDate} placeholder="Sot" />
             </div>
           </div>
 
-          {/* Outcome — only for call, visit, payment */}
+          {/* Outcome */}
           {outcomeOptions.length > 0 && (
             <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Rezultati <span className="text-red-500">*</span></label>
+              <label className={lbl}>Rezultati <span className="text-red-500">*</span></label>
               <Select value={outcome} onChange={setOutcome} placeholder="Zgjidhni rezultatin…" options={outcomeOptions} />
             </div>
           )}
@@ -189,13 +229,12 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
           {showPromise && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma e Premtimit (€)</label>
+                <label className={lbl}>Shuma e Premtimit (€)</label>
                 <input type="number" min="0" step="0.01" value={promiseAmount}
-                  onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00"
-                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+                  onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00" className={tinp} />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Premtimit</label>
+                <label className={lbl}>Data e Premtimit</label>
                 <DatePicker value={promiseDate} onChange={setPromiseDate} placeholder="Zgjidhni datën" />
               </div>
             </div>
@@ -204,20 +243,49 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
           {/* Next follow-up */}
           {showFollowup && (
             <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Ndjekja e Radhës</label>
+              <label className={lbl}>Ndjekja e Radhës</label>
               <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" />
             </div>
           )}
 
+          {/* Case category */}
+          <div>
+            <label className={lbl}>Kategoria e Rastit</label>
+            <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
+          </div>
+
           {/* Notes */}
           <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime <span className="text-red-500">*</span></label>
+            <label className={lbl}>Shënime <span className="text-red-500">*</span></label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
               placeholder="Çfarë ndodhi?"
               className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
           </div>
+
+          {/* Updated address & phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Adresa e Re e Siguruar</label>
+              <input value={updatedAddress} onChange={(e) => setUpdatedAddress(e.target.value)}
+                placeholder="Adresa e re e verifikuar…" className={tinp} />
+            </div>
+            <div>
+              <label className={lbl}>Numri i Telefonit i Siguruar</label>
+              <input value={updatedPhone} onChange={(e) => setUpdatedPhone(e.target.value)}
+                placeholder="+383 44 …" className={tinp} />
+            </div>
+          </div>
+
+          {/* Document upload */}
+          <div>
+            <label className={lbl}>Ngarko Dokument (PDF / Word)</label>
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+              className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+            {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
+          </div>
         </div>
-        <div className="px-6 pb-5 pt-1 flex gap-3 justify-end">
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
           <button onClick={submit} disabled={loading}
             className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
@@ -232,7 +300,6 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
 // ── Modal: Add Payment ───────────────────────────────────────
 function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClose: () => void; onSuccess: () => void }) {
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("CASH");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -242,7 +309,7 @@ function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClo
     if (!amount || parseFloat(amount) <= 0) { setError("Vendosni një shumë të vlefshme"); return; }
     setLoading(true); setError("");
     try {
-      await paymentsApi.register({ caseId, amount: parseFloat(amount), paymentMethod: method, paymentDate: date, notes });
+      await paymentsApi.register({ caseId, amount: parseFloat(amount), paymentMethod: "BANK_TRANSFER", paymentDate: date, notes });
       onSuccess(); onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
@@ -261,21 +328,9 @@ function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClo
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" autoFocus
               className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Metoda</label>
-              <Select value={method} onChange={setMethod} options={[
-                { value: "CASH", label: "Kesh" },
-                { value: "BANK_TRANSFER", label: "Transfer Bankar" },
-                { value: "CHECK", label: "Çek" },
-                { value: "ONLINE", label: "Online" },
-                { value: "OTHER", label: "Tjetër" },
-              ]} />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
-              <DatePicker value={date} onChange={setDate} />
-            </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+            <DatePicker value={date} onChange={setDate} />
           </div>
           <div>
             <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
@@ -496,6 +551,7 @@ export default function CaseDetailPage() {
     setEditOffices(o as any[]);
     setEditForm({
       assignedOfficerId: caseData?.assignedOfficer?.id ?? "",
+      secondaryOfficerId: caseData?.secondaryOfficer?.id ?? "",
       officeId: caseData?.officeId ?? "",
       currentOutstandingBalance: caseData?.loan?.currentOutstandingBalance ?? "",
       maturityDate: caseData?.loan?.maturityDate ? caseData.loan.maturityDate.slice(0, 10) : "",
@@ -512,6 +568,7 @@ export default function CaseDetailPage() {
     try {
       await casesApi.update(caseId, {
         assignedOfficerId: editForm.assignedOfficerId || null,
+        secondaryOfficerId: editForm.secondaryOfficerId || null,
         officeId: editForm.officeId || null,
         currentOutstandingBalance: editForm.currentOutstandingBalance !== "" ? parseFloat(editForm.currentOutstandingBalance) : undefined,
         maturityDate: editForm.maturityDate || null,
@@ -594,7 +651,7 @@ export default function CaseDetailPage() {
       variant: "danger",
       onConfirm: async () => {
         await activitiesApi.delete(actId);
-        setActivities((prev) => prev.filter((a: any) => a.id !== actId));
+        await loadCase();
       },
     });
   }
@@ -743,8 +800,14 @@ export default function CaseDetailPage() {
               {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Oficer i Caktuar</label>
+                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Primar</label>
                   <Select value={editForm.assignedOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, assignedOfficerId: v }))}
+                    placeholder="Pa caktuar"
+                    options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Sekondar</label>
+                  <Select value={editForm.secondaryOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, secondaryOfficerId: v }))}
                     placeholder="Pa caktuar"
                     options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
                 </div>
@@ -1182,8 +1245,10 @@ export default function CaseDetailPage() {
                     </div>
                     {p.court && <span className="text-[12px] text-gray-400">{p.court}</span>}
                   </div>
-                  <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                  <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     {[
+                      { label: "Numri i Lëndës", val: p.legalCaseNumber ?? "—" },
+                      { label: "Data e Inicimit", val: p.initiationDate ? new Date(p.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
                       { label: "Data e Depozitimit", val: p.filingDate ? new Date(p.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
                       { label: "Seanca Tjetër", val: p.nextHearingDate ? new Date(p.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
                       { label: "Data e Vendimit", val: p.judgmentDate ? new Date(p.judgmentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },

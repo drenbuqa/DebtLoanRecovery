@@ -25,12 +25,15 @@ const CASE_LIST_SELECT = {
     },
   },
   assignedOfficer: { select: { id: true, fullName: true } },
+  secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
   _count: { select: { activities: true, payments: true } },
 };
 
 const CASE_DETAIL_EXTRA = {
   nextActionNote: true,
+  secondaryOfficer: { select: { id: true, fullName: true } },
+  registrationDate: true,
   loan: {
     select: {
       id: true,
@@ -107,6 +110,7 @@ const CASE_DETAIL_EXTRA = {
     take: 5,
     select: {
       id: true, proceedingRef: true, status: true, court: true,
+      legalCaseNumber: true, initiationDate: true,
       filingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, notes: true,
     },
   },
@@ -208,6 +212,7 @@ export class CasesService {
 
   async updateCase(id: string, dto: {
     assignedOfficerId?: string;
+    secondaryOfficerId?: string;
     officeId?: string;
     currentOutstandingBalance?: number;
     maturityDate?: string;
@@ -236,6 +241,7 @@ export class CasesService {
 
     const caseData: any = {};
     if (dto.assignedOfficerId !== undefined) caseData.assignedOfficerId = dto.assignedOfficerId || null;
+    if (dto.secondaryOfficerId !== undefined) caseData.secondaryOfficerId = dto.secondaryOfficerId || null;
     if (dto.officeId !== undefined) caseData.officeId = dto.officeId || null;
 
     const borrowerData: any = {};
@@ -322,14 +328,16 @@ export class CasesService {
     currency?: string;
     interestRate?: number;
     productType?: string;
-    disbursementDate: string;
+    disbursementDate?: string;
     maturityDate?: string;
-    daysPastDue: number;
+    daysPastDue?: number;
     nplClassification?: string;
     // Case
     officeId?: string;
     assignedOfficerId?: string;
+    secondaryOfficerId?: string;
     collectionStage?: string;
+    registrationDate?: string;
   }, createdById: string) {
     // Check loan number not already used
     const existing = await this.prisma.loan.findUnique({ where: { loanNumber: dto.loanNumber } });
@@ -380,12 +388,12 @@ export class CasesService {
           institutionId: dto.institutionId,
           borrowerId: person.id,
           originalLoanAmount: dto.originalLoanAmount,
-          disbursedAmount: dto.disbursedAmount,
+          disbursedAmount: dto.disbursedAmount ?? dto.originalLoanAmount,
           currentOutstandingBalance: dto.currentOutstandingBalance,
           currency: dto.currency ?? 'EUR',
           interestRate: dto.interestRate,
           productType: dto.productType,
-          disbursementDate: new Date(dto.disbursementDate),
+          disbursementDate: dto.disbursementDate ? new Date(dto.disbursementDate) : new Date(),
           maturityDate: dto.maturityDate ? new Date(dto.maturityDate) : undefined,
           daysPastDue: dto.daysPastDue ?? 0,
           nplClassification: dto.nplClassification as any,
@@ -398,6 +406,8 @@ export class CasesService {
           loanId: loan.id,
           officeId: dto.officeId,
           assignedOfficerId: dto.assignedOfficerId,
+          secondaryOfficerId: dto.secondaryOfficerId,
+          registrationDate: dto.registrationDate ? new Date(dto.registrationDate) : undefined,
           collectionStage: (dto.collectionStage as CollectionStage) ?? CollectionStage.D1,
           priorityScore: Math.min(dto.daysPastDue ?? 0, 999),
         },

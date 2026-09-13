@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const LP_SELECT = {
-  id: true, caseId: true, proceedingRef: true, court: true, filingDate: true,
-  nextHearingDate: true, judgmentDate: true, judgmentAmount: true, status: true,
+  id: true, caseId: true, proceedingRef: true, court: true,
+  legalCaseNumber: true, initiationDate: true,
+  filingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, status: true,
   notes: true, createdAt: true,
   case: {
     select: {
@@ -56,7 +57,9 @@ export class LegalService {
   async create(dto: {
     caseId: string;
     court?: string;
+    legalCaseNumber?: string;
     filingDate: string;
+    initiationDate?: string;
     nextHearingDate?: string;
     notes?: string;
   }) {
@@ -71,7 +74,9 @@ export class LegalService {
           caseId: dto.caseId,
           proceedingRef: ref,
           court: dto.court,
+          legalCaseNumber: dto.legalCaseNumber,
           filingDate: new Date(dto.filingDate),
+          initiationDate: dto.initiationDate ? new Date(dto.initiationDate) : undefined,
           nextHearingDate: dto.nextHearingDate ? new Date(dto.nextHearingDate) : undefined,
           notes: dto.notes,
         },
@@ -82,6 +87,9 @@ export class LegalService {
 
   async update(id: string, dto: {
     status?: string;
+    court?: string;
+    legalCaseNumber?: string;
+    initiationDate?: string;
     nextHearingDate?: string;
     judgmentDate?: string;
     judgmentAmount?: number;
@@ -91,6 +99,9 @@ export class LegalService {
       where: { id },
       data: {
         ...(dto.status && { status: dto.status as any }),
+        ...(dto.court !== undefined && { court: dto.court }),
+        ...(dto.legalCaseNumber !== undefined && { legalCaseNumber: dto.legalCaseNumber }),
+        ...(dto.initiationDate && { initiationDate: new Date(dto.initiationDate) }),
         ...(dto.nextHearingDate && { nextHearingDate: new Date(dto.nextHearingDate) }),
         ...(dto.judgmentDate && { judgmentDate: new Date(dto.judgmentDate) }),
         ...(dto.judgmentAmount !== undefined && { judgmentAmount: dto.judgmentAmount }),

@@ -17,6 +17,9 @@ export class ActivitiesService {
     promiseAmount?: number;
     promiseCurrency?: string;
     occurredAt?: string;
+    updatedAddress?: string;
+    updatedPhone?: string;
+    caseCategory?: string;
   }) {
     const activity = await this.prisma.activity.create({
       data: {
@@ -32,11 +35,14 @@ export class ActivitiesService {
           promiseAmount: dto.promiseAmount,
           promiseCurrency: dto.promiseCurrency ?? 'EUR',
         }),
+        ...(dto.updatedAddress && { updatedAddress: dto.updatedAddress }),
+        ...(dto.updatedPhone && { updatedPhone: dto.updatedPhone }),
+        ...(dto.caseCategory && { caseCategory: dto.caseCategory }),
       },
       select: {
         id: true, activityType: true, channel: true, notes: true,
         outcome: true, occurredAt: true, nextActionDate: true,
-        promiseAmount: true,
+        promiseAmount: true, updatedAddress: true, updatedPhone: true, caseCategory: true,
         officer: { select: { id: true, fullName: true } },
       },
     });
@@ -107,7 +113,7 @@ export class ActivitiesService {
       select: {
         id: true, activityType: true, channel: true, notes: true,
         outcome: true, occurredAt: true, nextActionDate: true,
-        promiseAmount: true,
+        promiseAmount: true, updatedAddress: true, updatedPhone: true, caseCategory: true,
         officer: { select: { id: true, fullName: true } },
       },
     });
