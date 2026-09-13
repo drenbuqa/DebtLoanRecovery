@@ -369,7 +369,7 @@ export default function AgreementsPage() {
                           {nextDueDate ? (
                             <div>
                               <span className={`tabular text-[12px] font-medium ${nextIsOverdue ? "text-red-600" : "text-gray-700"}`}>
-                                {nextDueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                                {nextDueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}
                               </span>
                               {nextIsOverdue && <div className="text-[10px] text-red-500">Me Vonesë</div>}
                               {nextInst?.amount && <div className="text-[10px] text-gray-400 tabular">{formatCurrency(Number(nextInst.amount))}</div>}
@@ -380,7 +380,7 @@ export default function AgreementsPage() {
                         </Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
-                            {a.endDate ? new Date(a.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                            {a.endDate ? new Date(a.endDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
                           </span>
                         </Td>
                         <Td>

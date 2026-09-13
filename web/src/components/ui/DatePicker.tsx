@@ -28,7 +28,7 @@ function parseDate(val: string): Date | null {
 function formatDisplay(val: string): string {
   const d = parseDate(val);
   if (!d) return "";
-  return d.toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("sq-AL", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 function toValue(y: number, m: number, d: number): string {

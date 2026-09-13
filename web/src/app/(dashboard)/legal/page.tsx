@@ -411,12 +411,12 @@ export default function LegalPage() {
                         <Td><span className="text-gray-500 text-[12px]">{lp.court ?? "—"}</span></Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                            {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
                           </span>
                         </Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                            {lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
                           </span>
                         </Td>
                         <Td>

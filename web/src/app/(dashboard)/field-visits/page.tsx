@@ -362,7 +362,7 @@ export default function FieldVisitsPage() {
                   <div className="flex items-center justify-between text-[11px] text-gray-400 border-t border-gray-50 pt-2.5">
                     {!scopedToSelf && <span>{v.officer?.fullName ?? "—"}</span>}
                     {scopedToSelf && <span />}
-                    <span className="tabular">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</span>
+                    <span className="tabular">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long" }) : "—"}</span>
                   </div>
                   {hasPromise && (
                     <div className="mt-2 px-2.5 py-1.5 bg-emerald-50 rounded-lg flex items-center gap-1.5">
@@ -396,7 +396,7 @@ export default function FieldVisitsPage() {
                       </Td>
                       <Td><span className="font-mono text-[12px] text-brand-600">{v.case?.caseReference ?? "—"}</span></Td>
                       {!scopedToSelf && <Td><span className="text-[12px] text-gray-600">{v.officer?.fullName ?? "—"}</span></Td>}
-                      <Td><span className="tabular text-[12px] text-gray-500">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
+                      <Td><span className="tabular text-[12px] text-gray-500">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span></Td>
                       <Td><OutcomeBadge outcome={v.outcome} /></Td>
                       <Td>
                         {v.promiseAmount > 0

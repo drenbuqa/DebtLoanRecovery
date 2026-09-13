@@ -15,7 +15,7 @@ export function formatCurrency(amount: number, currency = "EUR") {
 export function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
-    month: "short",
+    month: "long",
     year: "numeric",
   }).format(new Date(date));
 }
@@ -23,7 +23,7 @@ export function formatDate(date: string | Date) {
 export function formatDateShort(date: string | Date) {
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
-    month: "short",
+    month: "long",
   }).format(new Date(date));
 }
 

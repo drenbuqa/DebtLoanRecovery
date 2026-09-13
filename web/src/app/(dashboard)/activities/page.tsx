@@ -106,7 +106,7 @@ function OutcomeBadge({ outcome }: { outcome?: string }) {
 }
 
 function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 function fmtTime(s: string) {
   return new Date(s).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -588,7 +588,7 @@ export default function ActivitiesPage() {
                       const isToday = a.occurredAt ? isSameDay(new Date(a.occurredAt), new Date()) : false;
                       const time = a.occurredAt ? (isToday ? fmtTime(a.occurredAt) : fmtDate(a.occurredAt)) : null;
                       const nextAction = a.nextActionDate
-                        ? new Date(a.nextActionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+                        ? new Date(a.nextActionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long" })
                         : null;
                       return (
                         <div key={a.id ?? i}
@@ -698,7 +698,7 @@ export default function ActivitiesPage() {
                     {v.notes && <p className="text-[12px] text-gray-600 leading-snug mb-3 line-clamp-2">{v.notes}</p>}
                     <div className="flex items-center justify-between text-[11px] text-gray-400 border-t border-gray-50 pt-2.5">
                       {!scopedToSelf ? <span>{v.officer?.fullName ?? "—"}</span> : <span />}
-                      <span className="tabular">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</span>
+                      <span className="tabular">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long" }) : "—"}</span>
                     </div>
                     {hasPromise && (
                       <div className="mt-2 px-2.5 py-1.5 bg-emerald-50 rounded-lg flex items-center gap-1.5">
@@ -728,7 +728,7 @@ export default function ActivitiesPage() {
                         <Td><div className="font-medium text-gray-900">{v.case?.loan?.borrower ? `${v.case.loan.borrower.firstName} ${v.case.loan.borrower.lastName}` : "—"}</div></Td>
                         <Td><span className="font-mono text-[12px] text-brand-600">{v.case?.caseReference ?? "—"}</span></Td>
                         {!scopedToSelf && <Td><span className="text-[12px] text-gray-600">{v.officer?.fullName ?? "—"}</span></Td>}
-                        <Td><span className="tabular text-[12px] text-gray-500">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
+                        <Td><span className="tabular text-[12px] text-gray-500">{dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span></Td>
                         <Td><OutcomeBadge outcome={v.outcome} /></Td>
                         <Td>{v.promiseAmount > 0 ? <span className="text-[12px] font-semibold text-emerald-700 tabular">€{Number(v.promiseAmount).toLocaleString()}</span> : <span className="text-gray-300">—</span>}</Td>
                         <Td><span className="text-[12px] text-gray-500 line-clamp-1">{v.notes ?? "—"}</span></Td>
