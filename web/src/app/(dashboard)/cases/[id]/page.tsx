@@ -484,7 +484,7 @@ function MoreMenu({ onAgreement, onStatusUpdate, onEdit }: { onAgreement?: () =>
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">
+        className="h-8 flex items-center px-3 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
         <MoreHorizontal size={15} />
       </button>
       {open && (
@@ -872,15 +872,15 @@ export default function CaseDetailPage() {
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 pt-4 pb-0">
 
         {/* Back + actions row */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 mb-4">
           <button onClick={() => router.push("/cases")}
             className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
-            <ChevronLeft size={14} /> Dosjet
+            <ChevronLeft size={14} /> Klientët
           </button>
           <div className="flex-1" />
           {can("case:delete") && (
             <button onClick={deleteCase}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors"
+              className="h-8 flex items-center gap-1.5 px-3 rounded-lg border border-red-200 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors"
               title="Fshi dosjen">
               <Trash2 size={13} /> <span className="hidden md:inline">Fshi Dosjen</span>
             </button>
@@ -894,13 +894,13 @@ export default function CaseDetailPage() {
           )}
           {can("payment:create") && (
             <button onClick={() => setShowAddPayment(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              className="h-8 flex items-center gap-1.5 px-3 rounded-lg border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <CreditCard size={13} /> <span className="hidden md:inline">Regjistro Pagesën</span>
             </button>
           )}
           {can("activity:create") && (
             <button onClick={() => setShowLogActivity(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
+              className="h-8 flex items-center gap-1.5 px-3 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
               <ClipboardList size={13} /> <span className="hidden md:inline">Regjistro Aktivitet</span>
             </button>
           )}
@@ -1001,7 +1001,7 @@ export default function CaseDetailPage() {
                         </div>
                         <div className="flex items-start gap-2 shrink-0">
                           <div className="text-[11px] text-gray-400 mt-0.5">
-                            {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                            {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : ""}
                           </div>
                           {can("activity:delete") && a.id && (
                             <button onClick={() => deleteActivity(a.id)}
@@ -1025,7 +1025,7 @@ export default function CaseDetailPage() {
                 <h3 className="text-[12px] font-semibold text-gray-900 mb-3">Përmbledhje e Dosjes</h3>
                 <div className="space-y-2.5">
                   {[
-                    { label: "Dosja u hap", val: caseData?.createdAt ? new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
+                    { label: "Dosja u hap", val: caseData?.createdAt ? new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Shuma e disbursuar", val: formatCurrency(disbursed) },
                     { label: "Gjendja debitore", val: formatCurrency(outstanding) },
                     { label: "Totali i arkëtuar", val: formatCurrency(totalCollected) },
@@ -1095,8 +1095,8 @@ export default function CaseDetailPage() {
                     { label: "Institucioni", val: institution },
                     { label: "Lloji i Produktit", val: caseData?.loan?.productType ?? "—" },
                     { label: "Norma e Interesit", val: caseData?.loan?.interestRate != null ? `${caseData.loan.interestRate}%` : "—" },
-                    { label: "Data e Disbursimit", val: caseData?.loan?.disbursementDate ? new Date(caseData.loan.disbursementDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
-                    { label: "Data e Maturimit", val: caseData?.loan?.maturityDate ? new Date(caseData.loan.maturityDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
+                    { label: "Data e Disbursimit", val: caseData?.loan?.disbursementDate ? new Date(caseData.loan.disbursementDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                    { label: "Data e Maturimit", val: caseData?.loan?.maturityDate ? new Date(caseData.loan.maturityDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Ditë Vonesë", val: `${dpd} ditë` },
                     { label: "Klasifikimi NPL", val: caseData?.loan?.nplClassification ? formatEnum(caseData.loan.nplClassification) : "—" },
                   ].map((r) => (
@@ -1143,14 +1143,13 @@ export default function CaseDetailPage() {
                 <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë dosje." action={{ label: "Regjistro Pagesën", onClick: () => setShowAddPayment(true) }} />
               ) : (
                 <Table>
-                  <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Metoda</Th><Th>Shënim</Th>{(user?.role === "ADMIN" || user?.role === "MANAGER") && <Th />}</tr></Thead>
+                  <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Shënim</Th>{(user?.role === "ADMIN" || user?.role === "MANAGER") && <Th />}</tr></Thead>
                   <Tbody>
                     {payments.map((p: any) => (
                       <Tr key={p.id}>
                         <Td><span className="font-mono text-[12px] text-gray-500">{p.paymentReference}</span></Td>
-                        <Td><span className="tabular text-[12px]">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
+                        <Td><span className="tabular text-[12px]">{p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span></Td>
                         <Td><span className="font-semibold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span></Td>
-                        <Td><span className="text-[12px] text-gray-500">{formatEnum(p.paymentMethod)}</span></Td>
                         <Td><span className="text-[12px] text-gray-400">{p.notes ?? "—"}</span></Td>
                         {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
                           <Td>
@@ -1203,7 +1202,7 @@ export default function CaseDetailPage() {
                         {a.installments.map((ins: any) => (
                           <Tr key={ins.id}>
                             <Td><span className="tabular text-gray-500">{ins.installmentNumber}</span></Td>
-                            <Td><span className="tabular text-[12px]">{ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
+                            <Td><span className="tabular text-[12px]">{ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span></Td>
                             <Td><span className="tabular">{formatCurrency(Number(ins.amount))}</span></Td>
                             <Td><span className={`tabular font-semibold ${ins.paidAmount > 0 ? "text-gray-800" : "text-gray-300"}`}>{formatCurrency(Number(ins.paidAmount ?? 0))}</span></Td>
                             <Td>
@@ -1251,10 +1250,10 @@ export default function CaseDetailPage() {
                   <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                     {[
                       { label: "Numri i Lëndës", val: p.legalCaseNumber ?? "—" },
-                      { label: "Data e Inicimit", val: p.initiationDate ? new Date(p.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
-                      { label: "Data e Depozitimit", val: p.filingDate ? new Date(p.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
-                      { label: "Seanca Tjetër", val: p.nextHearingDate ? new Date(p.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
-                      { label: "Data e Vendimit", val: p.judgmentDate ? new Date(p.judgmentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—" },
+                      { label: "Data e Inicimit", val: p.initiationDate ? new Date(p.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                      { label: "Data e Depozitimit", val: p.filingDate ? new Date(p.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                      { label: "Seanca Tjetër", val: p.nextHearingDate ? new Date(p.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                      { label: "Data e Vendimit", val: p.judgmentDate ? new Date(p.judgmentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                       { label: "Shuma e Vendimit", val: p.judgmentAmount ? formatCurrency(Number(p.judgmentAmount)) : "—" },
                     ].map((r) => (
                       <div key={r.label}>
@@ -1356,7 +1355,7 @@ export default function CaseDetailPage() {
                       <Td><span className="text-[12px] text-gray-500">{d.documentType?.replace(/_/g, " ")}</span></Td>
                       <Td><span className="text-[12px] text-gray-400 line-clamp-1">{d.notes ?? "—"}</span></Td>
                       <Td><span className="text-[12px] text-gray-500">{d.uploadedBy?.fullName ?? "—"}</span></Td>
-                      <Td><span className="text-[12px] tabular text-gray-500">{d.uploadedAt ? new Date(d.uploadedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span></Td>
+                      <Td><span className="text-[12px] tabular text-gray-500">{d.uploadedAt ? new Date(d.uploadedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}</span></Td>
                       <Td>
                         {can("document:delete") && (
                           <button onClick={() => deleteDoc(d.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors" title="Fshi">

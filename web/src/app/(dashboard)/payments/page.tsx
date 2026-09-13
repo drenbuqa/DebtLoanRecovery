@@ -68,7 +68,7 @@ const METHOD_LABELS: Record<string, string> = {
 function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void; scopedToSelf: boolean }) {
   const borrower = p.case?.loan?.borrower;
   const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "—";
-  const date = new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+  const date = new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" });
   return (
     <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50 cursor-pointer">
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -296,7 +296,6 @@ export default function PaymentsPage() {
                       <Th>Kredia #</Th>
                       <Th>Institucioni</Th>
                       <Th>Shuma</Th>
-                      <Th>Metoda</Th>
                       <Th>Data</Th>
                       {!scopedToSelf && <Th>Oficeri</Th>}
                       {canVoid && <Th />}
@@ -316,10 +315,9 @@ export default function PaymentsPage() {
                         <Td><span className="tabular text-gray-500 font-mono text-[12px]">{p.case?.loan?.loanNumber ?? "—"}</span></Td>
                         <Td><span className="text-gray-500 text-[12px]">{p.case?.loan?.institution?.shortName ?? "—"}</span></Td>
                         <Td><span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span></Td>
-                        <Td><span className="text-[12px] text-gray-500">{METHOD_LABELS[p.paymentMethod] ?? formatEnum(p.paymentMethod)}</span></Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
-                            {new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                            {new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}
                           </span>
                         </Td>
                         {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{p.officer?.fullName ?? "—"}</span></Td>}
