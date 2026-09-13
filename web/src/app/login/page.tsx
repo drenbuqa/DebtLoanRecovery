@@ -52,21 +52,7 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: "#7c3aed",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 16,
-            }}
-          >
-            <span style={{ color: "#fff", fontWeight: 800, fontSize: 20 }}>DLR</span>
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>DLR Platform</div>
+          <img src="/logo.png" alt="DLR" style={{ height: 64, width: "auto", margin: "0 auto 4px" }} />
           <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
             Operacione Arkëtimi &amp; Rimëkëmbje
           </div>

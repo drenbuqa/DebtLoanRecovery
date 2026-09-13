@@ -192,14 +192,8 @@ export default function Sidebar() {
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex flex-col w-[220px] shrink-0 bg-white border-r border-gray-200 h-screen sticky top-0">
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-          <div className="w-7 h-7 rounded-lg bg-brand-700 flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs tracking-wide">DLR</span>
-          </div>
-          <div>
-            <div className="text-[13px] font-semibold text-gray-900 leading-none">DLR Platform</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Operacione Arkëtimi</div>
-          </div>
+        <div className="flex items-center px-5 py-3 border-b border-gray-100">
+          <img src="/logo.png" alt="DLR" className="h-9 w-auto" />
         </div>
         <NavContent />
       </aside>
@@ -212,15 +206,7 @@ export default function Sidebar() {
           {/* Drawer */}
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-brand-700 flex items-center justify-center shrink-0">
-                  <span className="text-white font-bold text-xs tracking-wide">DLR</span>
-                </div>
-                <div>
-                  <div className="text-[13px] font-semibold text-gray-900 leading-none">DLR Platform</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">Operacione Arkëtimi</div>
-                </div>
-              </div>
+              <img src="/logo.png" alt="DLR" className="h-9 w-auto" />
               <button onClick={() => setDrawerOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
                 <X size={18} />
               </button>
