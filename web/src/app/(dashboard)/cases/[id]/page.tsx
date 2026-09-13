@@ -206,10 +206,10 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-4 overflow-y-auto flex-1">
+        <div className="p-5 space-y-3 overflow-y-auto flex-1">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
 
-          {/* Type + Date row */}
+          {/* Type + Date — always visible */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Lloji i Aktivitetit <span className="text-red-500">*</span></label>
@@ -221,79 +221,98 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
             </div>
           </div>
 
-          {/* Outcome */}
-          {outcomeOptions.length > 0 && (
-            <div>
-              <label className={lbl}>Rezultati <span className="text-red-500">*</span></label>
-              <Select value={outcome} onChange={setOutcome} placeholder="Zgjidhni rezultatin…" options={outcomeOptions} />
-            </div>
-          )}
+          {/* All conditional fields in one animated container */}
+          <div style={{ display: "grid", gridTemplateRows: type ? "1fr" : "0fr", transition: "grid-template-rows 0.25s ease" }}>
+            <div style={{ overflow: "hidden" }}>
+              <div className="space-y-3 pt-1">
 
-          {/* Promise fields */}
-          {showPromise && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={lbl}>Shuma e Premtimit (€)</label>
-                <input type="number" min="0" step="0.01" value={promiseAmount}
-                  onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00" className={tinp} />
+                {/* Rezultati */}
+                {outcomeOptions.length > 0 && (
+                  <div>
+                    <label className={lbl}>Rezultati <span className="text-red-500">*</span></label>
+                    <Select value={outcome} onChange={setOutcome} placeholder="Zgjidhni rezultatin…" options={outcomeOptions} />
+                  </div>
+                )}
+
+                {/* Promise */}
+                {showPromise && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={lbl}>Shuma e Premtimit (€)</label>
+                      <input type="number" min="0" step="0.01" value={promiseAmount}
+                        onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00" className={tinp} />
+                    </div>
+                    <div>
+                      <label className={lbl}>Data e Premtimit</label>
+                      <DatePicker value={promiseDate} onChange={setPromiseDate} placeholder="Zgjidhni datën" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Follow-up date */}
+                {showFollowup && (
+                  <div>
+                    <label className={lbl}>Ndjekja e Radhës</label>
+                    <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" />
+                  </div>
+                )}
+
+                {/* Kategoria e Rastit */}
+                <div>
+                  <label className={lbl}>Kategoria e Rastit</label>
+                  <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
+                </div>
+
+                {/* Address + Phone side by side when both shown, full width when only phone */}
+                {(SHOW_ADDRESS_TYPES.has(type) || SHOW_PHONE_TYPES.has(type)) && (
+                  <div className={SHOW_ADDRESS_TYPES.has(type) && SHOW_PHONE_TYPES.has(type) ? "grid grid-cols-2 gap-3" : ""}>
+                    {SHOW_ADDRESS_TYPES.has(type) && (
+                      <div>
+                        <label className={lbl}>Adresa e Re e Siguruar</label>
+                        <input value={updatedAddress} onChange={(e) => setUpdatedAddress(e.target.value)}
+                          placeholder="Rruga, ndërtesa, qyteti…" className={tinp} />
+                      </div>
+                    )}
+                    {SHOW_PHONE_TYPES.has(type) && (
+                      <div>
+                        <label className={lbl}>Numri i Telefonit i Siguruar</label>
+                        <input value={updatedPhone} onChange={(e) => setUpdatedPhone(e.target.value)}
+                          placeholder="+383 44 …" className={tinp} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes — last, after all structured fields */}
+                <div>
+                  <label className={lbl}>Shënime <span className="text-red-500">*</span></label>
+                  <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+                    placeholder="Çfarë ndodhi gjatë këtij aktiviteti?"
+                    className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
+                </div>
+
+                {/* Document upload */}
+                {SHOW_DOC_TYPES.has(type) && (
+                  <div>
+                    <label className={lbl}>Ngarko Dokument (PDF / Word)</label>
+                    <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+                      className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+                    {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
+                  </div>
+                )}
+
               </div>
-              <div>
-                <label className={lbl}>Data e Premtimit</label>
-                <DatePicker value={promiseDate} onChange={setPromiseDate} placeholder="Zgjidhni datën" />
-              </div>
             </div>
-          )}
-
-          {/* Next follow-up */}
-          {showFollowup && (
-            <div>
-              <label className={lbl}>Ndjekja e Radhës</label>
-              <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" />
-            </div>
-          )}
-
-          {/* Case category — always shown once a type is selected */}
-          {type && (
-            <div>
-              <label className={lbl}>Kategoria e Rastit</label>
-              <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
-            </div>
-          )}
-
-          {/* Notes */}
-          <div>
-            <label className={lbl}>Shënime <span className="text-red-500">*</span></label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
-              placeholder="Çfarë ndodhi?"
-              className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
           </div>
 
-          {/* Address — only for visits & meetings */}
-          {SHOW_ADDRESS_TYPES.has(type) && (
+          {/* Notes always visible when no type selected yet */}
+          {!type && (
             <div>
-              <label className={lbl}>Adresa e Re e Siguruar</label>
-              <input value={updatedAddress} onChange={(e) => setUpdatedAddress(e.target.value)}
-                placeholder="Adresa e re e verifikuar…" className={tinp} />
-            </div>
-          )}
-
-          {/* Phone — for calls, visits & meetings */}
-          {SHOW_PHONE_TYPES.has(type) && (
-            <div>
-              <label className={lbl}>Numri i Telefonit i Siguruar</label>
-              <input value={updatedPhone} onChange={(e) => setUpdatedPhone(e.target.value)}
-                placeholder="+383 44 …" className={tinp} />
-            </div>
-          )}
-
-          {/* Document upload — for formal interactions */}
-          {SHOW_DOC_TYPES.has(type) && (
-            <div>
-              <label className={lbl}>Ngarko Dokument (PDF / Word)</label>
-              <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
-                className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
-              {docFile && <p className="mt-1 text-[11px] text-gray-400">{docFile.name} · {(docFile.size / 1024).toFixed(0)} KB</p>}
+              <label className={lbl}>Shënime <span className="text-red-500">*</span></label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+                placeholder="Çfarë ndodhi gjatë këtij aktiviteti?"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
             </div>
           )}
         </div>
