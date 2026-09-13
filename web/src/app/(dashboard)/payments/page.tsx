@@ -9,7 +9,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X } from "lucide-react";
 import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
 import { useIsMobile } from "@/lib/useIsMobile";
 
@@ -28,11 +28,14 @@ function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () =
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-          <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
@@ -40,20 +43,14 @@ function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () =
           </div>
           <div>
             <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
               placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none"
-            />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
           </div>
           {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
         <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">
-            Anulo
-          </button>
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
           <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
             {loading ? "Duke anuluar…" : "Konfirmo Anulimin"}
           </button>
@@ -161,7 +158,7 @@ export default function PaymentsPage() {
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
         { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha dosjet. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
-        { title: "Si të regjistroni një pagesë", body: "Shkoni te dosja e debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Shto Pagesë' brenda dosjes. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
+        { title: "Si të regjistroni një pagesë", body: "Shkoni te dosja e debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Regjistro Pagesën' brenda dosjes. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
         { title: "Filtrimi sipas datës", body: "Përdorni zgjedhësin e datave në krye për të shfaqur vetëm pagesat nga një periudhë e caktuar — për shembull, të gjitha pagesat e marra këtë javë ose këtë muaj." },
       ]} />
 

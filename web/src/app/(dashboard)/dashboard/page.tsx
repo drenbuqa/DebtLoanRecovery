@@ -241,7 +241,7 @@ function OfficerDashboard({ user }: { user: any }) {
         subtitle={`${greeting}, ${firstName} · ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`}
         help={[
           { title: "Dosjet tuaja", body: "Këtu shfaqen vetëm dosjet që ju janë caktuar. Klikoni mbi çdo rresht për të hapur detajet e plota — informacionin e debitorit, historikun e pagesave dhe veprimet e ndërmarra." },
-          { title: "Si të regjistroni një telefonatë ose pagesë", body: "Klikoni mbi një dosje për ta hapur, pastaj përdorni butonat e veprimit në të djathtën e sipërme — 'Regjistro Aktivitet' për telefonata dhe vizita, 'Shto Pagesë' kur është marrë para." },
+          { title: "Si të regjistroni një telefonatë ose pagesë", body: "Klikoni mbi një dosje për ta hapur, pastaj përdorni butonat e veprimit në të djathtën e sipërme — 'Regjistro Aktivitet' për telefonata dhe vizita, 'Regjistro Pagesën' kur është marrë para." },
         ]}
       />
 

@@ -432,11 +432,14 @@ function CaseVoidModal({ payment, onClose, onVoided }: { payment: any; onClose: 
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-          <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
@@ -892,7 +895,7 @@ export default function CaseDetailPage() {
           {can("payment:create") && (
             <button onClick={() => setShowAddPayment(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <CreditCard size={13} /> <span className="hidden md:inline">Shto Pagesë</span>
+              <CreditCard size={13} /> <span className="hidden md:inline">Regjistro Pagesën</span>
             </button>
           )}
           {can("activity:create") && (
@@ -1133,11 +1136,11 @@ export default function CaseDetailPage() {
                 <h3 className="text-[13px] font-semibold text-gray-900">Historia e Pagesave</h3>
                 <button onClick={() => setShowAddPayment(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[12px] font-medium hover:bg-brand-700 transition-colors">
-                  <Plus size={12} /> Shto Pagesë
+                  <Plus size={12} /> Regjistro Pagesën
                 </button>
               </div>
               {payments.length === 0 ? (
-                <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë dosje." action={{ label: "Shto Pagesë", onClick: () => setShowAddPayment(true) }} />
+                <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë dosje." action={{ label: "Regjistro Pagesën", onClick: () => setShowAddPayment(true) }} />
               ) : (
                 <Table>
                   <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Metoda</Th><Th>Shënim</Th>{(user?.role === "ADMIN" || user?.role === "MANAGER") && <Th />}</tr></Thead>
