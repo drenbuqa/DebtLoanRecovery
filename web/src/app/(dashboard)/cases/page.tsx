@@ -174,33 +174,34 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
               </div>
               <div className="flex items-start pt-6">
                 <button onClick={searchPerson} disabled={searching}
-                  className="h-[34px] px-4 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap flex items-center gap-1.5">
-                  {searching ? (
-                    <><span className="animate-spin inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full" />Duke kërkuar…</>
-                  ) : "Kërko"}
+                  className="h-[34px] px-4 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-200 disabled:opacity-50 whitespace-nowrap">
+                  Kërko
                 </button>
               </div>
             </div>
 
-            {/* Hint shown before any search */}
-            {!personResult && !searching && (
-              <p className="mt-1.5 text-[11px] text-gray-400 leading-relaxed">
-                Shtyp numrin e letërnjoftimit ose NIPT-in dhe kliko <strong className="font-medium text-gray-500">Kërko</strong> — nëse ekziston, të dhënat plotësohen automatikisht.
-              </p>
-            )}
-
-            {/* Result banner */}
-            {personResult && (
-              <div className={`mt-2 p-3 rounded-lg text-[12px] border flex items-start gap-2
-                ${personResult.person ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
-                <span className="text-base leading-none mt-px">{personResult.person ? "✓" : "ℹ"}</span>
-                <span>
-                  {personResult.person
-                    ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese. Të dhënat u plotësuan automatikisht.`
-                    : "Nuk u gjet asnjë rekord për këtë numër. Plotëso të dhënat manualisht më poshtë."}
-                </span>
-              </div>
-            )}
+            {/* Fixed-height status area — always rendered to prevent layout shift */}
+            <div className="mt-1.5 min-h-[36px]">
+              {!personResult && !searching && (
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  Shtyp numrin personal ose numrin e biznesit dhe kliko <strong className="font-medium text-gray-500">Kërko</strong> — nëse ekziston, të dhënat plotësohen automatikisht.
+                </p>
+              )}
+              {searching && (
+                <p className="text-[11px] text-gray-400">Duke kërkuar…</p>
+              )}
+              {personResult && (
+                <div className={`px-3 py-2 rounded-lg text-[12px] border flex items-center gap-2
+                  ${personResult.person ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                  <span>{personResult.person ? "✓" : "ℹ"}</span>
+                  <span>
+                    {personResult.person
+                      ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese.`
+                      : "Nuk u gjet asnjë rekord. Plotëso të dhënat manualisht."}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Core required fields */}
