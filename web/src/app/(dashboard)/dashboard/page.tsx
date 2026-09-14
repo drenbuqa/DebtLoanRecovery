@@ -467,7 +467,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
           </div>
 
           <div className="flex flex-col gap-4 h-full">
-            <Card>
+            <Card className="p-4 md:p-5">
               <CardHeader title="Alarmet e Ditës" />
               <div className="space-y-1.5">
                 {loading || !stats ? Array.from({ length: 5 }).map((_, i) => (
@@ -495,7 +495,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
               </div>
             </Card>
 
-            <Card className="flex-1 flex flex-col">
+            <Card className="flex-1 flex flex-col p-4 md:p-5">
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="flex-1 space-y-2">
                 {loading || !stats ? Array.from({ length: 8 }).map((_, i) => (
@@ -682,7 +682,7 @@ function ViewerDashboard() {
             </div>
           </div>
           <div className="flex flex-col gap-4 h-full">
-            <Card className="flex-1 flex flex-col">
+            <Card className="flex-1 flex flex-col p-4 md:p-5">
               <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
               <div className="flex-1 space-y-2">
                 {loading ? Array.from({ length: 8 }).map((_, i) => (

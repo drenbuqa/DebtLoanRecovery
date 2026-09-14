@@ -256,7 +256,7 @@
 /* Main scroll area: leave room for the fixed bottom nav + iPhone safe area */
 @media (max-width: 767px) {
   .mobile-nav-pad {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -122,7 +122,10 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   async function submit() {
     touchAll(["loanNumber","personalId","firstName","lastName","originalAmount","currentBalance","institutionId"]);
-    if (Object.values(E).some(Boolean)) return;
+    const hasErrors =
+      !loanNumber.trim() || !personalId.trim() || !firstName.trim() ||
+      !lastName.trim() || !originalAmount || !currentBalance || !institutionId;
+    if (hasErrors) return;
     setLoading(true); setSubmitError("");
     try {
       await casesApi.create({

@@ -93,8 +93,14 @@ export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, l
         setOpen(false);
       }
     }
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    if (open) {
+      document.addEventListener("mousedown", handler);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const dropdown = open ? (

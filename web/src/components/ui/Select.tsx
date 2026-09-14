@@ -56,8 +56,14 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         setQuery("");
       }
     }
-    if (open) document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    if (open) {
+      document.addEventListener("mousedown", handler);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   useEffect(() => {
