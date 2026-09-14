@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FolderOpen, Activity, Grid3X3 } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Activity, CreditCard, Grid3X3 } from "lucide-react";
 
 const tabs = [
   { href: "/dashboard",  label: "Ballina",    icon: LayoutDashboard },
-  { href: "/activities", label: "Aktivitete", icon: Activity },
   { href: "/cases",      label: "Klientët",   icon: FolderOpen },
+  { href: "/activities", label: "Aktivitete", icon: Activity },
+  { href: "/payments",   label: "Pagesat",    icon: CreditCard },
   { href: "/more",       label: "Më shumë",   icon: Grid3X3 },
 ];
 
