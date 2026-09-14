@@ -36,7 +36,7 @@ export function useKeyboardShortcuts() {
           case "c": e.preventDefault(); router.push("/cases"); break;
           case "a": e.preventDefault(); router.push("/activities"); break;
           case "p": e.preventDefault(); router.push("/payments"); break;
-          case "f": e.preventDefault(); router.push("/field-visits"); break;
+          case "f": e.preventDefault(); router.push("/activities"); break;
           case "l": e.preventDefault(); router.push("/legal"); break;
           case "r": e.preventDefault(); router.push("/reports"); break;
         }

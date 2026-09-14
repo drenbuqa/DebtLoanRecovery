@@ -311,7 +311,7 @@ function OfficerDashboard({ user }: { user: any }) {
               <div className="space-y-1">
                 {[
                   { label: "Dosjet e mia", href: "/cases", icon: FolderOpen },
-                  { label: "Vizita në terren", href: "/field-visits", icon: MapPin },
+                  { label: "Vizita në terren", href: "/activities", icon: MapPin },
                   { label: "Aktivitete të fundit", href: "/activities", icon: Clock },
                 ].map((l) => (
                   <button key={l.href} onClick={() => router.push(l.href)}

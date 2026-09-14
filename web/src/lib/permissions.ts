@@ -7,7 +7,6 @@ export type Permission =
   | "page:payments"
   | "page:agreements"
   | "page:legal"
-  | "page:field-visits"
   | "page:institutions"
   | "page:reports"
   | "page:performance"
@@ -50,7 +49,7 @@ export type Permission =
 // ── Per-role permission sets ─────────────────────────────────
 const ADMIN_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
-  "page:payments", "page:agreements", "page:legal", "page:field-visits",
+  "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings",
   "case:create", "case:edit", "case:assign",
@@ -69,7 +68,7 @@ const ADMIN_PERMS: Permission[] = [
 
 const MANAGER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
-  "page:payments", "page:agreements", "page:legal", "page:field-visits",
+  "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings",
   "case:create", "case:edit", "case:assign",
@@ -87,7 +86,7 @@ const MANAGER_PERMS: Permission[] = [
 
 const OFFICER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
-  "page:payments", "page:agreements", "page:legal", "page:field-visits",
+  "page:payments", "page:agreements", "page:legal",
   "page:settings",
   "activity:create",
   "payment:create",
@@ -99,7 +98,7 @@ const OFFICER_PERMS: Permission[] = [
 
 const VIEWER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
-  "page:payments", "page:agreements", "page:legal", "page:field-visits",
+  "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
   "page:settings",
   "report:export",
