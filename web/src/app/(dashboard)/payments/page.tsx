@@ -181,12 +181,12 @@ export default function PaymentsPage() {
               value: stats ? total.toLocaleString() : null,
             },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-3 py-3 md:px-5 md:py-4"
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-3 py-3 md:px-5 md:py-4 flex flex-col justify-between min-h-[72px] md:min-h-0"
               style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
               <div className="text-[10px] md:text-[11px] font-medium text-gray-400 uppercase tracking-wide leading-tight">{s.label}</div>
               {s.value !== null
-                ? <div className="text-[15px] md:text-[22px] font-bold text-gray-900 tabular leading-tight mt-1">{s.value}</div>
-                : <div className="h-5 md:h-7 w-full bg-gray-100 rounded-lg mt-1 animate-pulse" />}
+                ? <div className="text-[15px] md:text-[22px] font-bold text-gray-900 tabular leading-tight mt-auto pt-1">{s.value}</div>
+                : <div className="h-5 md:h-7 w-full bg-gray-100 rounded-lg mt-auto pt-1 animate-pulse" />}
             </div>
           ))}
         </div>
