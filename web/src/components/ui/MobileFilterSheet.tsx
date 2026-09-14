@@ -42,7 +42,7 @@ function SingleFilterChip({ group }: SingleFilterChipProps) {
       {/* Chip button */}
       <button
         onClick={() => setOpen(true)}
-        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-[12px] font-medium transition-colors shrink-0 self-stretch ${
+        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-xl border text-[12px] font-medium transition-colors shrink-0 self-stretch ${
           hasValue
             ? "bg-brand-600 text-white border-brand-600"
             : "bg-white text-gray-600 border-gray-200"
