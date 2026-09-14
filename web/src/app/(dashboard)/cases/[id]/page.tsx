@@ -496,7 +496,7 @@ function CaseVoidModal({ payment, onClose, onVoided }: { payment: any; onClose: 
 }
 
 // ── More actions dropdown ────────────────────────────────────
-function MoreMenu({ onAgreement, onStatusUpdate, onEdit }: { onAgreement?: () => void; onStatusUpdate?: () => void; onEdit?: () => void }) {
+function MoreMenu({ onAgreement, onStatusUpdate, onEdit, onDelete }: { onAgreement?: () => void; onStatusUpdate?: () => void; onEdit?: () => void; onDelete?: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -507,9 +507,10 @@ function MoreMenu({ onAgreement, onStatusUpdate, onEdit }: { onAgreement?: () =>
   }, []);
 
   const items = [
-    ...(onEdit ? [{ label: "Ndrysho Detajet e Dosjes", action: onEdit }] : []),
-    ...(onStatusUpdate ? [{ label: "Ndrysho Statusin / Fazën", action: onStatusUpdate }] : []),
-    ...(onAgreement ? [{ label: "Krijo Marrëveshje", action: onAgreement }] : []),
+    ...(onEdit ? [{ label: "Ndrysho Detajet e Dosjes", action: onEdit, danger: false }] : []),
+    ...(onStatusUpdate ? [{ label: "Ndrysho Statusin / Fazën", action: onStatusUpdate, danger: false }] : []),
+    ...(onAgreement ? [{ label: "Krijo Marrëveshje", action: onAgreement, danger: false }] : []),
+    ...(onDelete ? [{ label: "Fshi Dosjen", action: onDelete, danger: true }] : []),
   ];
 
   return (
@@ -519,12 +520,17 @@ function MoreMenu({ onAgreement, onStatusUpdate, onEdit }: { onAgreement?: () =>
         <MoreHorizontal size={15} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-40 w-48">
-          {items.map((it) => (
-            <button key={it.label} onClick={() => { it.action(); setOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors">
-              {it.label}
-            </button>
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-40 w-52">
+          {items.map((it, i) => (
+            <>
+              {it.danger && items.length > 1 && i > 0 && <div key={`sep-${i}`} className="my-1 border-t border-gray-100" />}
+              <button key={it.label} onClick={() => { it.action(); setOpen(false); }}
+                className={`w-full text-left px-4 py-2.5 text-[13px] transition-colors flex items-center gap-2
+                  ${it.danger ? "text-red-600 hover:bg-red-50" : "text-gray-700 hover:bg-gray-50"}`}>
+                {it.danger && <Trash2 size={13} className="shrink-0" />}
+                {it.label}
+              </button>
+            </>
           ))}
         </div>
       )}
@@ -909,18 +915,12 @@ export default function CaseDetailPage() {
             <ChevronLeft size={14} /> Klientët
           </button>
           <div className="flex-1" />
-          {can("case:delete") && (
-            <button onClick={deleteCase}
-              className="h-8 flex items-center gap-1.5 px-3 rounded-lg border border-red-200 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors"
-              title="Fshi dosjen">
-              <Trash2 size={13} /> <span className="hidden md:inline">Fshi Dosjen</span>
-            </button>
-          )}
-          {(can("agreement:create") || can("case:edit")) && (
+          {(can("agreement:create") || can("case:edit") || can("case:delete")) && (
             <MoreMenu
               onEdit={can("case:edit") ? openEditCase : undefined}
               onStatusUpdate={can("case:edit") ? () => { setStatusForm({ status: status, collectionStage: stage, note: "" }); setShowStatusUpdate(true); } : undefined}
               onAgreement={can("agreement:create") ? () => setShowAgreement(true) : undefined}
+              onDelete={can("case:delete") ? deleteCase : undefined}
             />
           )}
           {can("payment:create") && (

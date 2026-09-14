@@ -26,12 +26,12 @@ export function ConfirmModal({
   const btnClass =
     variant === "danger"
       ? "bg-red-600 hover:bg-red-700 text-white"
-      : "bg-gray-900 hover:bg-gray-800 text-white";
+      : "bg-brand-600 hover:bg-brand-700 text-white";
 
   const iconBg =
     variant === "danger"
       ? "bg-red-50 text-red-600"
-      : "bg-gray-100 text-gray-600";
+      : "bg-brand-50 text-brand-600";
 
   async function handle() {
     setLoading(true);
