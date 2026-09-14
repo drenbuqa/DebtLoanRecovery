@@ -193,32 +193,30 @@ export default function PaymentsPage() {
 
         {/* Filter bar */}
         {isMobile ? (
-          <div className="space-y-2">
-            <div className="relative">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Kërko debitor ose dosje…"
                 className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
             </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
-              <MobileFilterSheet groups={[
-                {
-                  key: "datePreset",
-                  label: "Periudha",
-                  value: datePreset,
-                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
-                  allLabel: "Të gjitha datat",
-                  options: [
-                    { value: "today",      label: "Sot" },
-                    { value: "yesterday",  label: "Dje" },
-                    { value: "this_week",  label: "Kjo Javë" },
-                    { value: "last_week",  label: "Java e Kaluar" },
-                    { value: "this_month", label: "Ky Muaj" },
-                    { value: "last_month", label: "Muaji i Kaluar" },
-                  ],
-                },
-              ]} />
-            </div>
+            <MobileFilterSheet groups={[
+              {
+                key: "datePreset",
+                label: "Periudha",
+                value: datePreset,
+                onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
+                allLabel: "Të gjitha datat",
+                options: [
+                  { value: "today",      label: "Sot" },
+                  { value: "yesterday",  label: "Dje" },
+                  { value: "this_week",  label: "Kjo Javë" },
+                  { value: "last_week",  label: "Java e Kaluar" },
+                  { value: "this_month", label: "Ky Muaj" },
+                  { value: "last_month", label: "Muaji i Kaluar" },
+                ],
+              },
+            ]} />
           </div>
         ) : (
           <div className="flex items-center gap-3 flex-wrap">

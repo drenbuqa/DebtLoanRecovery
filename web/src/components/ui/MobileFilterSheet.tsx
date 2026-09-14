@@ -42,7 +42,7 @@ function SingleFilterChip({ group }: SingleFilterChipProps) {
       {/* Chip button */}
       <button
         onClick={() => setOpen(true)}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-full border text-[12px] font-medium transition-colors shrink-0 ${
+        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full border text-[12px] font-medium transition-colors shrink-0 self-stretch ${
           hasValue
             ? "bg-brand-600 text-white border-brand-600"
             : "bg-white text-gray-600 border-gray-200"
@@ -61,12 +61,12 @@ function SingleFilterChip({ group }: SingleFilterChipProps) {
 
       {/* Focused single-filter sheet */}
       {open && (
-        <div className="fixed inset-0 z-[70] flex flex-col justify-end" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
           <div
             className="relative bg-white rounded-t-[20px] w-full"
             style={{
-              paddingBottom: "env(safe-area-inset-bottom, 16px)",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)",
               animation: "sheet-in 0.22s cubic-bezier(0.32,0.72,0,1) forwards",
             }}
             onClick={(e) => e.stopPropagation()}>
