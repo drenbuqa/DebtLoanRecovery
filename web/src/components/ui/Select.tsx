@@ -40,10 +40,14 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
   function computeStyle(): React.CSSProperties {
     if (!ref.current) return {};
     const rect = ref.current.getBoundingClientRect();
-    const openUp = dropUp || (window.innerHeight - rect.bottom) < 220;
-    return openUp
-      ? { position: "fixed", left: rect.left, bottom: window.innerHeight - rect.top + 4, width: rect.width, zIndex: 9999 }
-      : { position: "fixed", left: rect.left, top: rect.bottom + 4, width: rect.width, zIndex: 9999 };
+    const navH = window.innerWidth < 768 ? 90 : 0;
+    const spaceBelow = window.innerHeight - rect.bottom - navH - 8;
+    const spaceAbove = rect.top - 8;
+    const openUp = dropUp || spaceBelow < 220;
+    if (openUp) {
+      return { position: "fixed", left: rect.left, bottom: window.innerHeight - rect.top + 4, width: rect.width, zIndex: 9999, maxHeight: Math.min(spaceAbove, 320) };
+    }
+    return { position: "fixed", left: rect.left, top: rect.bottom + 4, width: rect.width, zIndex: 9999, maxHeight: Math.min(spaceBelow, 320) };
   }
 
   useEffect(() => {
@@ -89,10 +93,10 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className="bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+      className="bg-white border border-gray-200 rounded-xl shadow-xl flex flex-col overflow-hidden"
     >
       {searchable && !openUp && (
-        <div className="p-2 border-b border-gray-100">
+        <div className="p-2 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
             <Search size={12} className="text-gray-400 shrink-0" />
             <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
@@ -101,7 +105,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
           </div>
         </div>
       )}
-      <div className="max-h-52 overflow-y-auto py-1">
+      <div className="overflow-y-auto py-1 min-h-0 flex-1">
         {placeholder && !query && (
           <button type="button" onClick={() => pick("")}
             className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
@@ -123,7 +127,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         ))}
       </div>
       {searchable && openUp && (
-        <div className="p-2 border-t border-gray-100">
+        <div className="p-2 border-t border-gray-100 shrink-0">
           <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-lg">
             <Search size={12} className="text-gray-400 shrink-0" />
             <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}

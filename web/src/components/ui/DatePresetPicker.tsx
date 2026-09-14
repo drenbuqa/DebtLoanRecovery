@@ -75,12 +75,16 @@ export function DatePresetPicker({ value, onChange, presets = DEFAULT_PRESETS, l
   function handleOpen() {
     if (!open && ref.current) {
       const rect = ref.current.getBoundingClientRect();
+      const navH = window.innerWidth < 768 ? 90 : 0;
+      const spaceBelow = window.innerHeight - rect.bottom - navH - 8;
       setDropdownStyle({
         position: "fixed",
         left: rect.left,
         top: rect.bottom + 4,
         minWidth: rect.width,
         zIndex: 9999,
+        maxHeight: Math.min(spaceBelow, 320),
+        overflowY: "auto",
       });
     }
     setOpen((o) => !o);
