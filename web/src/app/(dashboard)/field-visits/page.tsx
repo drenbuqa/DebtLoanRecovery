@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { MapPin, RefreshCw, CheckSquare, Search, X, LayoutGrid, List, Plus } from "lucide-react";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
+import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
@@ -69,6 +71,7 @@ const LOG_OUTCOME_OPTIONS = [
 ];
 
 export default function FieldVisitsPage() {
+  const isMobile = useIsMobile();
   const { user, scopedToSelf, scopedToOffice, can } = useAuth();
   const [refreshing, triggerRefresh] = useRefreshing();
   const { toast } = useToast();
@@ -252,7 +255,7 @@ export default function FieldVisitsPage() {
               <input
                 value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder={scopedToSelf ? "Kërko debitor ose dosje…" : "Kërko debitor, dosje…"}
-                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 bg-white"
+                className={`w-full pr-3 border border-gray-200 focus:outline-none focus:border-brand-400 bg-white ${isMobile ? "pl-9 py-2.5 text-[14px] rounded-xl" : "pl-8 py-1.5 text-[13px] rounded-lg"}`}
               />
               {search && (
                 <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -262,24 +265,54 @@ export default function FieldVisitsPage() {
             </div>
             {can("field-visit:create") && (
               <button onClick={openLogModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
-                <Plus size={14} /> <span className="hidden sm:inline">Regjistro Vizitë</span>
+                className={`flex items-center gap-1.5 bg-brand-600 text-white text-[13px] font-medium shrink-0 ${isMobile ? "px-3.5 py-2.5 rounded-xl" : "px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors"}`}>
+                <Plus size={isMobile ? 16 : 14} /> <span className={isMobile ? "hidden" : "hidden sm:inline"}>Regjistro Vizitë</span>
               </button>
             )}
           </div>
           {/* Row 2: filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="w-36 md:w-40">
-              <Select label="Rezultati" value={outcomeFilter} onChange={setOutcomeFilter} options={OUTCOME_OPTIONS} placeholder="Të gjitha" />
+          {isMobile ? (
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+              <MobileFilterSheet groups={[
+                {
+                  key: "outcomeFilter",
+                  label: "Rezultati",
+                  value: outcomeFilter,
+                  onChange: setOutcomeFilter,
+                  allLabel: "Të gjitha",
+                  options: OUTCOME_OPTIONS.filter((o) => o.value !== "").map((o) => ({ value: o.value, label: o.label })),
+                },
+                {
+                  key: "datePreset",
+                  label: "Periudha",
+                  value: datePreset,
+                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
+                  allLabel: "Të gjitha datat",
+                  options: [
+                    { value: "today",      label: "Sot" },
+                    { value: "yesterday",  label: "Dje" },
+                    { value: "this_week",  label: "Kjo Javë" },
+                    { value: "last_week",  label: "Java e Kaluar" },
+                    { value: "this_month", label: "Ky Muaj" },
+                    { value: "last_month", label: "Muaji i Kaluar" },
+                  ],
+                },
+              ]} />
             </div>
-            <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
-            {hasFilters && (
-              <button onClick={() => { setDatePreset(""); setDateFrom(""); setDateTo(""); setSearch(""); setOutcomeFilter(""); }}
-                className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
-                <X size={12} /> Pastro
-              </button>
-            )}
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="w-36 md:w-40">
+                <Select label="Rezultati" value={outcomeFilter} onChange={setOutcomeFilter} options={OUTCOME_OPTIONS} placeholder="Të gjitha" />
+              </div>
+              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
+              {hasFilters && (
+                <button onClick={() => { setDatePreset(""); setDateFrom(""); setDateTo(""); setSearch(""); setOutcomeFilter(""); }}
+                  className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-gray-700 transition-colors">
+                  <X size={12} /> Pastro
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (

@@ -10,7 +10,9 @@ import { formatCurrency } from "@/lib/utils";
 import { legal as legalApi, cases as casesApi, documents as docsApi } from "@/lib/api";
 import { RefreshCw, Scale, Plus, X, Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
+import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
+import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { formatEnum } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
@@ -205,6 +207,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
 }
 
 export default function LegalPage() {
+  const isMobile = useIsMobile();
   const { can, user, scopedToSelf, scopedToOffice } = useAuth();
   const { toast } = useToast();
   const [refreshing, triggerRefresh] = useRefreshing();
@@ -305,37 +308,82 @@ export default function LegalPage() {
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Filter bar */}
-        <div className="space-y-2">
-          {/* Row 1: search + date filter + action button */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Kërko debitor ose dosje…"
-                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+        {isMobile ? (
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Kërko debitor ose dosje…"
+                  className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
+              </div>
+              {can("legal:create") && (
+                <button onClick={() => setShowNew(true)}
+                  className="flex items-center gap-1 px-3.5 py-2.5 bg-brand-600 text-white rounded-xl text-[13px] font-medium shrink-0">
+                  <Plus size={16} />
+                </button>
+              )}
             </div>
-            <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
-            {can("legal:create") && (
-              <button onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
-                <Plus size={14} /> Procedim i Ri
-              </button>
-            )}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+              <MobileFilterSheet groups={[
+                {
+                  key: "statusFilter",
+                  label: "Statusi",
+                  value: statusFilter,
+                  onChange: (v) => { setStatusFilter(v); load(1, v); },
+                  allLabel: "Të gjitha",
+                  options: filterOptions.filter((o) => o.key !== "").map((o) => ({ value: o.key, label: o.label })),
+                },
+                {
+                  key: "datePreset",
+                  label: "Periudha",
+                  value: datePreset,
+                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); load(1); },
+                  allLabel: "Të gjitha datat",
+                  options: [
+                    { value: "today",      label: "Sot" },
+                    { value: "yesterday",  label: "Dje" },
+                    { value: "this_week",  label: "Kjo Javë" },
+                    { value: "last_week",  label: "Java e Kaluar" },
+                    { value: "this_month", label: "Ky Muaj" },
+                    { value: "last_month", label: "Muaji i Kaluar" },
+                  ],
+                },
+              ]} />
+            </div>
           </div>
-          <div className="flex border-b border-gray-200">
-            {filterOptions.map(({ key, label }) => (
-              <button key={key}
-                onClick={() => { setStatusFilter(key); load(1, key); }}
-                className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                  statusFilter === key
-                    ? "border-brand-600 text-brand-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}>
-                {label}
-              </button>
-            ))}
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-xs">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Kërko debitor ose dosje…"
+                  className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+              </div>
+              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
+              {can("legal:create") && (
+                <button onClick={() => setShowNew(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
+                  <Plus size={14} /> Procedim i Ri
+                </button>
+              )}
+            </div>
+            <div className="flex border-b border-gray-200">
+              {filterOptions.map(({ key, label }) => (
+                <button key={key}
+                  onClick={() => { setStatusFilter(key); load(1, key); }}
+                  className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                    statusFilter === key
+                      ? "border-brand-600 text-brand-700"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <Card padding="none">
           <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">

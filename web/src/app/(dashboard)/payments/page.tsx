@@ -10,7 +10,8 @@ import { payments as paymentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X } from "lucide-react";
-import { DatePresetPicker, DatePreset } from "@/components/ui/DatePresetPicker";
+import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
+import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
 
 function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
@@ -191,18 +192,45 @@ export default function PaymentsPage() {
         </div>
 
         {/* Filter bar */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Kërko debitor ose dosje…"
-              className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400"
-            />
+        {isMobile ? (
+          <div className="space-y-2">
+            <div className="relative">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Kërko debitor ose dosje…"
+                className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+              <MobileFilterSheet groups={[
+                {
+                  key: "datePreset",
+                  label: "Periudha",
+                  value: datePreset,
+                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
+                  allLabel: "Të gjitha datat",
+                  options: [
+                    { value: "today",      label: "Sot" },
+                    { value: "yesterday",  label: "Dje" },
+                    { value: "this_week",  label: "Kjo Javë" },
+                    { value: "last_week",  label: "Java e Kaluar" },
+                    { value: "this_month", label: "Ky Muaj" },
+                    { value: "last_month", label: "Muaji i Kaluar" },
+                  ],
+                },
+              ]} />
+            </div>
           </div>
-          <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Kërko debitor ose dosje…"
+                className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
+            </div>
+            <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
+          </div>
+        )}
 
         {isMobile ? (
           /* ── Mobile card list ── */
