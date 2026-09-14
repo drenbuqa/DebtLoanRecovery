@@ -166,7 +166,7 @@ export default function PaymentsPage() {
       <div className="p-3 md:p-6 space-y-4 md:space-y-5">
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
           {[
             {
               label: scopedToSelf ? "Arkëtimet e Mia Sot" : "Arkëtime Sot",
@@ -181,12 +181,12 @@ export default function PaymentsPage() {
               value: stats ? total.toLocaleString() : null,
             },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-3 py-3 md:px-5 md:py-4"
               style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
+              <div className="text-[10px] md:text-[11px] font-medium text-gray-400 uppercase tracking-wide leading-tight">{s.label}</div>
               {s.value !== null
-                ? <div className="text-[22px] font-bold text-gray-900 tabular leading-tight mt-1.5">{s.value}</div>
-                : <div className="h-7 w-28 bg-gray-100 rounded-lg mt-1.5 animate-pulse" />}
+                ? <div className="text-[15px] md:text-[22px] font-bold text-gray-900 tabular leading-tight mt-1">{s.value}</div>
+                : <div className="h-5 md:h-7 w-full bg-gray-100 rounded-lg mt-1 animate-pulse" />}
             </div>
           ))}
         </div>
