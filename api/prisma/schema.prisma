@@ -557,6 +557,7 @@ enum CaseStatus {
   CLOSED
   SUSPENDED
   WRITTEN_OFF
+  LEGAL
 }
 
 enum CollectionStage {

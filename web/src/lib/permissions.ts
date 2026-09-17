@@ -13,6 +13,7 @@ export type Permission =
   | "page:admin:users"
   | "page:admin:offices"
   | "page:settings"
+  | "page:import"
   // Case actions
   | "case:create"
   | "case:edit"
@@ -51,7 +52,7 @@ const ADMIN_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
-  "page:admin:users", "page:admin:offices", "page:settings",
+  "page:admin:users", "page:admin:offices", "page:settings", "page:import",
   "case:create", "case:edit", "case:assign",
   "activity:create",
   "payment:create",
@@ -70,7 +71,7 @@ const MANAGER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
-  "page:admin:users", "page:admin:offices", "page:settings",
+  "page:admin:users", "page:admin:offices", "page:settings", "page:import",
   "case:create", "case:edit", "case:assign",
   "activity:create",
   "payment:create",

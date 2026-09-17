@@ -186,7 +186,7 @@ function OfficesPageInner() {
           ].map((s: any) => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
               <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
-              <div className={`text-[22px] font-bold tabular leading-tight mt-1.5 ${s.emerald ? "text-emerald-700" : "text-gray-900"}`}>{s.value}</div>
+              <div className="text-[22px] font-bold tabular leading-tight mt-1.5 text-gray-900">{s.value}</div>
             </div>
           ))}
         </div>

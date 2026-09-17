@@ -17,7 +17,7 @@ export class CreateCaseDto {
 
   // Loan
   @IsString({ message: 'Numri i kredisë duhet të jetë tekst' }) @MaxLength(50, { message: 'Numri i kredisë nuk mund të kalojë 50 karaktere' }) loanNumber: string;
-  @IsUUID('4', { message: 'Institucioni i zgjedhur nuk është i vlefshëm' }) institutionId: string;
+  @IsUUID('all', { message: 'Institucioni i zgjedhur nuk është i vlefshëm' }) institutionId: string;
   @IsNumber({}, { message: 'Shuma e financuar duhet të jetë numër' }) @Min(0.01, { message: 'Shuma e financuar duhet të jetë më e madhe se zero' }) originalLoanAmount: number;
   @IsOptional() @IsNumber({}, { message: 'Shuma e disbursuar duhet të jetë numër' }) @Min(0.01) disbursedAmount?: number;
   @IsNumber({}, { message: 'Borgji aktual duhet të jetë numër' }) @Min(0, { message: 'Borgji aktual nuk mund të jetë negativ' }) currentOutstandingBalance: number;
@@ -30,9 +30,9 @@ export class CreateCaseDto {
   @IsOptional() @IsIn(NPL_CLASSES, { message: 'Kategoria sipas performancës nuk është e vlefshme' }) nplClassification?: string;
 
   // Case
-  @IsOptional() @IsUUID('4', { message: 'Zyra e zgjedhur nuk është e vlefshme' }) officeId?: string;
-  @IsOptional() @IsUUID('4', { message: 'Zyrtari primar nuk është i vlefshëm' }) assignedOfficerId?: string;
-  @IsOptional() @IsUUID('4', { message: 'Zyrtari sekondar nuk është i vlefshëm' }) secondaryOfficerId?: string;
+  @IsOptional() @IsUUID('all', { message: 'Zyra e zgjedhur nuk është e vlefshme' }) officeId?: string;
+  @IsOptional() @IsUUID('all', { message: 'Zyrtari primar nuk është i vlefshëm' }) assignedOfficerId?: string;
+  @IsOptional() @IsUUID('all', { message: 'Zyrtari sekondar nuk është i vlefshëm' }) secondaryOfficerId?: string;
   @IsOptional() @IsIn(STAGES, { message: 'Kategoria sipas procedurës nuk është e vlefshme' }) collectionStage?: string;
   @IsOptional() @IsDateString({}, { message: 'Data e regjistrimit nuk është e vlefshme' }) registrationDate?: string;
 }

@@ -60,7 +60,7 @@ const REPORTS = [
 ];
 
 function downloadCSV(filename: string, rows: string[][]) {
-  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\r\n");
   // Explicit UTF-8 BOM bytes (EF BB BF) — the only reliable way to make Excel open
   // special characters (ë, ç, etc.) correctly on both Windows and Mac.
   const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);

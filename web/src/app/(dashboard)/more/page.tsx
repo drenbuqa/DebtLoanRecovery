@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { auth } from "@/lib/api";
 import {
   FileText, Scale, Building2, BarChart3, TrendingUp, Users,
-  Database, ChevronRight, LogOut,
+  Database, ChevronRight, LogOut, Upload,
 } from "lucide-react";
 
 interface NavRowProps {
@@ -114,12 +114,13 @@ export default function MorePage() {
         )}
 
         {/* Admin */}
-        {(can("page:admin:users") || can("page:admin:offices")) && (
+        {(can("page:admin:users") || can("page:admin:offices") || can("page:import")) && (
           <div>
             <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">Administrim</div>
             <div className="rounded-2xl overflow-hidden border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              {can("page:admin:users")  && <NavRow href="/admin/users"     icon={Users}    iconBg="bg-gray-100" iconColor="text-gray-600" label="Përdoruesit" sub="Menaxho llogari" />}
-              {can("page:admin:offices")&& <NavRow href="/admin/reference" icon={Database} iconBg="bg-gray-100" iconColor="text-gray-600" label="Zyret"        sub="Statistikat sipas zyrës" />}
+              {can("page:admin:users")  && <NavRow href="/admin/users"     icon={Users}    iconBg="bg-gray-100"  iconColor="text-gray-600"  label="Përdoruesit" sub="Menaxho llogari" />}
+              {can("page:admin:offices")&& <NavRow href="/admin/reference" icon={Database} iconBg="bg-gray-100"  iconColor="text-gray-600"  label="Zyret"        sub="Statistikat sipas zyrës" />}
+              {can("page:import")       && <NavRow href="/import"          icon={Upload}   iconBg="bg-brand-50"  iconColor="text-brand-600" label="Import"       sub="Ngarkoni portofol nga banka" />}
             </div>
           </div>
         )}

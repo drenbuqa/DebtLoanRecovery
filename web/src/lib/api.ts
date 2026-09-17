@@ -242,6 +242,36 @@ export const performance = {
   },
 };
 
+// Import
+async function importFetch(path: string, form: FormData) {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', credentials: 'include', body: form });
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = text;
+    try { msg = JSON.parse(text)?.message ?? text; } catch {}
+    throw new Error(msg);
+  }
+  return JSON.parse(text);
+}
+
+export const importApi = {
+  templateUrl: () => `${API_BASE}/import/template`,
+  fields: () => req<any[]>('/import/fields'),
+  jobs: () => req<any[]>('/import/jobs'),
+  preview: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return importFetch('/import/preview', form);
+  },
+  upload: async (file: File, mapping?: Record<string, string>, institution?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (mapping) form.append('mapping', JSON.stringify(mapping));
+    if (institution) form.append('institution', institution);
+    return importFetch('/import/loans', form);
+  },
+};
+
 // Reports — PDF download via fetch with credentials
 export const reports = {
   downloadCase: async (caseId: string) => {

@@ -11,7 +11,7 @@ import {
   LayoutDashboard, FolderOpen, Activity,
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
-  ChevronDown, LogOut, Menu, X,
+  ChevronDown, LogOut, Menu, X, Upload,
 } from "lucide-react";
 
 type NavItem = {
@@ -62,6 +62,7 @@ const nav: NavGroup[] = [
     items: [
       { href: "/admin/users",     label: "Përdoruesit", icon: Users,    permission: "page:admin:users" },
       { href: "/admin/reference", label: "Zyret",       icon: Database, permission: "page:admin:offices" },
+      { href: "/import",          label: "Import",      icon: Upload,   permission: "page:import" },
     ],
   },
 ];
