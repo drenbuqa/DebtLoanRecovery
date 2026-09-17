@@ -84,9 +84,15 @@ export class CasesController {
     return this.svc.assignOfficer(id, officerId, req.user?.id);
   }
 
+  @Get(':id/delete-preview')
+  @RequireRoles('ADMIN', 'MANAGER')
+  deletePreview(@Param('id') id: string) {
+    return this.svc.deletePreview(id);
+  }
+
   @Delete(':id')
-  @RequireRoles('ADMIN')
-  remove(@Param('id') id: string, @Request() req: any) {
-    return this.svc.deleteCase(id, req.user?.id);
+  @RequireRoles('ADMIN', 'MANAGER')
+  remove(@Param('id') id: string) {
+    return this.svc.deleteCase(id);
   }
 }

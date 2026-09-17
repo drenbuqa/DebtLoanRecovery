@@ -102,6 +102,7 @@ export default function PaymentsPage() {
   const [meta, setMeta] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paging, setPaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [datePreset, setDatePreset] = useState<DatePreset>("");
@@ -113,7 +114,8 @@ export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const load = useCallback(async (p = 1) => {
-    setLoading(true); setError(null);
+    if (data.length === 0) setLoading(true); else setPaging(true);
+    setError(null);
     try {
       const params: Record<string, any> = { page: p, limit: 100 };
       if (scopedToSelf   && user?.id)       params.officerId = user.id;
@@ -126,8 +128,8 @@ export default function PaymentsPage() {
       setStats(res.stats);
       setPage(p);
     } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
-  }, [scopedToSelf, user?.id, dateFrom, dateTo]);
+    finally { setLoading(false); setPaging(false); }
+  }, [scopedToSelf, user?.id, dateFrom, dateTo, data.length]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -246,30 +248,33 @@ export default function PaymentsPage() {
                   <div className="h-3 w-40 bg-gray-100 rounded" />
                 </div>
               ))
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && !paging ? (
               <div className="bg-white rounded-2xl border border-gray-200 flex flex-col items-center justify-center py-16 gap-4">
                 <CreditCard size={22} className="text-gray-400" />
                 <div className="text-[13px] font-semibold text-gray-700">Nuk u gjetën pagesa</div>
               </div>
             ) : (
-              <>
+              <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : ""}`}>
                 {filtered.map((p) => (
                   <PaymentCard key={p.id} p={p} scopedToSelf={scopedToSelf} onClick={() => p.case?.id && router.push(`/cases/${p.case.id}`)} />
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                    <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
-                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                    <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
+                      {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
+                      {page} / {pages}
+                    </span>
+                    <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         ) : (
@@ -300,7 +305,7 @@ export default function PaymentsPage() {
                   </div>
                 ))}
               </div>
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && !paging ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                   <CreditCard size={22} className="text-gray-400" />
@@ -313,7 +318,7 @@ export default function PaymentsPage() {
                 </div>
               </div>
             ) : (
-              <>
+              <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : ""}`}>
                 <Table>
                   <Thead>
                     <tr>
@@ -365,21 +370,24 @@ export default function PaymentsPage() {
 
                 {pages > 1 && (
                   <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[12px] text-gray-400">{((page - 1) * 25) + 1}–{Math.min(page * 25, total)} nga {total.toLocaleString()}</span>
+                    <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
                     <div className="flex items-center gap-2">
-                      <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronLeft size={15} />
                       </button>
-                      <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                      <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
+                        {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
+                        {page} / {pages}
+                      </span>
+                      <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronRight size={15} />
                       </button>
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </Card>
         )}

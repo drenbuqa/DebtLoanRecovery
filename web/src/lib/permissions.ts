@@ -81,6 +81,7 @@ const MANAGER_PERMS: Permission[] = [
   // Managers can see user list and reset passwords but cannot create/deactivate
   "user:reset-password",
   "institution:edit",
+  "case:delete",
   "document:delete",
   "report:export",
 ];

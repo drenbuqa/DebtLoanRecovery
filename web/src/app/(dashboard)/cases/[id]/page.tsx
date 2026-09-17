@@ -329,7 +329,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
 }
 
 // ── Modal: Add Payment ───────────────────────────────────────
-function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClose: () => void; onSuccess: () => void }) {
+function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: string; officerId?: string; onClose: () => void; onSuccess: () => void }) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
@@ -340,7 +340,7 @@ function AddPaymentModal({ caseId, onClose, onSuccess }: { caseId: string; onClo
     if (!amount || parseFloat(amount) <= 0) { setError("Vendosni një shumë të vlefshme"); return; }
     setLoading(true); setError("");
     try {
-      await paymentsApi.register({ caseId, amount: parseFloat(amount), paymentMethod: "BANK_TRANSFER", paymentDate: date, notes });
+      await paymentsApi.register({ caseId, officerId, amount: parseFloat(amount), paymentMethod: "BANK_TRANSFER", paymentDate: date, notes });
       onSuccess(); onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
@@ -786,7 +786,7 @@ export default function CaseDetailPage() {
       {/* Modals */}
       {confirmModal}
       {showLogActivity && <LogActivityModal caseId={caseId} onClose={() => setShowLogActivity(false)} onSuccess={() => { loadCase(); toast("Aktiviteti u regjistrua"); }} />}
-      {showAddPayment && <AddPaymentModal caseId={caseId} onClose={() => setShowAddPayment(false)} onSuccess={() => { loadCase(); toast("Pagesa u regjistrua"); }} />}
+      {showAddPayment && <AddPaymentModal caseId={caseId} officerId={user?.id} onClose={() => setShowAddPayment(false)} onSuccess={() => { loadCase(); toast("Pagesa u regjistrua"); }} />}
       {showAgreement && <CreateAgreementModal caseId={caseId} onClose={() => setShowAgreement(false)} onSuccess={() => { loadCase(); toast("Marrëveshja u krijua"); }} />}
       {caseVoidTarget && <CaseVoidModal payment={caseVoidTarget} onClose={() => setCaseVoidTarget(null)} onVoided={() => { setCaseVoidTarget(null); loadCase(); toast("Pagesa u anulua"); }} />}
 

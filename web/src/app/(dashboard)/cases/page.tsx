@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency, formatEnum } from "@/lib/utils";
 import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
@@ -18,6 +18,122 @@ import { useToast } from "@/components/ui/Toast";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
+
+// ── Delete Case Modal ────────────────────────────────────────
+function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClose: () => void; onDeleted: () => void }) {
+  const [preview, setPreview] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [deleting, setDeleting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    (casesApi as any).deletePreview(caseId)
+      .then((p: any) => setPreview(p))
+      .catch(() => setError("Nuk mund të lexohen të dhënat e dosjes."))
+      .finally(() => setLoading(false));
+  }, [caseId]);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await casesApi.delete(caseId);
+      toast("Dosja u fshi me sukses.", "success");
+      onDeleted();
+    } catch {
+      setError("Fshirja dështoi. Provoni përsëri.");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+              <Trash2 size={15} className="text-red-500" />
+            </div>
+            <span className="text-[14px] font-semibold text-gray-900">Fshi Dosjen</span>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw size={18} className="animate-spin text-gray-400" />
+            </div>
+          ) : error && !preview ? (
+            <p className="text-[13px] text-red-600">{error}</p>
+          ) : preview ? (
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div className="text-[13px] font-semibold text-gray-900">{preview.borrowerName}</div>
+                <div className="flex items-center gap-3 text-[12px] text-gray-500">
+                  <span className="font-mono">{preview.caseReference}</span>
+                  <span>·</span>
+                  <span className="font-mono">{preview.loanNumber}</span>
+                </div>
+              </div>
+
+              {preview.hasPayments && (
+                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+                  <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-[12px] text-amber-800 leading-relaxed">
+                    Kjo dosje ka <strong>{preview.counts.payments} pagesë</strong> të regjistruar. Pagesat gjithashtu do të fshihen.
+                  </p>
+                </div>
+              )}
+
+              <div className="text-[12px] text-gray-500 leading-relaxed">
+                Kjo veprim është <strong className="text-gray-800">i pakthyeshëm</strong>. Do të fshihen:
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Aktivitete", preview.counts.activities],
+                  ["Pagesa", preview.counts.payments],
+                  ["Marrëveshje", preview.counts.agreements],
+                  ["Procedura Ligjore", preview.counts.legalProceedings],
+                  ["Dokumente", preview.counts.documents],
+                  ["Premtime Pagese", preview.counts.promises],
+                ].filter(([, v]) => Number(v) > 0).map(([label, count]) => (
+                  <div key={label as string} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <span className="text-[11px] text-gray-500">{label}</span>
+                    <span className="text-[11px] font-semibold text-gray-800">{count}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2 col-span-2">
+                  <span className="text-[11px] text-red-600">Klienti (personi)</span>
+                  <span className="text-[11px] font-semibold text-red-700">{preview.willDeletePerson ? "Do të fshihet" : "Do të ruhet"}</span>
+                </div>
+              </div>
+
+              {error && <p className="text-[12px] text-red-600">{error}</p>}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+          <button onClick={onClose} disabled={deleting} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            Anulo
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading || deleting || (!preview && !error)}
+            className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {deleting ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+            {deleting ? "Duke fshirë..." : "Fshi Dosjen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Shared field components ──────────────────────────────────
 function FL({ label, required, error, children }: { label: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
@@ -382,8 +498,10 @@ function CasesPageInner() {
   const [data, setData] = useState<any[]>([]);
   const [meta, setMeta] = useState({ total: 0, page: 1, pages: 1 });
   const [loading, setLoading] = useState(true);
+  const [paging, setPaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
 
   const initialSearch = searchParams.get("search") ?? "";
   const [search, setSearch] = useState(initialSearch);
@@ -411,11 +529,12 @@ function CasesPageInner() {
   const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const isInitial = data.length === 0;
+    if (isInitial) setLoading(true); else setPaging(true);
     setError(null);
     try {
       const res = await casesApi.list({
-        page, limit: 25, search: search || undefined,
+        page, limit: 50, search: search || undefined,
         view: view || undefined, status: status || undefined, stage: stage || undefined,
         from: dateFrom || undefined, to: dateTo || undefined,
         ...(scopedToSelf   && user?.id       ? { officerId: user.id }       : {}),
@@ -427,6 +546,7 @@ function CasesPageInner() {
       setError(e.message);
     } finally {
       setLoading(false);
+      setPaging(false);
     }
   }, [page, search, view, status, stage, dateFrom, dateTo]);
 
@@ -435,6 +555,7 @@ function CasesPageInner() {
   return (
     <div className="flex flex-col">
       {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={load} />}
+      {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); load(); }} />}
       <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej dosje`} help={[
         { title: "Si të gjeni një dosje", body: "Shkruani emrin e debitorit, numrin personal ose referencën e dosjes në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm dosjet me premtime të vonuara ose vetëm dosjet juridike." },
         { title: "Çfarë do të thotë D1, D2, D3, D4?", body: "Këto tregojnë sa gjatë ka qenë borxhi i vonuar. D1 nënkupton 30–60 ditë vonesë (fazë fillestare), D2 është 60–90 ditë, D3 është 90–180 ditë (serioz) dhe D4 është mbi 180 ditë (risk më i lartë). Sa më i madh numri, aq më e vështirë është rikuperimi i borxhit." },
@@ -521,7 +642,7 @@ function CasesPageInner() {
                 </div>
               ))}
             </div>
-          ) : data.length === 0 ? (
+          ) : data.length === 0 && !paging ? (
             <div className="bg-white rounded-2xl border border-gray-200 flex flex-col items-center justify-center py-16 gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <Briefcase size={22} className="text-gray-400" />
@@ -532,18 +653,21 @@ function CasesPageInner() {
               </div>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className={`space-y-2.5 transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
               {data.map((c) => (
                 <CaseCard key={c.id} c={c} onClick={() => router.push(`/cases/${c.id}`)} />
               ))}
               {meta.pages > 1 && (
                 <div className="flex items-center justify-center gap-3 pt-1 pb-2">
-                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronLeft size={16} />
                   </button>
-                  <span className="text-[13px] text-gray-500 tabular-nums">{page} / {meta.pages}</span>
-                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                  <span className="text-[13px] text-gray-500 tabular-nums flex items-center gap-1.5">
+                    {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
+                    {page} / {meta.pages}
+                  </span>
+                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronRight size={16} />
                   </button>
@@ -623,7 +747,7 @@ function CasesPageInner() {
             <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
               <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…
             </div>
-          ) : data.length === 0 ? (
+          ) : data.length === 0 && !paging ? (
             <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <Briefcase size={22} className="text-gray-400" />
@@ -634,6 +758,7 @@ function CasesPageInner() {
               </div>
             </div>
           ) : (
+            <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
             <Table>
               <Thead>
                 <tr>
@@ -644,6 +769,7 @@ function CasesPageInner() {
                   <Th>Faza / Statusi</Th>
                   <Th>Oficeri</Th>
                   <Th>Veprimi i Ardhshëm</Th>
+                  {can("case:delete") && <Th></Th>}
                 </tr>
               </Thead>
               <Tbody>
@@ -688,23 +814,40 @@ function CasesPageInner() {
                           : "—"}
                       </span>
                     </Td>
+                    {can("case:delete") && (
+                      <Td>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingCaseId(c.id); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="Fshi dosjen"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </Td>
+                    )}
                   </Tr>
                 ))}
               </Tbody>
             </Table>
+            </div>
           )}
 
           {/* Pagination */}
           {meta.pages > 1 && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
+              <span className="text-[12px] text-gray-400">
+                {((page - 1) * 50) + 1}–{Math.min(page * 50, meta.total)} nga {meta.total.toLocaleString()}
+              </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronLeft size={15} />
                 </button>
-                <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {meta.pages}</span>
-                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center justify-center gap-1.5">
+                  {paging ? <RefreshCw size={12} className="animate-spin text-gray-400" /> : null}
+                  {page} / {meta.pages}
+                </span>
+                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronRight size={15} />
                 </button>

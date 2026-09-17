@@ -72,7 +72,12 @@ const COL_ALIASES: Record<string, string> = {
   'npl': 'npl_classification', 'classification': 'npl_classification', 'category': 'npl_classification',
   // Office (DLR internal — only map explicit DLR office codes, never bank branch codes)
   'office_code': 'office_code', 'office': 'office_code',
-  // DLR Officers (matched by name in our user table)
+  // DLR Officers — by UUID (preferred, exact)
+  'assigned_officer_id': 'assigned_officer_id',
+  'secondary_officer_id': 'secondary_officer_id',
+  'dlr_officer_id': 'assigned_officer_id',
+  'dlr_secondary_officer_id': 'secondary_officer_id',
+  // DLR Officers — by name (fallback, fuzzy match)
   'dlr_first_collection_officer': 'assigned_officer_name',
   'dlr_second_collection_officer': 'secondary_officer_name',
   'collection_officer': 'assigned_officer_name',
@@ -138,6 +143,8 @@ interface ImportRow {
   days_past_due?: string;
   npl_classification?: string;
   office_code?: string;
+  assigned_officer_id?: string;
+  secondary_officer_id?: string;
   assigned_officer_name?: string;
   secondary_officer_name?: string;
   // Guarantor 1 (individual or combined)
@@ -349,7 +356,7 @@ export class ImportService {
       'personal_id', 'full_name', 'date_of_birth',
       'phone1', 'phone2', 'email', 'address', 'city',
       'loan_number', 'institution_name',
-      'DLR First Collection officer', 'DLR Second Collection Officer',
+      'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
       'days_past_due', 'npl_classification', 'office_code',
@@ -361,7 +368,7 @@ export class ImportService {
       '1234567890', 'Arben Gashi', '1985-03-15',
       '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 'Prishtinë',
       'PCB-2024-001', 'ProCredit Bank Kosovë',
-      'Alert Godeni', 'Lulzim Buqa',
+      'paste-officer-uuid-here', '',
       15000, 15000, 12500,
       'Consumer', '2024-01-15', '2027-01-15', '2024-11-01',
       45, 'WATCH', 'PRK',
@@ -506,8 +513,9 @@ export class ImportService {
     const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
     const officeMap = new Map(offices.map(o => [o.code.toLowerCase(), o]));
     const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true } });
-    // index by full name, lowercased, for fast lookup
     const officerMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim(), o.id]));
+    const officerFirstNameMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim().split(/\s+/)[0], o.id]));
+    const officerIdSet = new Set(officers.map(o => o.id));
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -536,17 +544,19 @@ export class ImportService {
         const officeCode = row.office_code?.trim().toLowerCase();
         const office = officeCode ? officeMap.get(officeCode) : undefined;
 
-        // Resolve officers by name (soft match — don't fail if not found)
-        const assignedOfficerId = row.assigned_officer_name?.trim()
-          ? (officerMap.get(row.assigned_officer_name.trim().toLowerCase()) ?? undefined)
-          : undefined;
-        const secondaryOfficerId = row.secondary_officer_name?.trim()
-          ? (officerMap.get(row.secondary_officer_name.trim().toLowerCase()) ?? undefined)
-          : undefined;
+        // Resolve officers — prefer UUID column, fall back to name match
+        const resolveOfficer = (id: string | undefined, name: string | undefined) => {
+          if (id?.trim()) return officerIdSet.has(id.trim()) ? id.trim() : undefined;
+          if (!name?.trim()) return undefined;
+          const key = name.trim().toLowerCase();
+          return officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]) ?? undefined;
+        };
+        const assignedOfficerId  = resolveOfficer(row.assigned_officer_id,   row.assigned_officer_name);
+        const secondaryOfficerId = resolveOfficer(row.secondary_officer_id,  row.secondary_officer_name);
 
         await this.prisma.$transaction(async (tx) => {
-          const personalId = cleanId(row.personal_id) || `NOID-${loanNum}`;
-          const fullName = row.full_name?.trim() || '';
+          const personalId = (cleanId(row.personal_id) || `NOID-${loanNum}`).slice(0, 30);
+          const fullName = (row.full_name?.trim() || '').slice(0, 200);
 
           const borrower = await tx.person.upsert({
             where: { personalId },
@@ -571,8 +581,9 @@ export class ImportService {
             [row.phone2?.trim(), false],
           ] as [string | undefined, boolean][]) {
             if (phone) {
-              const exists = await tx.personPhone.findFirst({ where: { personId: borrower.id, phoneNumber: phone } });
-              if (!exists) await tx.personPhone.create({ data: { personId: borrower.id, phoneNumber: phone, phoneType: 'MOBILE', isPrimary } });
+              const phoneNum = phone.slice(0, 30);
+              const exists = await tx.personPhone.findFirst({ where: { personId: borrower.id, phoneNumber: phoneNum } });
+              if (!exists) await tx.personPhone.create({ data: { personId: borrower.id, phoneNumber: phoneNum, phoneType: 'MOBILE', isPrimary } });
             }
           }
 
@@ -627,7 +638,7 @@ export class ImportService {
               update: { fullName: (fName + (lName ? " " + lName : "")).trim() },
             });
             if (rawPhone?.trim()) {
-              const ph = rawPhone.trim();
+              const ph = rawPhone.trim().slice(0, 30);
               const exists = await tx.personPhone.findFirst({ where: { personId: person.id, phoneNumber: ph } });
               if (!exists) await tx.personPhone.create({ data: { personId: person.id, phoneNumber: ph, phoneType: 'MOBILE', isPrimary: true } });
             }
