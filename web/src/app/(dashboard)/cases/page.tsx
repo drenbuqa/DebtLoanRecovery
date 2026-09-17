@@ -266,7 +266,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                       className={inp(false)} placeholder="+383 44 000 000" />
                   </FL>
                   <FL label="Qyteti" error={null}>
-                    <Select value={city} onChange={setCity} placeholder="Zgjidhni qytetin…" searchable dropUp
+                    <Select value={city} onChange={setCity} placeholder="Zgjidhni qytetin…" searchable dropUp clearable
                       options={KOSOVO_CITIES.map((c) => ({ value: c, label: c }))} />
                   </FL>
                   <FL label="Kategoria / Procedura" error={null}>
@@ -281,15 +281,15 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                       ]} />
                   </FL>
                   <FL label="Zyrtari Primar" error={null}>
-                    <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim" searchable dropUp
+                    <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim" searchable dropUp clearable
                       options={officerOptions} />
                   </FL>
                   <FL label="Zyrtari Sekondar" error={null}>
-                    <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId} placeholder="Pa caktim" searchable dropUp
+                    <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId} placeholder="Pa caktim" searchable dropUp clearable
                       options={officerOptions} />
                   </FL>
                   <FL label="Kategoria / Performanca" error={null}>
-                    <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori" dropUp
+                    <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori" dropUp clearable
                       options={[
                         { value: "PERFORMING",  label: "Performues" },
                         { value: "WATCH",       label: "Nën Vëzhgim" },
@@ -326,10 +326,11 @@ const STAGE_BADGE: Record<string, any> = {
 };
 
 const VIEWS = [
-  { key: "", label: "Të gjitha Dosjet" },
-  { key: "promises_today", label: "Premtime për Sot" },
-  { key: "inactive_30d", label: "Joaktive 30+ ditë" },
-  { key: "legal", label: "Dosje Juridike" },
+  { key: "",                 label: "Të gjitha" },
+  { key: "promises_today",   label: "Premtime për Sot" },
+  { key: "vonesa",           label: "Vonesa" },
+  { key: "premtime_thyera",  label: "Premtime të Thyera" },
+  { key: "inactive",         label: "Joaktive" },
 ];
 
 // ── Mobile case card ─────────────────────────────────────────
@@ -464,8 +465,8 @@ function CasesPageInner() {
             </div>
             {can("case:create") && (
               <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-1 px-3.5 py-2.5 bg-brand-600 text-white rounded-xl text-[13px] font-medium shrink-0">
-                <Plus size={16} />
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-brand-600 text-white rounded-xl text-[12px] font-medium shrink-0 whitespace-nowrap">
+                <Plus size={13} /> Regjistro
               </button>
             )}
           </div>
@@ -544,12 +545,12 @@ function CasesPageInner() {
               ))}
               {meta.pages > 1 && (
                 <div className="flex items-center justify-center gap-3 pt-1 pb-2">
-                  <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronLeft size={16} />
                   </button>
                   <span className="text-[13px] text-gray-500 tabular-nums">{page} / {meta.pages}</span>
-                  <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                  <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronRight size={16} />
                   </button>
@@ -564,7 +565,7 @@ function CasesPageInner() {
       <div className="p-4 md:p-6 space-y-3">
 
         {/* Toolbar */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-xs">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -577,7 +578,7 @@ function CasesPageInner() {
 
           <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); setPage(1); }} />
 
-          <Select value={stageStatus} onChange={applyStageStatus} label="Faza" placeholder="Të gjitha"
+          <Select value={stageStatus} onChange={applyStageStatus} label="Faza" placeholder="Të gjitha" clearable
             className="w-44"
             options={[
               { value: "stage:D1",          label: "D1" },
@@ -705,12 +706,12 @@ function CasesPageInner() {
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
               <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
               <div className="flex items-center gap-2">
-                <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
+                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronLeft size={15} />
                 </button>
                 <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {meta.pages}</span>
-                <button onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
+                <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronRight size={15} />
                 </button>

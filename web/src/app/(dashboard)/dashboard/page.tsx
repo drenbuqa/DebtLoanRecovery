@@ -11,9 +11,10 @@ import { cases as casesApi, payments as paymentsApi, performance as perfApi, off
 import { useAuth } from "@/lib/auth";
 import { formatEnum } from "@/lib/utils";
 import {
-  TrendingUp, AlertTriangle, Clock, Scale,
-  FileText, Users, ArrowUpRight, RefreshCw, FolderOpen,
-  MapPin, Circle, ChevronRight, BarChart3, CheckCircle2,
+  TrendingUp, Clock, Scale,
+  Users, ArrowUpRight, RefreshCw, FolderOpen,
+  MapPin, Circle, ChevronRight, BarChart3,
+  CheckSquare, AlertCircle, FileCheck,
 } from "lucide-react";
 
 const MONTHS = ["Janar","Shkurt","Mars","Prill","Maj","Qershor","Korrik","Gusht","Shtator","Tetor","Nëntor","Dhjetor"];
@@ -203,15 +204,14 @@ function CollectionsChart({ data, currentMonth }: { data: { month: string; total
 }
 
 // ── KPI card ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, alert, href }: { label: string; value: string; sub: string; alert?: boolean; href?: string }) {
+function KpiCard({ label, value, alert, href }: { label: string; value: string; alert?: boolean; href?: string }) {
   const inner = (
-    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 h-full" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</div>
-      <div className="text-[22px] font-bold text-gray-900 tabular leading-tight mt-1.5">{value}</div>
-      <div className={`text-[11px] mt-1 ${alert ? "text-amber-600 font-medium" : "text-gray-400"}`}>{sub}</div>
+    <div className="bg-white rounded-xl border border-gray-200 px-3 py-2.5 md:px-5 md:py-4 h-full flex flex-col justify-between min-h-[62px] md:min-h-0" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+      <div className="text-[10px] md:text-[11px] font-medium text-gray-400 uppercase tracking-wide leading-snug">{label}</div>
+      <div className={`text-[17px] md:text-[22px] font-bold tabular leading-tight mt-auto ${alert ? "text-amber-600" : "text-gray-900"}`}>{value}</div>
     </div>
   );
-  if (href) return <a href={href} className="block">{inner}</a>;
+  if (href) return <a href={href} className="block h-full">{inner}</a>;
   return inner;
 }
 
@@ -249,8 +249,8 @@ function OfficerDashboard({ user }: { user: any }) {
 
         {/* Summary strip */}
         <div className="grid grid-cols-2 gap-3">
-          <KpiCard label="Dosjet e Mia" value={loading ? "—" : fmtNum(cases.length)} sub="Caktuar tek ju" href="/cases" />
-          <KpiCard label="Aktivitete Sot" value="→" sub="Shto aktivitet të ri" href="/activities" />
+          <KpiCard label="Dosjet e Mia" value={loading ? "—" : fmtNum(cases.length)} href="/cases" />
+          <KpiCard label="Aktivitete Sot" value="→" href="/activities" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -430,23 +430,23 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3">
           {loading || !stats ? Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 px-4 py-3 h-[72px] animate-pulse">
-              <div className="h-2 w-20 bg-gray-100 rounded mb-3" />
-              <div className="h-5 w-14 bg-gray-100 rounded" />
+            <div key={i} className="bg-white rounded-xl border border-gray-200 px-3 py-2.5 md:px-4 md:py-3 min-h-[62px] md:min-h-0 animate-pulse flex flex-col justify-between">
+              <div className="h-2 w-16 bg-gray-100 rounded" />
+              <div className="h-5 w-12 bg-gray-100 rounded" />
             </div>
           )) : [
-            { label: "Gjendja Debitore", value: formatCurrency(stats.totalOutstanding), sub: "Për të gjitha institucionet", href: "/cases" },
-            { label: "Arkëtime Këtë Muaj", value: formatCurrency(stats.collectionsThisMonth), sub: "Muaji aktual", href: "/payments" },
-            { label: "Dosje Aktive", value: stats.activeCases.toLocaleString(), sub: "Aktualisht aktive", href: "/cases" },
-            { label: "Marrëveshje Aktive", value: stats.activeAgreements.toLocaleString(), sub: `${stats.overdueInstallments} këste me vonesë`, alert: stats.overdueInstallments > 0, href: "/agreements" },
-            { label: "Premtime Pagese për Sot", value: stats.promisesToday.toLocaleString(), sub: "Kërkon ndjekje", alert: stats.promisesToday > 0, href: "/cases?view=promises_today" },
-            { label: "Dosje Juridike", value: stats.legalCases.toLocaleString(), sub: "Në procedim", href: "/legal" },
+            { label: "Gjendja Debitore", value: formatCurrency(stats.totalOutstanding), href: "/cases" },
+            { label: "Arkëtime Këtë Muaj", value: formatCurrency(stats.collectionsThisMonth), href: "/payments" },
+            { label: "Dosje Aktive", value: stats.activeCases.toLocaleString(), href: "/cases" },
+            { label: "Marrëveshje Aktive", value: stats.activeAgreements.toLocaleString(), alert: stats.overdueInstallments > 0, href: "/agreements" },
+            { label: "Premtime Pagese për Sot", value: stats.promisesToday.toLocaleString(), alert: stats.promisesToday > 0, href: "/cases?view=promises_today" },
+            { label: "Dosje Juridike", value: stats.legalCases.toLocaleString(), href: "/legal" },
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
         {/* Chart + Alerts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-stretch">
-          <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+          <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
                 <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore</h3>
@@ -477,19 +477,19 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     <div className="w-6 h-3 bg-gray-100 animate-pulse rounded" />
                   </div>
                 )) : [
-                  { icon: Clock,        label: "Premtime pagese për sot",  val: stats.promisesToday,       color: "text-brand-600", bg: "bg-brand-50",   href: "/cases?view=promises_today" },
-                  { icon: FileText,     label: "Këste me vonesë",          val: stats.overdueInstallments, color: "text-red-500",   bg: "bg-red-50",     href: "/agreements" },
-                  { icon: Scale,        label: "Dosje juridike",           val: stats.legalCases,          color: "text-brand-600", bg: "bg-brand-50",   href: "/legal" },
-                  { icon: Users,        label: "Dosje aktive",             val: stats.activeCases,         color: "text-gray-500",  bg: "bg-gray-50",    href: "/cases" },
-                  { icon: CheckCircle2, label: "Marrëveshje aktive",       val: stats.activeAgreements,    color: "text-gray-500",  bg: "bg-gray-50",    href: "/agreements" },
+                  { icon: CheckSquare,  label: "Premtime pagese për sot",  val: stats.promisesToday,       href: "/cases?view=promises_today" },
+                  { icon: AlertCircle,  label: "Këste me vonesë",          val: stats.overdueInstallments, href: "/agreements" },
+                  { icon: Scale,        label: "Dosje juridike",           val: stats.legalCases,          href: "/legal" },
+                  { icon: FolderOpen,   label: "Dosje aktive",             val: stats.activeCases,         href: "/cases" },
+                  { icon: FileCheck,    label: "Marrëveshje aktive",       val: stats.activeAgreements,    href: "/agreements" },
                 ].map((a) => (
                   <button key={a.label} onClick={() => router.push(a.href)}
                     className="flex items-center gap-2.5 py-0.5 w-full hover:opacity-80 transition-opacity text-left">
-                    <div className={`w-6 h-6 rounded-md ${a.bg} flex items-center justify-center shrink-0`}>
-                      <a.icon size={11} className={a.color} />
+                    <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
+                      <a.icon size={11} className="text-gray-500" />
                     </div>
                     <span className="flex-1 text-[12px] text-gray-600">{a.label}</span>
-                    <span className={`text-[13px] font-bold tabular ${a.color}`}>{a.val}</span>
+                    <span className="text-[13px] font-bold tabular text-gray-900">{a.val}</span>
                   </button>
                 ))}
               </div>
@@ -648,8 +648,8 @@ function ViewerDashboard() {
       <div className="p-4 md:p-6 space-y-5">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3">
           {loading || !stats ? Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 px-4 py-3 h-[72px] animate-pulse">
-              <div className="h-2 w-20 bg-gray-100 rounded mb-3" /><div className="h-5 w-14 bg-gray-100 rounded" />
+            <div key={i} className="bg-white rounded-xl border border-gray-200 px-3 py-2.5 md:px-4 md:py-3 min-h-[62px] md:min-h-0 animate-pulse flex flex-col justify-between">
+              <div className="h-2 w-16 bg-gray-100 rounded" /><div className="h-5 w-12 bg-gray-100 rounded" />
             </div>
           )) : [
             { label: "Gjendja Debitore",        value: formatCurrency(stats.totalOutstanding),    sub: "Për të gjitha institucionet" },
@@ -662,7 +662,7 @@ function ViewerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
-          <div className="col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+          <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div className="flex items-start justify-between px-5 pt-4 pb-2">
               <div>
                 <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore</h3>

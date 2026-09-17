@@ -11,7 +11,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   useKeyboardShortcuts();
   return (
-    <div key={pathname} className="animate-page-in h-full">
+    <div key={pathname} className="animate-page-in min-h-full">
       {children}
     </div>
   );

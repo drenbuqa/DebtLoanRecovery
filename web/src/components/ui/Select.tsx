@@ -25,9 +25,10 @@ interface SelectProps {
   disabled?: boolean;
   dropUp?: boolean;
   searchable?: boolean;
+  clearable?: boolean;
 }
 
-export function Select({ value, onChange, options, placeholder = "Select…", label, className = "", disabled = false, dropUp = false, searchable = false }: SelectProps) {
+export function Select({ value, onChange, options, placeholder = "Zgjidhni…", label, className = "", disabled = false, dropUp = false, searchable = false, clearable = false }: SelectProps) {
   const mounted = useMounted();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -106,7 +107,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         </div>
       )}
       <div className="overflow-y-auto py-1 min-h-0 flex-1">
-        {placeholder && !query && (
+        {clearable && placeholder && !query && (
           <button type="button" onClick={() => pick("")}
             className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
               ${value === "" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-400 hover:bg-gray-50"}`}>
@@ -146,7 +147,7 @@ export function Select({ value, onChange, options, placeholder = "Select…", la
         disabled={disabled}
         onClick={() => { if (!open) setDropdownStyle(computeStyle()); setOpen((o) => !o); }}
         style={{ fontFamily: "inherit", fontSize: 13, fontWeight: 400 }}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all
+        className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border transition-all
           ${open
             ? "border-brand-400 shadow-[0_0_0_3px_rgba(167,139,250,0.15)] bg-white"
             : "border-gray-200 bg-white hover:border-gray-300"

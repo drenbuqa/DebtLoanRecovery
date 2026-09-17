@@ -801,13 +801,13 @@ export default function CaseDetailPage() {
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Dosjes</label>
                 <Select value={statusForm.status} onChange={(v) => setStatusForm(f => ({ ...f, status: v }))}
-                  placeholder="Pa ndryshim"
+                  placeholder="Pa ndryshim" clearable
                   options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Arkëtimit</label>
                 <Select value={statusForm.collectionStage} onChange={(v) => setStatusForm(f => ({ ...f, collectionStage: v }))}
-                  placeholder="Pa ndryshim"
+                  placeholder="Pa ndryshim" clearable
                   options={["D1","D2","D3","D4","LEGAL","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
               </div>
               <div>
@@ -842,19 +842,19 @@ export default function CaseDetailPage() {
                 <div>
                   <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Primar</label>
                   <Select value={editForm.assignedOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, assignedOfficerId: v }))}
-                    placeholder="Pa caktuar"
+                    placeholder="Pa caktuar" clearable
                     options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Sekondar</label>
                   <Select value={editForm.secondaryOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, secondaryOfficerId: v }))}
-                    placeholder="Pa caktuar"
+                    placeholder="Pa caktuar" clearable
                     options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyra</label>
                   <Select value={editForm.officeId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, officeId: v }))}
-                    placeholder="Pa zyrë specifike"
+                    placeholder="Pa zyrë specifike" clearable
                     options={editOffices.map((o: any) => ({ value: o.id, label: o.name }))} />
                 </div>
                 <div>
@@ -876,7 +876,7 @@ export default function CaseDetailPage() {
                 <div>
                   <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Klasifikimi NPL</label>
                   <Select value={editForm.nplClassification ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, nplClassification: v }))}
-                    dropUp placeholder="Asnjë"
+                    dropUp placeholder="Asnjë" clearable
                     options={[
                       { value: "PERFORMING",  label: "Performues" },
                       { value: "WATCH",       label: "Nën Vëzhgim" },

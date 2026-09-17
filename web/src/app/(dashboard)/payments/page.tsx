@@ -219,7 +219,7 @@ export default function PaymentsPage() {
             ]} />
           </div>
         ) : (
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
@@ -258,12 +258,12 @@ export default function PaymentsPage() {
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                    <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
                     <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                    <button disabled={page >= pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                    <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>
@@ -367,12 +367,12 @@ export default function PaymentsPage() {
                   <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-[12px] text-gray-400">{((page - 1) * 25) + 1}–{Math.min(page * 25, total)} nga {total.toLocaleString()}</span>
                     <div className="flex items-center gap-2">
-                      <button disabled={page <= 1} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronLeft size={15} />
                       </button>
                       <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                      <button disabled={page >= pages} onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronRight size={15} />
                       </button>

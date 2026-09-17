@@ -171,8 +171,8 @@ function NotificationsPanel() {
   return (
     <div ref={ref} className="relative">
       <button onClick={toggle}
-        className="relative w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
-        <Bell size={16} />
+        className="relative w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+        <Bell size={18} />
         {hasAlerts && (
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-600 rounded-full" />
         )}
@@ -278,8 +278,8 @@ function HelpPanel({ items }: { items: HelpItem[] }) {
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen((o) => !o)}
-        className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
-        <HelpCircle size={16} />
+        className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+        <HelpCircle size={18} />
       </button>
 
       {open && (

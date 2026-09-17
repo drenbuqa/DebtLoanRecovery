@@ -158,10 +158,12 @@ export class CasesService {
       where.activities = {
         some: { activityType: 'PROMISE_TO_PAY', nextActionDate: { gte: today, lt: tomorrow } },
       };
-    } else if (query.view === 'inactive_30d') {
-      const thirtyAgo = new Date();
-      thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-      where.activities = { none: { occurredAt: { gte: thirtyAgo } } };
+    } else if (query.view === 'vonesa') {
+      where.agreements = { some: { installments: { some: { status: 'OVERDUE' } } } };
+    } else if (query.view === 'premtime_thyera') {
+      where.promisesToPay = { some: { status: 'BROKEN' } };
+    } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
+      where.status = 'INACTIVE';
     } else if (query.view === 'legal') {
       where.legalProceedings = { some: {} };
     }

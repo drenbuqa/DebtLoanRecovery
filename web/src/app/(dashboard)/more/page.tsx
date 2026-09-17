@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { auth } from "@/lib/api";
 import {
-  CreditCard, FileText,
-  Scale, Building2, BarChart3, TrendingUp, Users,
+  FileText, Scale, Building2, BarChart3, TrendingUp, Users,
   Database, ChevronRight, LogOut,
 } from "lucide-react";
 
@@ -58,7 +57,7 @@ export default function MorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] pb-28">
+    <div className="bg-[#F4F5F7]">
       {/* Page title */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="flex items-center px-4 h-14">
@@ -69,7 +68,8 @@ export default function MorePage() {
       <div className="px-4 pt-5 space-y-5">
 
         {/* Profile card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3"
+        <Link href="/admin/system"
+          className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3 active:bg-gray-50 transition-colors"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0">
             <span className="text-brand-700 text-[15px] font-bold">{initials}</span>
@@ -80,13 +80,13 @@ export default function MorePage() {
               {roleLabel[user?.role ?? ""] ?? user?.role} · {user?.office?.name ?? "—"}
             </div>
           </div>
-        </div>
+          <ChevronRight size={15} className="text-gray-300 shrink-0" />
+        </Link>
 
         {/* Operations */}
         <div>
           <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">Operacione</div>
           <div className="rounded-2xl overflow-hidden border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            {can("page:payments")    && <NavRow href="/payments"    icon={CreditCard}  iconBg="bg-emerald-50" iconColor="text-emerald-600" label="Pagesat"          sub="Regjistri i arkëtimeve" />}
             {can("page:agreements")  && <NavRow href="/agreements"  icon={FileText}    iconBg="bg-blue-50"    iconColor="text-blue-600"    label="Marrëveshjet"     sub="Planet e pagesave" />}
             {can("page:legal")       && <NavRow href="/legal"       icon={Scale}       iconBg="bg-brand-50"   iconColor="text-brand-600"   label="Juridike"         sub="Procedime gjyqësore" />}
           </div>

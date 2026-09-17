@@ -91,7 +91,7 @@ function PerformancePageInner() {
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Filters */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <DatePresetPicker
             label="Periudha"
             value={datePreset}
@@ -104,6 +104,7 @@ function PerformancePageInner() {
               value={officeFilter}
               onChange={setOfficeFilter}
               placeholder="Të gjitha"
+              clearable
               options={offices.map((o: any) => ({ value: o.id, label: o.name }))}
             />
           </div>

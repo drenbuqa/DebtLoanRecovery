@@ -71,7 +71,7 @@ export class ActivitiesService {
     return activity;
   }
 
-  async findAll(query: { page?: number; limit?: number; officerId?: string; officeId?: string; activityType?: string; from?: string; to?: string; caseId?: string }) {
+  async findAll(query: { page?: number; limit?: number; officerId?: string; officeId?: string; activityType?: string | string[]; from?: string; to?: string; caseId?: string }) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 50, 200);
     const skip = (page - 1) * limit;
@@ -79,7 +79,12 @@ export class ActivitiesService {
     if (query.caseId)    where.caseId = query.caseId;
     if (query.officerId) where.officerId = query.officerId;
     if (query.officeId)  where.case = { officeId: query.officeId };
-    if (query.activityType) where.activityType = query.activityType;
+    if (query.activityType) {
+      const types = Array.isArray(query.activityType)
+        ? query.activityType
+        : query.activityType.split(',').filter(Boolean);
+      where.activityType = types.length === 1 ? types[0] : { in: types };
+    }
     if (query.from || query.to) {
       where.occurredAt = {
         ...(query.from && { gte: new Date(query.from) }),

@@ -310,7 +310,7 @@ function UsersAdminPageInner() {
 
         {/* Filter bar */}
         <div className="space-y-3">
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
@@ -322,6 +322,7 @@ function UsersAdminPageInner() {
               value={roleFilter}
               onChange={setRoleFilter}
               placeholder="Të gjithë"
+              clearable
               options={[
                 { value: "ADMIN",   label: "Administrator" },
                 { value: "MANAGER", label: "Menaxher" },
