@@ -93,7 +93,7 @@ function GlobalSearch() {
               <div className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Dosjet</div>
               {results.map((c) => {
                 const borrower = c.loan?.borrower;
-                const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "—";
+                const name = borrower ? `${borrower.fullName}` : "—";
                 return (
                   <button key={c.id} onClick={() => go(c.id)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
@@ -392,7 +392,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
               <div className="px-4 pt-4 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dosjet</div>
               {results.map((c) => {
                 const borrower = c.loan?.borrower;
-                const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "—";
+                const name = borrower ? `${borrower.fullName}` : "—";
                 const initials = name !== "—"
                   ? name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
                   : "?";

@@ -99,7 +99,7 @@ export class ActivitiesService {
       case: {
         select: {
           id: true, caseReference: true,
-          loan: { select: { loanNumber: true, borrower: { select: { firstName: true, lastName: true } } } },
+          loan: { select: { loanNumber: true, borrower: { select: { fullName: true } } } },
         },
       },
     };

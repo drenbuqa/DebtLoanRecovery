@@ -68,7 +68,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void; scopedToSelf: boolean }) {
   const borrower = p.case?.loan?.borrower;
-  const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "—";
+  const name = borrower ? `${borrower.fullName}` : "—";
   const date = new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" });
   return (
     <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50 cursor-pointer">
@@ -138,7 +138,7 @@ export default function PaymentsPage() {
   const filtered = q
     ? data.filter((p) => {
         const borrower = p.case?.loan?.borrower;
-        const name = borrower ? `${borrower.firstName} ${borrower.lastName}`.toLowerCase() : "";
+        const name = borrower ? `${borrower.fullName}`.toLowerCase() : "";
         const ref = (p.case?.caseReference ?? "").toLowerCase();
         return name.includes(q) || ref.includes(q);
       })
@@ -334,7 +334,7 @@ export default function PaymentsPage() {
                         <Td>
                           <span className="font-medium text-gray-900">
                             {p.case?.loan?.borrower
-                              ? `${p.case.loan.borrower.firstName} ${p.case.loan.borrower.lastName}`
+                              ? `${p.case.loan.borrower.fullName}`
                               : "—"}
                           </span>
                         </Td>

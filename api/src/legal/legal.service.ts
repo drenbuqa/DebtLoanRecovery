@@ -12,7 +12,7 @@ const LP_SELECT = {
       loan: {
         select: {
           loanNumber: true,
-          borrower: { select: { firstName: true, lastName: true, personalId: true } },
+          borrower: { select: { fullName: true, personalId: true } },
           institution: { select: { shortName: true } },
         },
       },

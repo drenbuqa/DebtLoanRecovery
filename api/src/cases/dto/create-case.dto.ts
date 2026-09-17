@@ -6,8 +6,7 @@ const STAGES = ['D1', 'D2', 'D3', 'D4', 'LEGAL', 'WRITTEN_OFF'] as const;
 export class CreateCaseDto {
   // Borrower
   @IsString({ message: 'Numri personal duhet të jetë tekst' }) @MaxLength(30, { message: 'Numri personal nuk mund të kalojë 30 karaktere' }) personalId: string;
-  @IsString({ message: 'Emri duhet të jetë tekst' }) @MaxLength(100, { message: 'Emri nuk mund të kalojë 100 karaktere' }) firstName: string;
-  @IsString({ message: 'Mbiemri duhet të jetë tekst' }) @MaxLength(100, { message: 'Mbiemri nuk mund të kalojë 100 karaktere' }) lastName: string;
+  @IsString({ message: 'Emri i plotë duhet të jetë tekst' }) @MaxLength(200, { message: 'Emri i plotë nuk mund të kalojë 200 karaktere' }) fullName: string;
   @IsOptional() @IsDateString({}, { message: 'Data e lindjes nuk është e vlefshme' }) dateOfBirth?: string;
   @IsOptional() @IsString({ message: 'Telefoni duhet të jetë tekst' }) @MaxLength(30, { message: 'Telefoni nuk mund të kalojë 30 karaktere' }) phone1?: string;
   @IsOptional() @IsString({ message: 'Telefoni 2 duhet të jetë tekst' }) @MaxLength(30, { message: 'Telefoni 2 nuk mund të kalojë 30 karaktere' }) phone2?: string;

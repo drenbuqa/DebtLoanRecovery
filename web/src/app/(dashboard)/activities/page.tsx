@@ -293,7 +293,7 @@ export default function ActivitiesPage() {
   const q = searchQuery.trim().toLowerCase();
   const filtered = q ? data.filter((a) => {
     const borrower = a.case?.loan?.borrower;
-    const name = borrower ? `${borrower.firstName} ${borrower.lastName}`.toLowerCase() : "";
+    const name = borrower ? `${borrower.fullName}`.toLowerCase() : "";
     const ref = (a.case?.caseReference ?? "").toLowerCase();
     const notes = (a.notes ?? "").toLowerCase();
     return name.includes(q) || ref.includes(q) || notes.includes(q);
@@ -365,7 +365,7 @@ export default function ActivitiesPage() {
                           <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
                             {caseResults.map((c) => {
                               const borrower = c.loan?.borrower;
-                              const name = borrower ? `${borrower.firstName} ${borrower.lastName}` : "I panjohur";
+                              const name = borrower ? `${borrower.fullName}` : "I panjohur";
                               const label = `${c.caseReference} — ${name}`;
                               return (
                                 <button key={c.id} type="button"
@@ -666,7 +666,7 @@ export default function ActivitiesPage() {
                     const tm = TYPE_META[a.activityType] ?? { icon: Clock, label: a.activityType, color: "text-gray-500", bg: "bg-gray-100" };
                     const Icon = tm.icon;
                     const om = a.outcome ? (OUTCOME_META[a.outcome] ?? { label: a.outcome, color: "text-gray-500", bg: "bg-gray-100" }) : null;
-                    const debtor = a.case?.loan?.borrower ? `${a.case.loan.borrower.firstName} ${a.case.loan.borrower.lastName}` : null;
+                    const debtor = a.case?.loan?.borrower ? `${a.case.loan.borrower.fullName}` : null;
                     const officerName = a.officer?.fullName ?? null;
                     const caseRef = a.case?.caseReference ?? null;
                     const isToday = a.occurredAt ? isSameDay(new Date(a.occurredAt), new Date()) : false;

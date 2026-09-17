@@ -90,7 +90,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         for (const c of data) {
           rows.push([
             c.caseReference,
-            `${c.loan?.borrower?.firstName ?? ""} ${c.loan?.borrower?.lastName ?? ""}`.trim(),
+            `${c.loan?.borrower?.fullName}`.trim(),
             c.loan?.institution?.shortName ?? "",
             formatEnum(c.status),
             formatEnum(c.collectionStage),
@@ -108,7 +108,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           rows.push([
             p.paymentReference,
             p.case?.caseReference ?? "",
-            `${p.case?.loan?.borrower?.firstName ?? ""} ${p.case?.loan?.borrower?.lastName ?? ""}`.trim(),
+            `${p.case?.loan?.borrower?.fullName}`.trim(),
             p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("sq-AL") : "",
             String(Number(p.amount).toFixed(2)),
             formatEnum(p.paymentMethod),
@@ -121,7 +121,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           rows.push([
             a.agreementReference,
             a.case?.caseReference ?? "",
-            `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
+            `${a.case?.loan?.borrower?.fullName}`.trim(),
             formatEnum(a.status),
             String(Number(a.totalAmount).toFixed(2)),
             String(a.installmentCount),
@@ -137,7 +137,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
             if (ins.status === "OVERDUE") {
               rows.push([
                 a.agreementReference,
-                `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
+                `${a.case?.loan?.borrower?.fullName}`.trim(),
                 String(ins.installmentNumber),
                 ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("sq-AL") : "",
                 String(Number(ins.amount).toFixed(2)),
@@ -153,7 +153,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           rows.push([
             lp.proceedingRef,
             lp.case?.caseReference ?? "",
-            `${lp.case?.loan?.borrower?.firstName ?? ""} ${lp.case?.loan?.borrower?.lastName ?? ""}`.trim(),
+            `${lp.case?.loan?.borrower?.fullName}`.trim(),
             lp.court ?? "",
             formatEnum(lp.status),
             lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("sq-AL") : "",
@@ -171,7 +171,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           rows.push([
             formatEnum(a.activityType),
             a.case?.caseReference ?? "",
-            `${a.case?.loan?.borrower?.firstName ?? ""} ${a.case?.loan?.borrower?.lastName ?? ""}`.trim(),
+            `${a.case?.loan?.borrower?.fullName}`.trim(),
             a.officer?.fullName ?? "",
             a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
             a.outcome ? formatEnum(a.outcome) : "",

@@ -724,7 +724,7 @@ export default function CaseDetailPage() {
 
   // Derived values
   const debtor = caseData
-    ? `${caseData.loan?.borrower?.firstName ?? ""} ${caseData.loan?.borrower?.lastName ?? ""}`.trim()
+    ? caseData.loan?.borrower?.fullName ?? ""
     : "Duke ngarkuar…";
   const outstanding = Number(caseData?.loan?.currentOutstandingBalance ?? 0);
   const dpd = caseData?.loan?.daysPastDue ?? 0;
@@ -742,7 +742,7 @@ export default function CaseDetailPage() {
     ? [
         { name: debtor, role: "Debitor", personalId: caseData.loan?.borrower?.personalId, phone: caseData.loan?.borrower?.phones?.[0]?.phoneNumber, address: caseData.loan?.borrower?.address },
         ...(caseData.loan?.relatedParties ?? []).map((rp: any) => ({
-          name: `${rp.person?.firstName} ${rp.person?.lastName}`, role: rp.role,
+          name: rp.person?.fullName ?? "", role: rp.role,
           personalId: rp.person?.personalId, phone: rp.person?.phones?.[0]?.phoneNumber, address: "",
         })),
       ]

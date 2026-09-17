@@ -274,7 +274,7 @@ function OfficerDashboard({ user }: { user: any }) {
               ) : (
                 <div className="divide-y divide-gray-50">
                   {cases.map((c) => {
-                    const name = c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "—";
+                    const name = c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—";
                     const stage = c.collectionStage ?? "—";
                     const nextAction = c.nextActionDate ? new Date(c.nextActionDate) : null;
                     const isOverdue = nextAction && nextAction < now;
@@ -587,7 +587,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                       <Td><span className="font-mono text-[12px] text-gray-500">{p.paymentReference}</span></Td>
                       <Td>
                         <span className="font-medium text-gray-900">
-                          {p.case?.loan?.borrower ? `${p.case.loan.borrower.firstName} ${p.case.loan.borrower.lastName}` : "—"}
+                          {p.case?.loan?.borrower ? `${p.case.loan.borrower.fullName}` : "—"}
                         </span>
                       </Td>
                       <Td><span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span></Td>

@@ -18,7 +18,7 @@ const PAYMENT_SELECT = {
       loan: {
         select: {
           loanNumber: true,
-          borrower: { select: { firstName: true, lastName: true } },
+          borrower: { select: { fullName: true } },
           institution: { select: { shortName: true } },
         },
       },

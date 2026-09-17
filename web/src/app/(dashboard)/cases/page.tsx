@@ -59,8 +59,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   const [loanNumber, setLoanNumber] = useState("");
   const [personalId, setPersonalId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [phone1, setPhone1] = useState("");
   const [originalAmount, setOriginalAmount] = useState("");
@@ -100,8 +99,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
       const wrapped = person ? { person, loanCount: person.loans?.length ?? 0 } : { person: null, loanCount: 0 };
       setPersonResult(wrapped);
       if (person) {
-        setFirstName(person.firstName);
-        setLastName(person.lastName);
+        setFullName(person.fullName);
         setPhone1(person.phones?.[0]?.phoneNumber ?? "");
         setAddress(person.address ?? "");
         setCity(person.city ?? "");
@@ -113,23 +111,22 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const E = {
     loanNumber:    fieldError("loanNumber",    loanNumber,    { required: true }),
     personalId:    fieldError("personalId",    personalId,    { required: true }),
-    firstName:     fieldError("firstName",     firstName,     { required: true }),
-    lastName:      fieldError("lastName",      lastName,      { required: true }),
+    fullName:      fieldError("fullName",      fullName,      { required: true }),
     originalAmount:fieldError("originalAmount",originalAmount,{ required: true, min: 0 }),
     currentBalance:fieldError("currentBalance",currentBalance,{ required: true, min: 0 }),
     institutionId: fieldError("institutionId", institutionId, { required: true }),
   };
 
   async function submit() {
-    touchAll(["loanNumber","personalId","firstName","lastName","originalAmount","currentBalance","institutionId"]);
+    touchAll(["loanNumber","personalId","fullName","originalAmount","currentBalance","institutionId"]);
     const hasErrors =
-      !loanNumber.trim() || !personalId.trim() || !firstName.trim() ||
-      !lastName.trim() || !originalAmount || !currentBalance || !institutionId;
+      !loanNumber.trim() || !personalId.trim() || !fullName.trim() ||
+      !originalAmount || !currentBalance || !institutionId;
     if (hasErrors) return;
     setLoading(true); setSubmitError("");
     try {
       await casesApi.create({
-        loanNumber, personalId, firstName, lastName,
+        loanNumber, personalId, fullName,
         address: address || undefined,
         phone1: phone1 || undefined,
         originalLoanAmount: parseFloat(originalAmount),
@@ -199,7 +196,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                   <span>{personResult.person ? "✓" : "ℹ"}</span>
                   <span>
                     {personResult.person
-                      ? `U gjet: ${personResult.person.firstName} ${personResult.person.lastName} · ${personResult.loanCount} kredi ekzistuese.`
+                      ? `U gjet: ${personResult.person.fullName} · ${personResult.loanCount} kredi ekzistuese.`
                       : "Nuk u gjet asnjë rekord. Plotëso të dhënat manualisht."}
                   </span>
                 </div>
@@ -220,13 +217,9 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                   options={institutionOptions} />
               </div>
             </FL>
-            <FL label="Emri" required error={E.firstName}>
-              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} onBlur={() => touch("firstName")}
-                className={inp(!!E.firstName)} placeholder="Emri" />
-            </FL>
-            <FL label="Mbiemri" required error={E.lastName}>
-              <input value={lastName} onChange={(e) => setLastName(e.target.value)} onBlur={() => touch("lastName")}
-                className={inp(!!E.lastName)} placeholder="Mbiemri" />
+            <FL label="Emri i Plotë" required error={E.fullName}>
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} onBlur={() => touch("fullName")}
+                className={inp(!!E.fullName)} placeholder="p.sh. Arben Gashi" />
             </FL>
             <FL label="Shuma e Financuar (EUR)" required error={E.originalAmount}>
               <input type="number" min="0" step="0.01" value={originalAmount}
@@ -337,7 +330,7 @@ const VIEWS = [
 function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
   const dpd = c.loan?.daysPastDue ?? 0;
   const dpdColor = dpd > 180 ? "text-red-600" : dpd > 90 ? "text-amber-600" : "text-gray-700";
-  const debtor = c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "—";
+  const debtor = c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—";
   const nextAction = c.nextActionDate
     ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" })
     : null;
@@ -659,7 +652,7 @@ function CasesPageInner() {
                     <Td>
                       <div className="font-medium text-gray-900">
                         {c.loan?.borrower
-                          ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}`
+                          ? `${c.loan.borrower.fullName}`
                           : "—"}
                       </div>
                       <div className="text-[11px] text-gray-400 font-mono mt-0.5">{c.caseReference}</div>

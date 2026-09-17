@@ -120,7 +120,7 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
                 <div>
                   <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
                   <span className="text-[12px] text-gray-600 ml-2">
-                    {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.firstName} ${selectedCase.loan.borrower.lastName}` : ""}
+                    {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.fullName}` : ""}
                   </span>
                 </div>
                 <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); }}
@@ -138,7 +138,7 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
                         <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
                         <span className="text-[12px] text-gray-700">
-                          {c.loan?.borrower ? `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}` : "—"}
+                          {c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—"}
                         </span>
                         <span className="ml-auto text-[11px] text-gray-400">{c.loan?.institution?.shortName}</span>
                       </button>
@@ -249,7 +249,7 @@ export default function AgreementsPage() {
   const q = searchQuery.trim().toLowerCase();
   const filtered = q ? data.filter((a) => {
     const borrower = a.case?.loan?.borrower;
-    const name = borrower ? `${borrower.firstName} ${borrower.lastName}`.toLowerCase() : "";
+    const name = borrower ? `${borrower.fullName}`.toLowerCase() : "";
     const ref = (a.case?.caseReference ?? "").toLowerCase();
     return name.includes(q) || ref.includes(q);
   }) : data;
@@ -397,7 +397,7 @@ export default function AgreementsPage() {
                         <Td>
                           <span className="font-medium text-gray-900">
                             {a.case?.loan?.borrower
-                              ? `${a.case.loan.borrower.firstName} ${a.case.loan.borrower.lastName}`
+                              ? `${a.case.loan.borrower.fullName}`
                               : "—"}
                           </span>
                           {a.notes && (

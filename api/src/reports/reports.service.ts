@@ -70,7 +70,7 @@ export class ReportsService {
     this.sectionTitle(doc, 'Borrower & Loan');
     const b = c.loan.borrower;
     this.twoCol(doc, [
-      ['Borrower', `${b.firstName} ${b.lastName}`],
+      ['Borrower', `${b.fullName}`],
       ['Personal ID', b.personalId],
       ['Phone', (b as any).phones?.[0]?.phoneNumber ?? '—'],
       ['Address', b.address ?? '—'],
@@ -196,7 +196,7 @@ export class ReportsService {
         ['Reference', 'Borrower', 'Outstanding', 'DPD', 'Stage', 'Officer'],
         cases.map(c => [
           c.caseReference,
-          `${c.loan.borrower.firstName} ${c.loan.borrower.lastName}`,
+          `${c.loan.borrower.fullName}`,
           euro(c.loan.currentOutstandingBalance),
           String(c.loan.daysPastDue),
           c.collectionStage,
@@ -229,7 +229,7 @@ export class ReportsService {
         case: {
           select: {
             caseReference: true,
-            loan: { select: { loanNumber: true, borrower: { select: { firstName: true, lastName: true } } } },
+            loan: { select: { loanNumber: true, borrower: { select: { fullName: true } } } },
           },
         },
       },
@@ -246,7 +246,7 @@ export class ReportsService {
         p.paymentChannel ?? '',
         p.case.caseReference,
         p.case.loan.loanNumber,
-        `${p.case.loan.borrower.firstName} ${p.case.loan.borrower.lastName}`,
+        `${p.case.loan.borrower.fullName}`,
         p.officer.fullName,
         (p.notes ?? '').replace(/,/g, ';'),
       ]),
@@ -277,7 +277,7 @@ export class ReportsService {
         case: {
           select: {
             caseReference: true,
-            loan: { select: { loanNumber: true, borrower: { select: { firstName: true, lastName: true } } } },
+            loan: { select: { loanNumber: true, borrower: { select: { fullName: true } } } },
           },
         },
       },
@@ -292,7 +292,7 @@ export class ReportsService {
         a.channel ?? '',
         a.case.caseReference,
         a.case.loan.loanNumber,
-        `${a.case.loan.borrower.firstName} ${a.case.loan.borrower.lastName}`,
+        `${a.case.loan.borrower.fullName}`,
         a.officer.fullName,
         a.promiseAmount ? Number(a.promiseAmount).toFixed(2) : '',
         (a.notes ?? '').replace(/,/g, ';'),

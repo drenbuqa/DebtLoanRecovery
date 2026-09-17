@@ -9,7 +9,7 @@ const AGR_SELECT = {
   case: {
     select: {
       id: true, caseReference: true,
-      loan: { select: { loanNumber: true, borrower: { select: { firstName: true, lastName: true } }, institution: { select: { shortName: true } } } },
+      loan: { select: { loanNumber: true, borrower: { select: { fullName: true } }, institution: { select: { shortName: true } } } },
     },
   },
   installments: { orderBy: { dueDate: 'asc' as const } },

@@ -285,7 +285,7 @@ export default function ImportPage() {
             <div className="border-t border-gray-100 pt-3 space-y-2">
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Fusha të detyrueshme</p>
               <div className="flex flex-wrap gap-1.5">
-                {["personal_id", "first_name", "last_name", "loan_number", "institution_name", "current_outstanding_balance"].map(c => (
+                {["full_name", "loan_number", "institution_name", "current_outstanding_balance"].map(c => (
                   <span key={c} className="text-[11px] font-mono bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 text-gray-700">{c}</span>
                 ))}
               </div>

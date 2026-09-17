@@ -109,18 +109,15 @@ const COL_ALIASES: Record<string, string> = {
   'principal_due_after_deduction_of_recoveries': 'current_outstanding_balance',
 };
 
-// Either (first_name + last_name) OR full_name satisfies the name requirement
 const REQUIRED_COLS = [
-  'personal_id',
+  'full_name',
   'loan_number', 'institution_name',
   'current_outstanding_balance',
 ];
 
 interface ImportRow {
   personal_id: string;
-  full_name?: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   date_of_birth?: string;
   phone1?: string;
   phone2?: string;
@@ -253,10 +250,8 @@ function parseNplClass(v: string | undefined): string | undefined {
 
 export const ALL_FIELDS: { key: string; label: string; required: boolean }[] = [
   // Required
-  { key: 'personal_id',                 label: 'NID / Numri Personal',             required: true },
-  { key: 'full_name',                   label: 'Emri Mbiemri (bashkë)',             required: false },
-  { key: 'first_name',                  label: 'Emri',                              required: true },
-  { key: 'last_name',                   label: 'Mbiemri',                           required: true },
+  { key: 'personal_id',                 label: 'NID / Numri Personal',             required: false },
+  { key: 'full_name',                   label: 'Emri Mbiemri',                      required: true },
   { key: 'loan_number',                 label: 'Numri i Kredisë',                   required: true },
   { key: 'institution_name',            label: 'Institucioni',                      required: true },
   { key: 'current_outstanding_balance', label: 'Balanca e Mbetur',                  required: true },
@@ -351,7 +346,7 @@ export class ImportService {
 
   templateXlsx(): Buffer {
     const headers = [
-      'personal_id', 'first_name', 'last_name', 'date_of_birth',
+      'personal_id', 'full_name', 'date_of_birth',
       'phone1', 'phone2', 'email', 'address', 'city',
       'loan_number', 'institution_name',
       'DLR First Collection officer', 'DLR Second Collection Officer',
@@ -363,7 +358,7 @@ export class ImportService {
       'co_borrower_personal_id', 'co_borrower_first_Last_name', 'co_borrower_phone',
     ];
     const example = [
-      '1234567890', 'Arben', 'Gashi', '1985-03-15',
+      '1234567890', 'Arben Gashi', '1985-03-15',
       '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 'Prishtinë',
       'PCB-2024-001', 'ProCredit Bank Kosovë',
       'Alert Godeni', 'Lulzim Buqa',
@@ -431,12 +426,7 @@ export class ImportService {
 
     const mappedKeys = new Set(columns.filter(c => c.mapped).map(c => c.mapped as string));
 
-    // Name is satisfied by either (first_name + last_name) or full_name
-    const hasName = (mappedKeys.has('first_name') && mappedKeys.has('last_name')) || mappedKeys.has('full_name');
-    const requiredMissing = [
-      ...REQUIRED_COLS.filter(k => !mappedKeys.has(k)),
-      ...(!hasName ? ['first_name'] : []),
-    ];
+    const requiredMissing = REQUIRED_COLS.filter(k => !mappedKeys.has(k));
 
     const sampleValues: Record<string, string> = {};
     for (const h of originalHeaders) {
@@ -477,24 +467,18 @@ export class ImportService {
       }
     }
 
-    // Resolve full_name → first_name + last_name for rows that have it
+    // Combine first_name + last_name → full_name for banks that send them separately
     for (const row of rows) {
-      if (row.full_name && (!row.first_name || !row.last_name)) {
-        const split = splitName(row.full_name);
-        if (split) {
-          row.first_name = row.first_name || split.firstName;
-          row.last_name = row.last_name || split.lastName;
-        }
+      if (!row.full_name?.trim() && ((row as any).first_name || (row as any).last_name)) {
+        const fn = ((row as any).first_name ?? '').trim();
+        const ln = ((row as any).last_name ?? '').trim();
+        row.full_name = (fn + (ln ? ' ' + ln : '')).trim();
       }
     }
 
     // Validate required columns are present
     const firstRowKeys = Object.keys(rows[0]);
-    const hasName = (firstRowKeys.includes('first_name') && firstRowKeys.includes('last_name')) || firstRowKeys.includes('full_name');
-    const missing = [
-      ...REQUIRED_COLS.filter(k => !firstRowKeys.includes(k)),
-      ...(!hasName ? ['first_name'] : []),
-    ];
+    const missing = REQUIRED_COLS.filter(k => !firstRowKeys.includes(k));
     if (missing.length) {
       const labels = missing.map(k => ALL_FIELDS.find(f => f.key === k)?.label ?? k);
       throw new BadRequestException(
@@ -561,25 +545,21 @@ export class ImportService {
           : undefined;
 
         await this.prisma.$transaction(async (tx) => {
-          // Resolve combined names for borrower
-          const personalId = cleanId(row.personal_id);
-          const firstName = row.first_name.trim();
-          const lastName = row.last_name.trim();
+          const personalId = cleanId(row.personal_id) || `NOID-${loanNum}`;
+          const fullName = row.full_name?.trim() || '';
 
           const borrower = await tx.person.upsert({
             where: { personalId },
             create: {
               personalId,
-              firstName,
-              lastName,
+              fullName,
               dateOfBirth: parseDate(row.date_of_birth),
               email: row.email?.trim() || undefined,
               address: row.address?.trim() || undefined,
               city: row.city?.trim() || undefined,
             },
             update: {
-              firstName,
-              lastName,
+              fullName,
               ...(row.email?.trim() && { email: row.email.trim() }),
               ...(row.address?.trim() && { address: row.address.trim() }),
               ...(row.city?.trim() && { city: row.city.trim() }),
@@ -643,8 +623,8 @@ export class ImportService {
             if (!fName) return; // no usable name
             const person = await tx.person.upsert({
               where: { personalId: pid },
-              create: { personalId: pid, firstName: fName, lastName: lName },
-              update: { firstName: fName, lastName: lName },
+              create: { personalId: pid, fullName: (fName + (lName ? " " + lName : "")).trim() },
+              update: { fullName: (fName + (lName ? " " + lName : "")).trim() },
             });
             if (rawPhone?.trim()) {
               const ph = rawPhone.trim();
@@ -748,9 +728,8 @@ export class ImportService {
     const req = (field: string, label: string) => {
       if (!cleanId(row[field])?.trim()) throw new Error(`${label} mungon (rreshti ${rowNum})`);
     };
-    req('personal_id', 'Numri personal');
-    if (!row.first_name?.trim() && !row.full_name?.trim())
-      throw new Error(`Emri mungon (rreshti ${rowNum})`);
+    if (!row.full_name?.trim())
+      throw new Error(`Emri i plotë mungon (rreshti ${rowNum})`);
     req('loan_number', 'Numri i kredisë');
     req('institution_name', 'Institucioni');
     if (parseDecimal(row.current_outstanding_balance) < 0)

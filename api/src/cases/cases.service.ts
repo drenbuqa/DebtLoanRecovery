@@ -21,7 +21,7 @@ const CASE_LIST_SELECT = {
       lastPaymentDate: true,
       daysPastDue: true,
       institution: { select: { id: true, shortName: true, name: true } },
-      borrower: { select: { id: true, firstName: true, lastName: true, personalId: true } },
+      borrower: { select: { id: true, fullName: true, personalId: true } },
     },
   },
   assignedOfficer: { select: { id: true, fullName: true } },
@@ -52,7 +52,7 @@ const CASE_DETAIL_EXTRA = {
       institution: { select: { id: true, shortName: true, name: true } },
       borrower: {
         select: {
-          id: true, firstName: true, lastName: true, personalId: true,
+          id: true, fullName: true, personalId: true,
           dateOfBirth: true, email: true, address: true, city: true,
           phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         },
@@ -62,7 +62,7 @@ const CASE_DETAIL_EXTRA = {
           role: true,
           person: {
             select: {
-              id: true, firstName: true, lastName: true, personalId: true,
+              id: true, fullName: true, personalId: true,
               phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
             },
           },
@@ -172,8 +172,7 @@ export class CasesService {
       where.OR = [
         { caseReference: { contains: query.search, mode: 'insensitive' } },
         { loan: { loanNumber: { contains: query.search, mode: 'insensitive' } } },
-        { loan: { borrower: { firstName: { contains: query.search, mode: 'insensitive' } } } },
-        { loan: { borrower: { lastName: { contains: query.search, mode: 'insensitive' } } } },
+        { loan: { borrower: { fullName: { contains: query.search, mode: 'insensitive' } } } },
         { loan: { borrower: { personalId: { contains: query.search, mode: 'insensitive' } } } },
       ];
     }
@@ -296,7 +295,7 @@ export class CasesService {
     return this.prisma.person.findUnique({
       where: { personalId },
       select: {
-        id: true, personalId: true, firstName: true, lastName: true,
+        id: true, personalId: true, fullName: true,
         email: true, address: true, city: true,
         phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         loans: {
@@ -313,8 +312,7 @@ export class CasesService {
   async createCase(dto: {
     // Person (borrower)
     personalId: string;
-    firstName: string;
-    lastName: string;
+    fullName: string;
     dateOfBirth?: string;
     phone1?: string;
     phone2?: string;
@@ -349,16 +347,14 @@ export class CasesService {
     const person = await this.prisma.person.upsert({
       where: { personalId: dto.personalId },
       update: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        fullName: dto.fullName,
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.city !== undefined && { city: dto.city }),
       },
       create: {
         personalId: dto.personalId,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        fullName: dto.fullName,
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
         email: dto.email,
         address: dto.address,
