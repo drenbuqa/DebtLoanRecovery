@@ -288,6 +288,15 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
+  downloadAgreementStatusXlsx: async (params?: { officerId?: string; officeId?: string; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.officerId) qs.set('officerId', params.officerId);
+    if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.status) qs.set('status', params.status);
+    const res = await fetch(`${API_BASE}/reports/agreement-status/xlsx?${qs}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
+    return res.blob();
+  },
   downloadCollectionsXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);

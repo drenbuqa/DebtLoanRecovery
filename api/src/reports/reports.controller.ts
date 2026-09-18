@@ -57,4 +57,13 @@ export class ReportsController {
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
     return this.svc.collectionsXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
+
+  @Get('agreement-status/xlsx')
+  agreementStatusXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
+    const user = (req as any).user;
+    let { officerId, officeId } = q;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    return this.svc.agreementStatusXlsx({ officerId, officeId, status: q.status }, res);
+  }
 }

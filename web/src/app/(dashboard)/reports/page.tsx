@@ -31,8 +31,8 @@ const REPORTS = [
     name: "Statusi i Marrëveshjeve",
     desc: "Të gjitha marrëveshjet aktive me ecurinë e kësteve",
     icon: FileCheck,
-    columns: ["Ref. Marrëveshje", "Ref. Dosje", "Debitor", "Status", "Totali (EUR)", "Këste", "Paguar", "Kësti i Ardhshëm"],
-    info: "Eksporton të gjitha marrëveshjet e shlyerjes në portofol me ecurinë aktuale të kësteve dhe datën e këstit të ardhshëm.",
+    columns: ["Ref. Marrëveshje", "Statusi", "Totali", "Këste", "Paguar", "Vonuar", "Data e Ardhshme", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Faza"],
+    info: "Eksporton marrëveshjet me format të plotë — detajet e marrëveshjes dhe kësteve plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm dosjet e tij/saj.",
   },
   {
     code: "OVERDUE_INSTALLMENTS",
@@ -116,20 +116,17 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         onClose();
         return;
       } else if (report.code === "AGREEMENT_STATUS") {
-        const data = await fetchAllPages((p) => agreementsApi.list(p));
-        rows = [["Ref. Marrëveshje", "Ref. Dosje", "Debitor", "Status", "Totali (EUR)", "Këste", "Paguar", "Kësti i Ardhshëm"]];
-        for (const a of data) {
-          rows.push([
-            a.agreementReference,
-            a.case?.caseReference ?? "",
-            `${a.case?.loan?.borrower?.fullName}`.trim(),
-            formatEnum(a.status),
-            String(Number(a.totalAmount).toFixed(2)),
-            String(a.installmentCount),
-            String(a.paidInstallments ?? 0),
-            a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString("sq-AL") : "",
-          ]);
-        }
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        const blob = await reportsApi.downloadAgreementStatusXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `marreveshjet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
       } else if (report.code === "OVERDUE_INSTALLMENTS") {
         const data = await fetchAllPages((p) => agreementsApi.list({ ...p, status: "ACTIVE" }));
         rows = [["Ref. Marrëveshje", "Debitor", "Kësti #", "Data e Maturimit", "Shuma (EUR)", "Status"]];
