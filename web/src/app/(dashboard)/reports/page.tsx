@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Topbar from "@/components/layout/Topbar";
-import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi, fetchAllPages } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi, reports as reportsApi, fetchAllPages } from "@/lib/api";
 import { formatEnum } from "@/lib/utils";
 import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -14,8 +15,8 @@ const REPORTS = [
     name: "Gjendja e Dosjeve",
     desc: "Të gjitha dosjet aktuale me balancën, statusin dhe fazën e arkëtimit",
     icon: BarChart3,
-    columns: ["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Borxhi Aktual (EUR)", "DPD"],
-    info: "Eksporton të gjitha dosjet me gjendjen aktuale debitore, ditët me vonesë, statusin dhe fazën e arkëtimit. Pa filtër datash — pasqyron gjithmonë portofolin aktual.",
+    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Klasifikimi NPL", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Statusi", "Faza"],
+    info: "Eksporton dosjet me format identik me importin — të gjitha fushat e borrowerit, kredisë, garantorëve dhe ko-huamarrësit. Oficeri shikon vetëm dosjet e tij/saj; admini shikon të gjitha.",
   },
   {
     code: "COLLECTIONS",
@@ -73,6 +74,7 @@ function downloadCSV(filename: string, rows: string[][]) {
 }
 
 function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () => void }) {
+  const { user } = useAuth();
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [running, setRunning] = useState(false);
@@ -82,23 +84,24 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
   async function run() {
     setRunning(true); setError(""); setResult(null);
     try {
+      // PORTFOLIO_SUMMARY: server generates full XLSX in migration format, download directly
+      if (report.code === "PORTFOLIO_SUMMARY") {
+        const params: { officerId?: string } = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        const blob = await reportsApi.downloadCaseStatusXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `gjendja-dosjeve-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
+      }
+
       let rows: string[][] = [];
 
-      if (report.code === "PORTFOLIO_SUMMARY") {
-        const data = await fetchAllPages((p) => casesApi.list(p));
-        rows = [["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Borxhi Aktual (EUR)", "DPD"]];
-        for (const c of data) {
-          rows.push([
-            c.caseReference,
-            `${c.loan?.borrower?.fullName}`.trim(),
-            c.loan?.institution?.shortName ?? "",
-            formatEnum(c.status),
-            formatEnum(c.collectionStage),
-            String(Number(c.loan?.currentOutstandingBalance ?? 0).toFixed(2)),
-            String(c.loan?.daysPastDue ?? 0),
-          ]);
-        }
-      } else if (report.code === "COLLECTIONS") {
+      if (report.code === "COLLECTIONS") {
         const extra: any = {};
         if (dateFrom) extra.dateFrom = dateFrom;
         if (dateTo) extra.dateTo = dateTo;

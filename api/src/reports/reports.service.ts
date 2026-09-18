@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PDFDocument = require('pdfkit') as typeof import('pdfkit');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const XLSX = require('xlsx');
 import { Response } from 'express';
 
 const BRAND = {
@@ -303,6 +305,120 @@ export class ReportsService {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send('﻿' + rows.map(r => r.join(',')).join('\n'));
+  }
+
+  // ─── Case Status Excel ───────────────────────────────────────────────────────
+
+  async caseStatusXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+    const where: any = { deletedAt: null };
+    if (query.officerId) where.assignedOfficerId = query.officerId;
+    if (query.officeId)  where.officeId = query.officeId;
+
+    const cases = await this.prisma.case.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        loan: {
+          include: {
+            borrower: {
+              include: {
+                phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 2 },
+              },
+            },
+            institution: true,
+            relatedParties: {
+              include: {
+                person: {
+                  include: {
+                    phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        assignedOfficer: { select: { id: true, fullName: true } },
+        secondaryOfficer: { select: { id: true, fullName: true } },
+        office: { select: { code: true, name: true } },
+      },
+    });
+
+    const headers = [
+      'personal_id', 'full_name', 'date_of_birth',
+      'phone1', 'phone2', 'email', 'address', 'city',
+      'loan_number', 'institution_name',
+      'assigned_officer_id', 'secondary_officer_id',
+      'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
+      'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
+      'days_past_due', 'npl_classification', 'office_code',
+      '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
+      '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
+      // DLR status columns (additional, not in import template)
+      'case_reference', 'case_status', 'collection_stage', 'borxhi_aktual_eur',
+    ];
+
+    const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
+
+    const rows = cases.map((c) => {
+      const b = c.loan.borrower;
+      const phones = b.phones ?? [];
+      const parties = c.loan.relatedParties ?? [];
+      const guarantors = parties.filter((p) => p.role === 'GUARANTOR');
+      const coBorrower = parties.find((p) => p.role === 'CO_BORROWER');
+      const g1 = guarantors[0]?.person;
+      const g2 = guarantors[1]?.person;
+      const co = coBorrower?.person;
+
+      return [
+        b.personalId ?? '',
+        b.fullName ?? '',
+        d((b as any).dateOfBirth),
+        phones[0]?.phoneNumber ?? '',
+        phones[1]?.phoneNumber ?? '',
+        (b as any).email ?? '',
+        b.address ?? '',
+        b.city ?? '',
+        c.loan.loanNumber ?? '',
+        c.loan.institution?.name ?? '',
+        c.assignedOfficer?.id ?? '',
+        c.secondaryOfficer?.id ?? '',
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.currentOutstandingBalance ?? 0),
+        (c.loan as any).productType ?? '',
+        d((c.loan as any).disbursementDate),
+        d(c.loan.maturityDate),
+        d(c.loan.lastPaymentDate),
+        c.loan.daysPastDue ?? 0,
+        c.loan.nplClassification ?? '',
+        (c.office as any)?.code ?? '',
+        g1?.personalId ?? '',
+        g1?.fullName ?? '',
+        g1?.phones?.[0]?.phoneNumber ?? '',
+        g2?.personalId ?? '',
+        g2?.fullName ?? '',
+        g2?.phones?.[0]?.phoneNumber ?? '',
+        co?.personalId ?? '',
+        co?.fullName ?? '',
+        co?.phones?.[0]?.phoneNumber ?? '',
+        c.caseReference,
+        c.status,
+        c.collectionStage,
+        Number(c.loan.currentOutstandingBalance ?? 0),
+      ];
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 4, 16) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Gjendja e Dosjeve');
+
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `gjendja-dosjeve-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
   }
 
   // ─── PDF helpers ─────────────────────────────────────────────────────────────
