@@ -92,6 +92,8 @@ export class PaymentsService {
     paymentChannel?: string;
     notes?: string;
     externalReference?: string;
+    nextPaymentDate?: string;
+    nextPaymentAmount?: number;
   }) {
     const payment = await this.prisma.$transaction(async (tx) => {
       // Collision-safe reference: count within the year inside the transaction
@@ -128,6 +130,23 @@ export class PaymentsService {
         await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: newBalance, lastPaymentDate: new Date(dto.paymentDate) } });
         await tx.loanBalanceHistory.create({
           data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: newBalance, source: 'PAYMENT', recordedById: dto.officerId },
+        });
+      }
+
+      // Create a promise-to-pay for the next scheduled payment if provided
+      if (dto.nextPaymentDate && dto.nextPaymentAmount && dto.nextPaymentAmount > 0) {
+        await tx.promiseToPay.create({
+          data: {
+            caseId: dto.caseId,
+            createdById: dto.officerId,
+            promisedAmount: dto.nextPaymentAmount,
+            currency: dto.currency ?? 'EUR',
+            promiseDate: new Date(dto.nextPaymentDate),
+          },
+        });
+        await tx.case.update({
+          where: { id: dto.caseId },
+          data: { nextActionDate: new Date(dto.nextPaymentDate) },
         });
       }
 

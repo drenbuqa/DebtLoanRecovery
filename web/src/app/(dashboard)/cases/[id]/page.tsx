@@ -333,14 +333,25 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
+  const [nextDate, setNextDate] = useState("");
+  const [nextAmount, setNextAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function submit() {
     if (!amount || parseFloat(amount) <= 0) { setError("Vendosni një shumë të vlefshme"); return; }
+    if (nextDate && (!nextAmount || parseFloat(nextAmount) <= 0)) { setError("Vendosni shumën për pagesën e ardhshme"); return; }
     setLoading(true); setError("");
     try {
-      await paymentsApi.register({ caseId, officerId, amount: parseFloat(amount), paymentMethod: "BANK_TRANSFER", paymentDate: date, notes });
+      await paymentsApi.register({
+        caseId, officerId,
+        amount: parseFloat(amount),
+        paymentMethod: "BANK_TRANSFER",
+        paymentDate: date,
+        notes,
+        nextPaymentDate: nextDate || undefined,
+        nextPaymentAmount: nextAmount ? parseFloat(nextAmount) : undefined,
+      });
       onSuccess(); onClose();
     } catch (e: any) { setError(e.message); } finally { setLoading(false); }
   }
@@ -360,13 +371,30 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
               className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
             <DatePicker value={date} onChange={setDate} />
           </div>
           <div>
             <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
             <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)"
               className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-100 pt-3">
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
+                <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00"
+                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
+              </div>
+            </div>
+            {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
           </div>
         </div>
         <div className="px-6 pb-5 flex gap-3 justify-end">

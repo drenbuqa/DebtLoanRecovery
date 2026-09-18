@@ -30,4 +30,13 @@ export class RegisterPaymentDto {
   @IsString({ message: 'Referenca duhet të jetë tekst' })
   @MaxLength(100, { message: 'Referenca nuk mund të kalojë 100 karaktere' })
   externalReference?: string;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'Data e pagesës tjetër nuk është e vlefshme' })
+  nextPaymentDate?: string;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'Shuma e pagesës tjetër duhet të jetë numër' })
+  @IsPositive({ message: 'Shuma e pagesës tjetër duhet të jetë pozitive' })
+  nextPaymentAmount?: number;
 }
