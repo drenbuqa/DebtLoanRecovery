@@ -269,6 +269,8 @@ export default function LegalPage() {
         params.view = "in_progress";
       } else if (status === "JUDGMENT_VIEW") {
         params.view = "judgment";
+      } else if (status === "ENFORCEMENT_VIEW") {
+        params.view = "enforcement";
       } else if (status) {
         params.status = status;
       }
@@ -294,7 +296,7 @@ export default function LegalPage() {
     { key: "IN_PROGRESS_VIEW", label: "Në Progres" },
     { key: "IN_PROGRESS", label: "Aktive" },
     { key: "JUDGMENT_VIEW", label: "Vendim" },
-    { key: "ENFORCEMENT", label: "Ekzekutim" },
+    { key: "ENFORCEMENT_VIEW", label: "Ekzekutim" },
     { key: "CLOSED", label: "Mbyllur" },
   ];
 
