@@ -23,8 +23,8 @@ const REPORTS = [
     name: "Raporti i Arkëtimeve",
     desc: "Pagesat e arkëtuara, të ndara sipas periudhës dhe metodës",
     icon: CreditCard,
-    columns: ["Referencë", "Ref. Dosje", "Debitor", "Datë", "Shumë (EUR)", "Metodë"],
-    info: "Eksporton të gjitha regjistrimet e pagesave. Përdorni intervalin kohor për të kufizuar në një periudhë specifike arkëtimi.",
+    columns: ["Ref. Pagesë", "Data", "Shuma", "Metoda", "Kanali", "Zyrtari Arkëtues", "NID", "Emri", "Tel 1", "Tel 2", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Statusi", "Faza"],
+    info: "Eksporton pagesat me format të plotë — të dhënat e pagesës plus të gjitha fushat e borrowerit, garantorëve dhe ko-huamarrësit nga formati i migrimit. Oficeri shikon vetëm pagesat e tij/saj.",
   },
   {
     code: "AGREEMENT_STATUS",
@@ -102,21 +102,19 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
       let rows: string[][] = [];
 
       if (report.code === "COLLECTIONS") {
-        const extra: any = {};
-        if (dateFrom) extra.dateFrom = dateFrom;
-        if (dateTo) extra.dateTo = dateTo;
-        const data = await fetchAllPages((p) => paymentsApi.list(p), extra);
-        rows = [["Referencë", "Ref. Dosje", "Debitor", "Datë", "Shumë (EUR)", "Metodë"]];
-        for (const p of data) {
-          rows.push([
-            p.paymentReference,
-            p.case?.caseReference ?? "",
-            `${p.case?.loan?.borrower?.fullName}`.trim(),
-            p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("sq-AL") : "",
-            String(Number(p.amount).toFixed(2)),
-            formatEnum(p.paymentMethod),
-          ]);
-        }
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+        const blob = await reportsApi.downloadCollectionsXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `arketimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
       } else if (report.code === "AGREEMENT_STATUS") {
         const data = await fetchAllPages((p) => agreementsApi.list(p));
         rows = [["Ref. Marrëveshje", "Ref. Dosje", "Debitor", "Status", "Totali (EUR)", "Këste", "Paguar", "Kësti i Ardhshëm"]];
