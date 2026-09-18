@@ -133,6 +133,36 @@ export class PaymentsService {
         });
       }
 
+      // Auto-complete any active agreement whose total amount is now covered by payments
+      const activeAgreements = await tx.agreement.findMany({
+        where: { caseId: dto.caseId, status: 'ACTIVE' },
+        select: {
+          id: true,
+          totalAmount: true,
+          installments: { select: { id: true, status: true } },
+        },
+      });
+      if (activeAgreements.length > 0) {
+        const totalPaid = await tx.payment.aggregate({
+          where: { caseId: dto.caseId, voidedAt: null },
+          _sum: { amount: true },
+        });
+        const totalPaidAmount = Number(totalPaid._sum.amount ?? 0);
+        for (const ag of activeAgreements) {
+          if (totalPaidAmount >= Number(ag.totalAmount)) {
+            await tx.agreement.update({ where: { id: ag.id }, data: { status: 'COMPLETED' } });
+            // Mark any remaining unpaid installments as WAIVED
+            const unpaid = ag.installments.filter((i) => i.status !== 'PAID' && i.status !== 'WAIVED');
+            for (const inst of unpaid) {
+              await tx.agreementInstallment.update({
+                where: { id: inst.id },
+                data: { status: 'WAIVED' },
+              });
+            }
+          }
+        }
+      }
+
       // Create a promise-to-pay for the next scheduled payment if provided
       if (dto.nextPaymentDate && dto.nextPaymentAmount && dto.nextPaymentAmount > 0) {
         await tx.promiseToPay.create({
