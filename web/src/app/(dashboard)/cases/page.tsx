@@ -434,12 +434,11 @@ const STAGE_BADGE: Record<string, any> = {
 };
 
 const VIEWS = [
-  { key: "",                 label: "Të gjitha" },
-  { key: "promises_today",   label: "Premtime Sot" },
-  { key: "all_promises",     label: "Të gjitha Premtimet" },
-  { key: "vonesa",           label: "Vonesa" },
-  { key: "premtime_thyera",  label: "Premtime të Thyera" },
-  { key: "inactive",         label: "Joaktive" },
+  { key: "",                label: "Të gjitha" },
+  { key: "all_promises",    label: "Premtimet" },
+  { key: "vonesa",          label: "Vonesat" },
+  { key: "premtime_thyera", label: "Premtime të Thyera" },
+  { key: "inactive",        label: "Joaktive" },
 ];
 
 // ── Mobile case card ─────────────────────────────────────────
@@ -762,7 +761,9 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Balanca", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza", ""].map((h, i) => (
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Balanca", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza",
+                    ...(["all_promises","vonesa","premtime_thyera"].includes(view) ? ["Premtimi"] : []),
+                  ].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
                   ))}
                   {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
@@ -776,6 +777,10 @@ function CasesPageInner() {
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const npl: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
+                  const latestPromise = c.promisesToPay?.[0];
+                  const promiseDaysOverdue = latestPromise
+                    ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
+                    : 0;
                   return (
                     <tr key={c.id} onClick={() => router.push(`/cases/${c.id}`)} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors group">
                       <td className="px-3 py-2 min-w-[160px]">
@@ -819,11 +824,23 @@ function CasesPageInner() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         <Badge variant={STAGE_BADGE[c.collectionStage] ?? "default"} className="text-[10px]">{formatEnum(c.collectionStage)}</Badge>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[10px] text-gray-400">
-                          {c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" }) : ""}
-                        </span>
-                      </td>
+                      {["all_promises","vonesa","premtime_thyera"].includes(view) && (
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {latestPromise ? (
+                            <div>
+                              <div className="text-[11px] font-medium text-gray-700">
+                                {new Date(latestPromise.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                              </div>
+                              <div className="text-[10px] text-gray-400">{formatCurrency(Number(latestPromise.promisedAmount ?? 0))}</div>
+                              {promiseDaysOverdue > 0 && (
+                                <div className={`text-[10px] font-semibold ${promiseDaysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
+                                  {promiseDaysOverdue} ditë vonesë
+                                </div>
+                              )}
+                            </div>
+                          ) : "—"}
+                        </td>
+                      )}
                       {can("case:delete") && (
                         <td className="px-2 py-2">
                           <button

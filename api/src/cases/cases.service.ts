@@ -48,7 +48,7 @@ const CASE_LIST_SELECT = {
   promisesToPay: {
     orderBy: { promiseDate: 'desc' as const },
     take: 1,
-    select: { id: true, promiseDate: true, promiseAmount: true, status: true },
+    select: { id: true, promiseDate: true, promisedAmount: true, status: true },
   },
   _count: { select: { activities: true, payments: true } },
 };
@@ -178,15 +178,22 @@ export class CasesService {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     if (query.view === 'promises_today') {
-      where.activities = {
-        some: { activityType: 'PROMISE_TO_PAY', nextActionDate: { gte: today, lt: tomorrow } },
-      };
+      where.promisesToPay = { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } };
     } else if (query.view === 'all_promises') {
-      where.promisesToPay = { some: {} };
+      where.promisesToPay = { some: { status: 'PENDING' } };
     } else if (query.view === 'vonesa') {
+      // Promise date has passed, still no payment (status PENDING)
       where.promisesToPay = { some: { promiseDate: { lt: today }, status: 'PENDING' } };
     } else if (query.view === 'premtime_thyera') {
-      where.promisesToPay = { some: { status: 'BROKEN' } };
+      // Promise date was > 30 days ago, still no payment
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      where.promisesToPay = {
+        some: {
+          promiseDate: { lt: thirtyDaysAgo },
+          status: { in: ['PENDING', 'BROKEN'] },
+        },
+      };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['INACTIVE', 'CLOSED', 'SUSPENDED'] };
     } else if (query.view === 'legal') {
