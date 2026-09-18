@@ -20,13 +20,36 @@ const CASE_LIST_SELECT = {
       currency: true,
       lastPaymentDate: true,
       daysPastDue: true,
+      nplClassification: true,
       institution: { select: { id: true, shortName: true, name: true } },
-      borrower: { select: { id: true, fullName: true, personalId: true } },
+      borrower: {
+        select: {
+          id: true, fullName: true, personalId: true,
+          address: true, city: true,
+          phones: {
+            where: { isActive: true },
+            orderBy: { isPrimary: 'desc' as const },
+            take: 1,
+            select: { phoneNumber: true },
+          },
+        },
+      },
+      relatedParties: {
+        select: {
+          role: true,
+          person: { select: { id: true, fullName: true } },
+        },
+      },
     },
   },
   assignedOfficer: { select: { id: true, fullName: true } },
   secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
+  promisesToPay: {
+    orderBy: { promiseDate: 'desc' as const },
+    take: 1,
+    select: { id: true, promiseDate: true, promiseAmount: true, status: true },
+  },
   _count: { select: { activities: true, payments: true } },
 };
 
@@ -158,12 +181,14 @@ export class CasesService {
       where.activities = {
         some: { activityType: 'PROMISE_TO_PAY', nextActionDate: { gte: today, lt: tomorrow } },
       };
+    } else if (query.view === 'all_promises') {
+      where.promisesToPay = { some: {} };
     } else if (query.view === 'vonesa') {
-      where.agreements = { some: { installments: { some: { status: 'OVERDUE' } } } };
+      where.promisesToPay = { some: { promiseDate: { lt: today }, status: 'PENDING' } };
     } else if (query.view === 'premtime_thyera') {
       where.promisesToPay = { some: { status: 'BROKEN' } };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
-      where.status = 'INACTIVE';
+      where.status = { in: ['INACTIVE', 'CLOSED', 'SUSPENDED'] };
     } else if (query.view === 'legal') {
       where.legalProceedings = { some: {} };
     }

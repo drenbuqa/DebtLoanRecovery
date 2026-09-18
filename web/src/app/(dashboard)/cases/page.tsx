@@ -6,7 +6,6 @@ import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency, formatEnum } from "@/lib/utils";
 import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle } from "lucide-react";
@@ -436,7 +435,8 @@ const STAGE_BADGE: Record<string, any> = {
 
 const VIEWS = [
   { key: "",                 label: "Të gjitha" },
-  { key: "promises_today",   label: "Premtime për Sot" },
+  { key: "promises_today",   label: "Premtime Sot" },
+  { key: "all_promises",     label: "Të gjitha Premtimet" },
   { key: "vonesa",           label: "Vonesa" },
   { key: "premtime_thyera",  label: "Premtime të Thyera" },
   { key: "inactive",         label: "Joaktive" },
@@ -758,77 +758,88 @@ function CasesPageInner() {
               </div>
             </div>
           ) : (
-            <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-            <Table>
-              <Thead>
-                <tr>
-                  <Th>Dosja / Debitori</Th>
-                  <Th>Institucioni</Th>
-                  <Th>Gjendja Debitore</Th>
-                  <Th>Ditë Vonesë</Th>
-                  <Th>Faza / Statusi</Th>
-                  <Th>Oficeri</Th>
-                  <Th>Veprimi i Ardhshëm</Th>
-                  {can("case:delete") && <Th></Th>}
+            <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-x-auto`}>
+            <table className="w-full min-w-[1200px]">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Balanca", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza", ""].map((h, i) => (
+                    <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
+                  ))}
+                  {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
                 </tr>
-              </Thead>
-              <Tbody>
-                {data.map((c) => (
-                  <Tr key={c.id} onClick={() => router.push(`/cases/${c.id}`)}>
-                    <Td>
-                      <div className="font-medium text-gray-900">
-                        {c.loan?.borrower
-                          ? `${c.loan.borrower.fullName}`
-                          : "—"}
-                      </div>
-                      <div className="text-[11px] text-gray-400 font-mono mt-0.5">{c.caseReference}</div>
-                    </Td>
-                    <Td>
-                      <div className="text-[12px] text-gray-600">{c.loan?.institution?.shortName ?? "—"}</div>
-                      <div className="text-[11px] text-gray-400 font-mono">{c.loan?.loanNumber ?? "—"}</div>
-                    </Td>
-                    <Td>
-                      <span className="font-semibold tabular text-gray-900">
-                        {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
-                      </span>
-                    </Td>
-                    <Td>
-                      <span className={`text-[12px] font-semibold tabular ${
-                        c.loan?.daysPastDue > 180 ? "text-red-600" :
-                        c.loan?.daysPastDue > 90 ? "text-amber-600" : "text-gray-700"
-                      }`}>
-                        {c.loan?.daysPastDue ?? 0} ditë
-                      </span>
-                    </Td>
-                    <Td>
-                      <Badge variant={STAGE_BADGE[c.collectionStage] ?? "default"}>{formatEnum(c.collectionStage)}</Badge>
-                      {c.status !== "ACTIVE" && c.collectionStage !== "LEGAL" && c.collectionStage !== "WRITTEN_OFF" && (
-                        <div className="text-[11px] text-gray-400 mt-0.5">{formatEnum(c.status)}</div>
+              </thead>
+              <tbody>
+                {data.map((c) => {
+                  const b = c.loan?.borrower;
+                  const parties = c.loan?.relatedParties ?? [];
+                  const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
+                  const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
+                  const phone = b?.phones?.[0]?.phoneNumber;
+                  const npl: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
+                  return (
+                    <tr key={c.id} onClick={() => router.push(`/cases/${c.id}`)} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors group">
+                      <td className="px-3 py-2 min-w-[160px]">
+                        <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[150px]">{b?.fullName ?? "—"}</div>
+                        <div className="text-[10px] text-gray-400 font-mono">{b?.personalId ?? c.caseReference}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-600 font-mono">{phone ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 max-w-[120px]">
+                        <span className="text-[11px] text-gray-500 truncate block">{b?.address ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="text-[11px] text-gray-600">{c.loan?.institution?.shortName ?? "—"}</div>
+                        <div className="text-[10px] text-gray-400 font-mono">{c.loan?.loanNumber ?? ""}</div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[12px] font-bold text-gray-900 tabular-nums">{formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-600">{c.assignedOfficer?.fullName ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-500">{c.secondaryOfficer?.fullName ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-500">{b?.city ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[10px] text-gray-500">{c.loan?.nplClassification ? (npl[c.loan.nplClassification] ?? c.loan.nplClassification) : "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-600">{guarantors[0]?.person?.fullName ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-500">{guarantors[1]?.person?.fullName ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-500">{coborrower?.person?.fullName ?? "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <Badge variant={STAGE_BADGE[c.collectionStage] ?? "default"} className="text-[10px]">{formatEnum(c.collectionStage)}</Badge>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[10px] text-gray-400">
+                          {c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" }) : ""}
+                        </span>
+                      </td>
+                      {can("case:delete") && (
+                        <td className="px-2 py-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingCaseId(c.id); }}
+                            className="w-6 h-6 flex items-center justify-center rounded text-gray-200 group-hover:text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Fshi dosjen"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </td>
                       )}
-                    </Td>
-                    <Td><span className="text-[12px] text-gray-500">{c.assignedOfficer?.fullName ?? "—"}</span></Td>
-                    <Td>
-                      <span className="text-[12px] text-gray-400">
-                        {c.nextActionDate
-                          ? new Date(c.nextActionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long" })
-                          : "—"}
-                      </span>
-                    </Td>
-                    {can("case:delete") && (
-                      <Td>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingCaseId(c.id); }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title="Fshi dosjen"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </Td>
-                    )}
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
             </div>
           )}
 

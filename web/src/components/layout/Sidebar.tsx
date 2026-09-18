@@ -12,6 +12,7 @@ import {
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
   ChevronDown, LogOut, Menu, X, Upload,
+  Handshake, AlertCircle, XCircle, PauseCircle,
 } from "lucide-react";
 
 type NavItem = {
@@ -37,11 +38,15 @@ const nav: NavGroup[] = [
   {
     label: "Operacione",
     items: [
-      { href: "/cases",        label: "Klientët",      icon: FolderOpen,   permission: "page:cases" },
-      { href: "/activities",   label: "Aktivitetet",   icon: Activity,     permission: "page:activities" },
-      { href: "/payments",     label: "Pagesat",       icon: CreditCard,   permission: "page:payments" },
-      { href: "/agreements",   label: "Marrëveshjet",  icon: FileText,     permission: "page:agreements" },
-      { href: "/legal",        label: "Juridike",      icon: Scale,        permission: "page:legal" },
+      { href: "/cases",            label: "Klientët",          icon: FolderOpen,     permission: "page:cases" },
+      { href: "/promises",         label: "Premtimet",         icon: Handshake,      permission: "page:cases" },
+      { href: "/vonesa",           label: "Vonesat",           icon: AlertCircle,    permission: "page:cases" },
+      { href: "/broken-promises",  label: "Premtime të Thyera",icon: XCircle,        permission: "page:cases" },
+      { href: "/inactive",         label: "Rastet Joaktive",   icon: PauseCircle,    permission: "page:cases" },
+      { href: "/activities",       label: "Aktivitetet",       icon: Activity,       permission: "page:activities" },
+      { href: "/payments",         label: "Pagesat",           icon: CreditCard,     permission: "page:payments" },
+      { href: "/agreements",       label: "Marrëveshjet",      icon: FileText,       permission: "page:agreements" },
+      { href: "/legal",            label: "Juridike",          icon: Scale,          permission: "page:legal" },
     ],
   },
   {
