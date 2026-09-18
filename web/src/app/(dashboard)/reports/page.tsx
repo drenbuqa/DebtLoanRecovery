@@ -39,8 +39,8 @@ const REPORTS = [
     name: "Këste me Vonesë",
     desc: "Këste që kanë kaluar datën e maturimit",
     icon: FileText,
-    columns: ["Ref. Marrëveshje", "Debitor", "Kësti #", "Data e Maturimit", "Shuma (EUR)", "Status"],
-    info: "Eksporton vetëm këste me status VONUAR nga marrëveshjet aktive. I dobishëm për prioritizimin e ndjekjes.",
+    columns: ["Ref. Marrëveshje", "Kësti #", "Data Maturimit", "Shuma", "Ditë Vonesë", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Faza"],
+    info: "Eksporton vetëm këste me status VONUAR, të renditura nga vonesa më e madhe. Çdo këst i vonuar del si rresht i veçantë me të gjitha të dhënat e borrowerit nga formati i migrimit.",
   },
   {
     code: "LEGAL_CASES",
@@ -128,22 +128,17 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         onClose();
         return;
       } else if (report.code === "OVERDUE_INSTALLMENTS") {
-        const data = await fetchAllPages((p) => agreementsApi.list({ ...p, status: "ACTIVE" }));
-        rows = [["Ref. Marrëveshje", "Debitor", "Kësti #", "Data e Maturimit", "Shuma (EUR)", "Status"]];
-        for (const a of data) {
-          for (const ins of a.installments ?? []) {
-            if (ins.status === "OVERDUE") {
-              rows.push([
-                a.agreementReference,
-                `${a.case?.loan?.borrower?.fullName}`.trim(),
-                String(ins.installmentNumber),
-                ins.dueDate ? new Date(ins.dueDate).toLocaleDateString("sq-AL") : "",
-                String(Number(ins.amount).toFixed(2)),
-                formatEnum(ins.status),
-              ]);
-            }
-          }
-        }
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        const blob = await reportsApi.downloadOverdueInstallmentsXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `keste-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
       } else if (report.code === "LEGAL_CASES") {
         const data = await fetchAllPages((p) => legalApi.list(p));
         rows = [["Referencë", "Ref. Dosje", "Debitor", "Gjykatë", "Status", "Dorëzuar", "Seanca e Ardhshme", "Vendim (EUR)"]];

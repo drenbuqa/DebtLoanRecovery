@@ -697,6 +697,143 @@ export class ReportsService {
     res.send(buf);
   }
 
+  // ─── Overdue Installments Excel ──────────────────────────────────────────────
+
+  async overdueInstallmentsXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+    const agreementWhere: any = { status: { in: ['ACTIVE', 'BROKEN'] } };
+    if (query.officerId) agreementWhere.case = { assignedOfficerId: query.officerId };
+    if (query.officeId)  agreementWhere.case = { ...(agreementWhere.case ?? {}), officeId: query.officeId };
+
+    const agreements = await this.prisma.agreement.findMany({
+      where: { ...agreementWhere, installments: { some: { status: 'OVERDUE' } } },
+      include: {
+        installments: { where: { status: 'OVERDUE' }, orderBy: { dueDate: 'asc' } },
+        case: {
+          include: {
+            loan: {
+              include: {
+                borrower: {
+                  include: {
+                    phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 2 },
+                  },
+                },
+                institution: true,
+                relatedParties: {
+                  include: {
+                    person: {
+                      include: {
+                        phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            assignedOfficer: { select: { id: true, fullName: true } },
+            secondaryOfficer: { select: { id: true, fullName: true } },
+            office: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+
+    const headers = [
+      // Installment-specific
+      'agreement_reference', 'agreement_status',
+      'installment_number', 'due_date', 'installment_amount', 'currency', 'days_overdue',
+      // Borrower & loan (migration format)
+      'personal_id', 'full_name', 'date_of_birth',
+      'phone1', 'phone2', 'email', 'address', 'city',
+      'loan_number', 'institution_name',
+      'assigned_officer_id', 'secondary_officer_id',
+      'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
+      'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
+      'days_past_due', 'npl_classification', 'office_code',
+      '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
+      '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
+      'case_reference', 'case_status', 'collection_stage',
+    ];
+
+    const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    const rows: any[][] = [];
+    for (const ag of agreements) {
+      const c = ag.case;
+      const b = c.loan.borrower;
+      const phones = b.phones ?? [];
+      const parties = c.loan.relatedParties ?? [];
+      const guarantors = parties.filter((rp) => rp.role === 'GUARANTOR');
+      const coBorrower = parties.find((rp) => rp.role === 'CO_BORROWER');
+      const g1 = guarantors[0]?.person;
+      const g2 = guarantors[1]?.person;
+      const co = coBorrower?.person;
+
+      for (const ins of ag.installments) {
+        const dueDate = new Date(ins.dueDate);
+        const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / 86400000);
+        rows.push([
+          ag.agreementReference,
+          ag.status,
+          ins.installmentNumber,
+          d(ins.dueDate),
+          Number(ins.amount),
+          ins.currency ?? ag.currency,
+          daysOverdue,
+          b.personalId ?? '',
+          b.fullName ?? '',
+          d((b as any).dateOfBirth),
+          phones[0]?.phoneNumber ?? '',
+          phones[1]?.phoneNumber ?? '',
+          (b as any).email ?? '',
+          b.address ?? '',
+          b.city ?? '',
+          c.loan.loanNumber ?? '',
+          c.loan.institution?.name ?? '',
+          c.assignedOfficer?.id ?? '',
+          c.secondaryOfficer?.id ?? '',
+          Number(c.loan.originalLoanAmount ?? 0),
+          Number(c.loan.originalLoanAmount ?? 0),
+          Number(c.loan.currentOutstandingBalance ?? 0),
+          (c.loan as any).productType ?? '',
+          d((c.loan as any).disbursementDate),
+          d(c.loan.maturityDate),
+          d(c.loan.lastPaymentDate),
+          c.loan.daysPastDue ?? 0,
+          c.loan.nplClassification ?? '',
+          (c.office as any)?.code ?? '',
+          g1?.personalId ?? '',
+          g1?.fullName ?? '',
+          g1?.phones?.[0]?.phoneNumber ?? '',
+          g2?.personalId ?? '',
+          g2?.fullName ?? '',
+          g2?.phones?.[0]?.phoneNumber ?? '',
+          co?.personalId ?? '',
+          co?.fullName ?? '',
+          co?.phones?.[0]?.phoneNumber ?? '',
+          c.caseReference,
+          c.status,
+          c.collectionStage,
+        ]);
+      }
+    }
+
+    // Sort by days overdue descending (most overdue first)
+    rows.sort((a, b) => (b[6] as number) - (a[6] as number));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 4, 16) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Këste në Vonesë');
+
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `keste-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
+  }
+
   // ─── PDF helpers ─────────────────────────────────────────────────────────────
 
   private header(doc: PDFKit.PDFDocument, title: string) {
