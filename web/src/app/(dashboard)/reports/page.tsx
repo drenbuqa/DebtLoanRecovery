@@ -47,8 +47,8 @@ const REPORTS = [
     name: "Dosjet Gjyqësore",
     desc: "Procedurat gjyqësore aktive me datat e seancave të ardhshme",
     icon: Scale,
-    columns: ["Referencë", "Ref. Dosje", "Debitor", "Gjykatë", "Status", "Dorëzuar", "Seanca e Ardhshme", "Vendim (EUR)"],
-    info: "Eksporton të gjitha procedurat gjyqësore me detajet e gjykatës, datat e dorëzimit dhe shumat e vendimit kur aplikohet.",
+    columns: ["Ref. Procedurës", "Statusi", "Gjykata", "Nr. Gjyqësor", "Dorëzuar", "Iniciuar", "Seanca e Ardhshme", "Vendim", "Shuma Vendimit", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Faza"],
+    info: "Eksporton të gjitha procedurat gjyqësore — detajet ligjore (gjykata, datat, vendimi) plus formatin e plotë të migrimit për çdo rast. Oficeri shikon vetëm dosjet e tij/saj.",
   },
   {
     code: "ACTIVITY_LOG",
@@ -140,20 +140,17 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         onClose();
         return;
       } else if (report.code === "LEGAL_CASES") {
-        const data = await fetchAllPages((p) => legalApi.list(p));
-        rows = [["Referencë", "Ref. Dosje", "Debitor", "Gjykatë", "Status", "Dorëzuar", "Seanca e Ardhshme", "Vendim (EUR)"]];
-        for (const lp of data) {
-          rows.push([
-            lp.proceedingRef,
-            lp.case?.caseReference ?? "",
-            `${lp.case?.loan?.borrower?.fullName}`.trim(),
-            lp.court ?? "",
-            formatEnum(lp.status),
-            lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("sq-AL") : "",
-            lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("sq-AL") : "",
-            lp.judgmentAmount != null ? String(Number(lp.judgmentAmount).toFixed(2)) : "",
-          ]);
-        }
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        const blob = await reportsApi.downloadLegalCasesXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `dosjet-gjyqesore-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
       } else if (report.code === "ACTIVITY_LOG") {
         const extra: any = {};
         if (dateFrom) extra.from = dateFrom;
