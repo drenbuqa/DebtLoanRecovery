@@ -5,11 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PerformanceService {
   constructor(private prisma: PrismaService) {}
 
-  async officerStats(query: { from?: string; to?: string; officeId?: string }) {
+  async officerStats(query: { from?: string; to?: string; officeId?: string; officerId?: string }) {
     const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const to = query.to ? new Date(query.to) : new Date();
 
-    const officerWhere = { isActive: true, role: { in: ['OFFICER', 'MANAGER'] as any[] }, ...(query.officeId ? { officeId: query.officeId } : {}) };
+    const officerWhere: any = { isActive: true, role: { in: ['OFFICER', 'MANAGER'] as any[] } };
+    if (query.officeId) officerWhere.officeId = query.officeId;
+    // When scoped to a single officer, only show that officer
+    if (query.officerId) officerWhere.id = query.officerId;
 
     // 4 queries total regardless of officer count — no N+1
     const [officers, caseCounts, activityGroups, paymentGroups] = await Promise.all([
@@ -113,6 +116,70 @@ export class PerformanceService {
       officerCount: o._count.users,
       collected: payMap.get(o.id) ?? 0,
       activities: actMap.get(o.id) ?? 0,
+    }));
+  }
+
+  async institutionStats(query: { from?: string; to?: string; institutionId?: string }) {
+    const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const to = query.to ? new Date(query.to) : new Date();
+
+    const instWhere: any = { isActive: true };
+    if (query.institutionId) instWhere.id = query.institutionId;
+
+    const [institutions, caseCounts, activeCaseCounts, paymentAgg, activityAgg, outstandingAgg] = await Promise.all([
+      this.prisma.institution.findMany({
+        where: instWhere,
+        select: { id: true, name: true, shortName: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.loan.groupBy({
+        by: ['institutionId'],
+        where: instWhere.id ? { institutionId: instWhere.id } : {},
+        _count: { id: true },
+      }),
+      this.prisma.loan.groupBy({
+        by: ['institutionId'],
+        where: { case: { status: 'ACTIVE' }, ...(instWhere.id ? { institutionId: instWhere.id } : {}) },
+        _count: { id: true },
+      }),
+      this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
+        SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
+        FROM payments p
+        JOIN cases c ON c.id = p.case_id
+        JOIN loans l ON l.case_id = c.id
+        WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
+          AND p.voided_at IS NULL
+        GROUP BY l.institution_id
+      `,
+      this.prisma.$queryRaw<{ institution_id: string; cnt: string }[]>`
+        SELECT l.institution_id, COUNT(a.id)::text AS cnt
+        FROM activities a
+        JOIN cases c ON c.id = a.case_id
+        JOIN loans l ON l.case_id = c.id
+        WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+        GROUP BY l.institution_id
+      `,
+      this.prisma.loan.groupBy({
+        by: ['institutionId'],
+        where: instWhere.id ? { institutionId: instWhere.id } : {},
+        _sum: { currentOutstandingBalance: true, originalLoanAmount: true },
+      }),
+    ]);
+
+    const totalMap    = new Map(caseCounts.map((r) => [r.institutionId, r._count.id]));
+    const activeMap   = new Map(activeCaseCounts.map((r) => [r.institutionId, r._count.id]));
+    const payMap      = new Map(paymentAgg.map((r) => [r.institution_id, Number(r.total)]));
+    const actMap      = new Map(activityAgg.map((r) => [r.institution_id, Number(r.cnt)]));
+    const outstandMap = new Map(outstandingAgg.map((r) => [r.institutionId, { outstanding: Number(r._sum.currentOutstandingBalance ?? 0), original: Number(r._sum.originalLoanAmount ?? 0) }]));
+
+    return institutions.map((inst) => ({
+      id: inst.id, name: inst.name, shortName: inst.shortName,
+      totalCases: totalMap.get(inst.id) ?? 0,
+      activeCases: activeMap.get(inst.id) ?? 0,
+      collected: payMap.get(inst.id) ?? 0,
+      activities: actMap.get(inst.id) ?? 0,
+      totalOutstanding: outstandMap.get(inst.id)?.outstanding ?? 0,
+      totalOriginal: outstandMap.get(inst.id)?.original ?? 0,
     }));
   }
 }

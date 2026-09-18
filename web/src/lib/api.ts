@@ -241,6 +241,10 @@ export const performance = {
     const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
     return req<any[]>(`/performance/offices${qs ? `?${qs}` : ''}`);
   },
+  institutions: (params?: { from?: string; to?: string; institutionId?: string }) => {
+    const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
+    return req<any[]>(`/performance/institutions${qs ? `?${qs}` : ''}`);
+  },
 };
 
 // Import
