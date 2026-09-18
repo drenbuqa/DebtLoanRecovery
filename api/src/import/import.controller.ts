@@ -1,13 +1,14 @@
 import {
   Controller, Post, Get, Res, Request, Query, Body,
   UseInterceptors, UploadedFile,
-  BadRequestException, UseGuards,
+  BadRequestException, UseGuards, Inject,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { ImportService, ALL_FIELDS } from './import.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 const ALLOWED_MIME = new Set([
   'text/csv', 'application/csv', 'text/plain',
@@ -28,7 +29,35 @@ const fileInterceptor = () => FileInterceptor('file', {
 @UseGuards(RolesGuard)
 @RequireRoles('ADMIN', 'MANAGER')
 export class ImportController {
-  constructor(private svc: ImportService) {}
+  constructor(private svc: ImportService, private prisma: PrismaService) {}
+
+  @Get('reference-data')
+  async referenceData() {
+    const [officers, institutions, cities] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
+        select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
+        orderBy: { fullName: 'asc' },
+      }),
+      this.prisma.institution.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, shortName: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.person.findMany({
+        where: { city: { not: null } },
+        select: { city: true },
+        distinct: ['city'],
+        orderBy: { city: 'asc' },
+      }),
+    ]);
+    return {
+      officers,
+      institutions,
+      cities: cities.map((p) => p.city).filter(Boolean).sort(),
+      nplCategories: ['PERFORMING', 'WATCH', 'SUBSTANDARD', 'DOUBTFUL', 'LOSS'],
+    };
+  }
 
   @Get('template')
   template(@Res() res: Response) {
@@ -53,6 +82,19 @@ export class ImportController {
   preview(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
     return this.svc.previewColumns(file.buffer);
+  }
+
+  @Post('bulk-update')
+  @UseInterceptors(fileInterceptor())
+  async bulkUpdate(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+    @Body('type') type: string,
+  ) {
+    if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
+    const validTypes = ['officer', 'npl', 'institution', 'city'];
+    if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
+    return this.svc.bulkUpdate(file.buffer, type as any, req.user.id);
   }
 
   @Post('loans')

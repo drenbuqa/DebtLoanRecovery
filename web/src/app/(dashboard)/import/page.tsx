@@ -5,7 +5,7 @@ import Topbar from "@/components/layout/Topbar";
 import { importApi } from "@/lib/api";
 import {
   Upload, Download, CheckCircle, XCircle, AlertTriangle,
-  FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp,
+  FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp, Copy, Check,
 } from "lucide-react";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -195,6 +195,390 @@ function HistoryRow({ job }: { job: any }) {
   );
 }
 
+// ── Copy button ────────────────────────────────────────────────────────────────
+
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+  return (
+    <button onClick={copy} title="Kopjo"
+      className="ml-1 p-0.5 rounded text-gray-300 hover:text-brand-500 transition-colors shrink-0">
+      {copied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+    </button>
+  );
+}
+
+// ── Reference panel ────────────────────────────────────────────────────────────
+
+function ReferencePanel() {
+  const [data, setData] = useState<{ officers: any[]; institutions: any[]; cities: string[]; nplCategories: string[] } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"officers" | "institutions" | "cities" | "npl">("officers");
+
+  useEffect(() => {
+    importApi.referenceData().then(setData).catch(() => {});
+  }, []);
+
+  const NPL_DESC: Record<string, string> = {
+    PERFORMING: "Kredi aktive, pa vonesë",
+    WATCH: "Vonesë 1–90 ditë",
+    SUBSTANDARD: "Vonesë 91–180 ditë",
+    DOUBTFUL: "Vonesë 181–360 ditë",
+    LOSS: "Vonesë mbi 360 ditë",
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <button onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left">
+        <div>
+          <div className="text-[14px] font-semibold text-gray-900">Vlerat e referencës</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">ID-të e zyrtarëve, emrat e institucioneve, qytetet dhe kategoritë NPL</div>
+        </div>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      </button>
+
+      {open && data && (
+        <div className="border-t border-gray-100">
+          {/* Tab bar */}
+          <div className="flex border-b border-gray-100 px-5">
+            {([
+              { key: "officers", label: `Zyrtarët (${data.officers.length})` },
+              { key: "institutions", label: `Bankat (${data.institutions.length})` },
+              { key: "cities", label: `Qytetet (${data.cities.length})` },
+              { key: "npl", label: "Kategoria NPL" },
+            ] as const).map(({ key, label }) => (
+              <button key={key} onClick={() => setTab(key)}
+                className={`px-3 py-2.5 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                  tab === key ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-5">
+            {tab === "officers" && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-gray-400 mb-3">
+                  Kolona <span className="font-mono bg-gray-100 px-1 rounded">Kodi</span> përdoret për ndryshime me Excel.
+                  Kopjoni UUID-në për migrim direkt.
+                </p>
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                  {data.officers.map((o, idx) => (
+                    <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{idx + 1}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
+                        <div className="text-[11px] text-gray-400">{o.office?.name ?? ""} · {o.role}</div>
+                      </div>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="font-mono text-[11px] text-gray-500 truncate max-w-[160px]">{o.id}</span>
+                        <CopyBtn text={o.id} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tab === "institutions" && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-gray-400 mb-3">Kopjoni emrin e saktë dhe ngjiseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">institution_name</span></p>
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                  {data.institutions.map((inst) => (
+                    <div key={inst.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-gray-800">{inst.name}</div>
+                        <div className="text-[11px] text-gray-400">{inst.shortName}</div>
+                      </div>
+                      <CopyBtn text={inst.name} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tab === "cities" && (
+              <div>
+                <p className="text-[11px] text-gray-400 mb-3">Qytetet ekzistuese në sistem. Kopjoni drejtshkrimin e saktë për kolonën <span className="font-mono bg-gray-100 px-1 rounded">city</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {data.cities.map((city) => (
+                    <div key={city} className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg">
+                      <span className="text-[12px] text-gray-700">{city}</span>
+                      <CopyBtn text={city} />
+                    </div>
+                  ))}
+                  {data.cities.length === 0 && (
+                    <p className="text-[12px] text-gray-400">Nuk ka qytete të regjistruara ende.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {tab === "npl" && (
+              <div>
+                <p className="text-[11px] text-gray-400 mb-3">Vlerat e vlefshme për kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span></p>
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                  {data.nplCategories.map((cat) => (
+                    <div key={cat} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="flex-1">
+                        <span className="font-mono text-[13px] font-semibold text-gray-800">{cat}</span>
+                        <span className="text-[12px] text-gray-400 ml-3">{NPL_DESC[cat]}</span>
+                      </div>
+                      <CopyBtn text={cat} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Static reference maps (mirror of backend ImportService statics) ────────────
+
+const CITY_CODES: Record<number, string> = {
+  1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
+  7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
+  13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
+  19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
+  25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
+  31:'Gjakovë',32:'Dragash',33:'Rahovec',
+};
+
+const INSTITUTION_CODES: Record<number, string> = {
+  1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
+  6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
+  10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
+  14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
+  20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
+  25:'Ziraat Bankasi',26:'TIMI INVEST',
+};
+
+const NPL_CODES: Record<number, string> = {
+  1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
+};
+
+// ── Bulk update panel ──────────────────────────────────────────────────────────
+
+type BulkType = "officer" | "npl" | "institution" | "city";
+
+const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
+  { key: "officer",     label: "Zyrtar",        desc: "Ndrysho oficerina e rastit" },
+  { key: "npl",         label: "Kategoria NPL",  desc: "Ndrysho klasifikimin NPL të kredisë" },
+  { key: "institution", label: "Institucioni",   desc: "Ndrysho bankën/institucionin e kredisë" },
+  { key: "city",        label: "Qyteti",         desc: "Ndrysho qytetin e huamarrësit" },
+];
+
+function BulkUpdatePanel({ officers }: { officers: any[] }) {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<BulkType>("officer");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<{ updated: number; skipped: number; errors: string[]; total: number } | null>(null);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function reset() { setFile(null); setResult(null); setError(""); }
+
+  async function submit() {
+    if (!file) return;
+    setUploading(true); setResult(null); setError("");
+    try {
+      const r = await importApi.bulkUpdate(file, type);
+      setResult(r);
+      setFile(null);
+    } catch (e: any) {
+      setError(e.message ?? "Ndodhi një gabim.");
+    } finally { setUploading(false); }
+  }
+
+  // Reference table for the selected type
+  function CodeTable() {
+    if (type === "officer") {
+      return (
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+          {officers.map((o, idx) => (
+            <div key={o.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{idx + 1}</span>
+              <span className="flex-1 text-gray-800">{o.fullName}</span>
+              <span className="text-gray-400 text-[11px]">{o.office?.name ?? ""}</span>
+            </div>
+          ))}
+          {officers.length === 0 && <p className="px-3 py-2 text-[12px] text-gray-400">Duke ngarkuar…</p>}
+        </div>
+      );
+    }
+    if (type === "npl") {
+      const descs: Record<string,string> = { PERFORMING:"Pa vonesë",WATCH:"1–90 ditë",SUBSTANDARD:"91–180 ditë",DOUBTFUL:"181–360 ditë",LOSS:"mbi 360 ditë" };
+      return (
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+          {Object.entries(NPL_CODES).map(([code, val]) => (
+            <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
+              <span className="font-mono font-semibold text-gray-800 w-28">{val}</span>
+              <span className="text-gray-400">{descs[val]}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (type === "institution") {
+      return (
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+          {Object.entries(INSTITUTION_CODES).map(([code, val]) => (
+            <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
+              <span className="text-gray-800">{val}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    // city
+    return (
+      <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+        {Object.entries(CITY_CODES).map(([code, val]) => (
+          <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+            <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
+            <span className="text-gray-800">{val}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <button onClick={() => { setOpen((v) => !v); reset(); }}
+        className="w-full flex items-center justify-between px-5 py-4 text-left">
+        <div>
+          <div className="text-[14px] font-semibold text-gray-900">Ndryshime të Pjesshme</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, kategori NPL, institucion ose qytet me ngarkesë Excel</div>
+        </div>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 p-5 space-y-5">
+
+          {/* Type selector */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {BULK_TYPE_OPTIONS.map(({ key, label, desc }) => (
+              <button key={key} onClick={() => { setType(key); reset(); }}
+                className={`px-3 py-3 rounded-xl border text-left transition-all ${
+                  type === key
+                    ? "border-brand-400 bg-brand-50 text-brand-700"
+                    : "border-gray-200 hover:border-gray-300 text-gray-700"
+                }`}>
+                <div className="text-[13px] font-semibold">{label}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">{desc}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            {/* Left: code reference */}
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
+              </p>
+              <div className="text-[11px] text-gray-400 mb-2">
+                Kolona A = numri i rastit &nbsp;·&nbsp; Kolona B = kodi
+              </div>
+              <CodeTable />
+            </div>
+
+            {/* Right: upload */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Ngarko Dokumentin Excel
+              </p>
+
+              {result ? (
+                <div className="space-y-3">
+                  <div className={`flex items-start gap-2.5 p-3.5 rounded-xl border ${result.errors.length === 0 ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
+                    <CheckCircle size={14} className={`shrink-0 mt-0.5 ${result.errors.length === 0 ? "text-emerald-600" : "text-amber-600"}`} />
+                    <div className="text-[12px]">
+                      <span className={`font-semibold ${result.errors.length === 0 ? "text-emerald-800" : "text-amber-800"}`}>
+                        {result.updated} raste u përditësuan
+                      </span>
+                      {result.skipped > 0 && <span className="text-gray-500 ml-2">· {result.skipped} anashkaluar</span>}
+                    </div>
+                  </div>
+                  {result.errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1">
+                      {result.errors.map((e, i) => (
+                        <p key={i} className="text-[11px] text-red-700">{e}</p>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={reset} className="text-[12px] text-brand-600 hover:underline">
+                    Ngarko dokument tjetër
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {!file ? (
+                    <div
+                      onClick={() => inputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}
+                      className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-8 cursor-pointer hover:border-brand-300 hover:bg-brand-50/40 transition-all">
+                      <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
+                      <Upload size={18} className="text-gray-300" />
+                      <p className="text-[12px] text-gray-500">Tërhiq ose kliko për të zgjedhur</p>
+                      <p className="text-[11px] text-gray-400">Kolona A: numri i rastit · Kolona B: kodi</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 border border-brand-200 bg-brand-50 rounded-xl">
+                      <FileSpreadsheet size={16} className="text-brand-600 shrink-0" />
+                      <span className="flex-1 text-[12px] font-medium text-gray-800 truncate">{file.name}</span>
+                      <button onClick={() => setFile(null)} className="text-[11px] text-gray-400 hover:text-gray-600 shrink-0">Ndrysho</button>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <XCircle size={13} className="text-red-500 shrink-0 mt-0.5" />
+                      <p className="text-[12px] text-red-700">{error}</p>
+                    </div>
+                  )}
+
+                  {file && (
+                    <button onClick={submit} disabled={uploading}
+                      className="flex items-center justify-center gap-2 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-lg text-[13px] font-medium transition-colors">
+                      {uploading ? (
+                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Duke aplikuar…</>
+                      ) : (
+                        <><Upload size={14} /> Apliko Ndryshimet</>
+                      )}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
@@ -204,9 +588,11 @@ export default function ImportPage() {
   const [error, setError]         = useState("");
   const [jobs, setJobs]           = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [officers, setOfficers]   = useState<any[]>([]);
 
   useEffect(() => {
     importApi.jobs().then(setJobs).catch(() => {}).finally(() => setLoadingJobs(false));
+    importApi.referenceData().then((d) => setOfficers(d.officers)).catch(() => {});
   }, []);
 
   function handleFile(f: File) { setFile(f); setResult(null); setError(""); }
@@ -347,6 +733,12 @@ export default function ImportPage() {
             )}
           </div>
         </div>
+
+        {/* ── Reference data ───────────────────────── */}
+        <ReferencePanel />
+
+        {/* ── Bulk partial updates ─────────────────── */}
+        <BulkUpdatePanel officers={officers} />
 
         {/* ── History ───────────────────────────────── */}
         <div>

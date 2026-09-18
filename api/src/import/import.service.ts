@@ -735,6 +735,116 @@ export class ImportService {
     });
   }
 
+  // ── Bulk partial update ────────────────────────────────────────────────────────
+
+  // Static reference code maps (shared with front-end reference panel)
+  static readonly CITY_CODES: Record<number, string> = {
+    1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
+    7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
+    13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
+    19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
+    25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
+    31:'Gjakovë',32:'Dragash',33:'Rahovec',
+  };
+
+  static readonly INSTITUTION_CODES: Record<number, string> = {
+    1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
+    6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
+    10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
+    14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
+    20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
+    25:'Ziraat Bankasi',26:'TIMI INVEST',
+  };
+
+  static readonly NPL_CODES: Record<number, string> = {
+    1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
+  };
+
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'npl'|'institution'|'city', performedById: string) {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    // Skip header row if first cell looks like a header
+    const dataRows = rows.filter((r, i) => {
+      if (i === 0) {
+        const first = String(r[0] ?? '').toLowerCase();
+        return !['case', 'rasti', 'reference', 'nr', 'numri'].some(h => first.includes(h));
+      }
+      return true;
+    });
+
+    let updated = 0, skipped = 0;
+    const errors: string[] = [];
+
+    // Pre-load institution lookup for 'institution' type
+    let institutionByName: Map<string, string> | null = null;
+    if (type === 'institution') {
+      const insts = await this.prisma.institution.findMany({ select: { id: true, name: true } });
+      institutionByName = new Map(insts.map((i) => [i.name.toLowerCase().trim(), i.id]));
+    }
+
+    // Pre-load officer codes (sequential by createdAt)
+    let officerByCode: Map<number, string> | null = null;
+    if (type === 'officer') {
+      const officers = await this.prisma.user.findMany({
+        where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] as any[] } },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      officerByCode = new Map(officers.map((o, idx) => [idx + 1, o.id]));
+    }
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const caseRef = String(row[0] ?? '').trim();
+      const codeRaw = String(row[1] ?? '').trim();
+      const rowLabel = `Rreshti ${i + 2}`;
+
+      if (!caseRef || !codeRaw) { skipped++; continue; }
+
+      try {
+        const cas = await this.prisma.case.findUnique({
+          where: { caseReference: caseRef },
+          select: { id: true, loanId: true, loan: { select: { borrowerId: true } } },
+        });
+        if (!cas) { errors.push(`${rowLabel}: rasti "${caseRef}" nuk u gjet`); skipped++; continue; }
+
+        if (type === 'officer') {
+          const code = parseInt(codeRaw);
+          const officerId = officerByCode!.get(code);
+          if (!officerId) { errors.push(`${rowLabel}: kodi i zyrtatit ${code} nuk ekziston`); skipped++; continue; }
+          await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
+          updated++;
+        } else if (type === 'npl') {
+          const code = parseInt(codeRaw);
+          const npl = ImportService.NPL_CODES[code];
+          if (!npl) { errors.push(`${rowLabel}: kodi NPL ${code} nuk është i vlefshëm (1-5)`); skipped++; continue; }
+          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { nplClassification: npl as any } });
+          updated++;
+        } else if (type === 'institution') {
+          const code = parseInt(codeRaw);
+          const instName = ImportService.INSTITUTION_CODES[code];
+          if (!instName) { errors.push(`${rowLabel}: kodi i institucionit ${code} nuk ekziston (1-26)`); skipped++; continue; }
+          const instId = institutionByName!.get(instName.toLowerCase().trim());
+          if (!instId) { errors.push(`${rowLabel}: institucioni "${instName}" nuk u gjet në bazë të të dhënave`); skipped++; continue; }
+          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { institutionId: instId } });
+          updated++;
+        } else if (type === 'city') {
+          const code = parseInt(codeRaw);
+          const city = ImportService.CITY_CODES[code];
+          if (!city) { errors.push(`${rowLabel}: kodi i qytetit ${code} nuk ekziston (1-33)`); skipped++; continue; }
+          await this.prisma.person.update({ where: { id: cas.loan.borrowerId }, data: { city } });
+          updated++;
+        }
+      } catch (e: any) {
+        errors.push(`${rowLabel}: ${e.message}`);
+        skipped++;
+      }
+    }
+
+    return { updated, skipped, errors, total: dataRows.length };
+  }
+
   private validateRow(row: ImportRow, rowNum: number) {
     const req = (field: string, label: string) => {
       if (!cleanId(row[field])?.trim()) throw new Error(`${label} mungon (rreshti ${rowNum})`);

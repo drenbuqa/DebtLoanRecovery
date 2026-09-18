@@ -261,6 +261,7 @@ async function importFetch(path: string, form: FormData) {
 
 export const importApi = {
   templateUrl: () => `${API_BASE}/import/template`,
+  referenceData: () => req<{ officers: any[]; institutions: any[]; cities: string[]; nplCategories: string[] }>('/import/reference-data'),
   fields: () => req<any[]>('/import/fields'),
   jobs: () => req<any[]>('/import/jobs'),
   preview: async (file: File) => {
@@ -274,6 +275,12 @@ export const importApi = {
     if (mapping) form.append('mapping', JSON.stringify(mapping));
     if (institution) form.append('institution', institution);
     return importFetch('/import/loans', form);
+  },
+  bulkUpdate: async (file: File, type: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('type', type);
+    return importFetch('/import/bulk-update', form);
   },
 };
 
