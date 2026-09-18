@@ -264,7 +264,12 @@ export default function LegalPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: any = { page: p, limit: 100, ...(status ? { status } : {}), ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}), ...(scopedToSelf && user?.id ? { officerId: user.id } : {}) };
+      const params: any = { page: p, limit: 100, ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}), ...(scopedToSelf && user?.id ? { officerId: user.id } : {}) };
+      if (status === "IN_PROGRESS_VIEW") {
+        params.view = "in_progress";
+      } else if (status) {
+        params.status = status;
+      }
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo)   params.dateTo   = dateTo;
       const res = await legalApi.list(params);
@@ -283,7 +288,12 @@ export default function LegalPage() {
 
   const filterOptions = [
     { key: "", label: "Të gjitha" },
-    ...Object.entries(STATUS_LABELS).map(([key, label]) => ({ key, label })),
+    { key: "INITIATED", label: "Iniciuar" },
+    { key: "IN_PROGRESS_VIEW", label: "Në Progres" },
+    { key: "IN_PROGRESS", label: "Aktive" },
+    { key: "JUDGMENT", label: "Vendim" },
+    { key: "ENFORCEMENT", label: "Ekzekutim" },
+    { key: "CLOSED", label: "Mbyllur" },
   ];
 
   const q = searchQuery.trim().toLowerCase();
