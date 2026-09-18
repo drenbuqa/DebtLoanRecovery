@@ -858,7 +858,7 @@ export default function CaseDetailPage() {
                     options={editOffices.map((o: any) => ({ value: o.id, label: o.name }))} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Gjendja Debitore (EUR)</label>
+                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Borxhi Aktual (EUR)</label>
                   <input type="number" min="0" step="0.01" value={editForm.currentOutstandingBalance}
                     onChange={(e) => setEditForm((f: any) => ({ ...f, currentOutstandingBalance: e.target.value }))}
                     className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
@@ -974,7 +974,7 @@ export default function CaseDetailPage() {
           {/* Key numbers */}
           <div className="flex items-center gap-5 shrink-0 self-start md:self-auto">
             <div className="text-right">
-              <div className="text-[11px] text-gray-400 mb-0.5">Gjendja Debitore</div>
+              <div className="text-[11px] text-gray-400 mb-0.5">Borxhi Aktual</div>
               <div className="text-[22px] font-bold text-gray-900 tabular leading-none">{formatCurrency(outstanding)}</div>
             </div>
             <div className="w-px h-9 bg-gray-200" />
@@ -1058,7 +1058,7 @@ export default function CaseDetailPage() {
                   {[
                     { label: "Dosja u hap", val: caseData?.createdAt ? new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Shuma e disbursuar", val: formatCurrency(disbursed) },
-                    { label: "Gjendja debitore", val: formatCurrency(outstanding) },
+                    { label: "Borxhi aktual", val: formatCurrency(outstanding) },
                     { label: "Totali i arkëtuar", val: formatCurrency(totalCollected) },
                     { label: "Shkalla e arkëtimit", val: `${recoveryRate}%` },
                     { label: "Ditë nga pagesa e fundit", val: daysSincePay != null ? `${daysSincePay} ditë` : "—" },
@@ -1108,7 +1108,7 @@ export default function CaseDetailPage() {
               {[
                 { label: "Kredia Origjinale", val: formatCurrency(Number(caseData?.loan?.originalLoanAmount ?? 0)) },
                 { label: "E Disbursuar", val: formatCurrency(disbursed) },
-                { label: "Gjendja Debitore", val: formatCurrency(outstanding) },
+                { label: "Borxhi Aktual", val: formatCurrency(outstanding) },
                 { label: "Totali i Arkëtuar", val: formatCurrency(totalCollected) },
               ].map((s) => (
                 <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-4 py-3">

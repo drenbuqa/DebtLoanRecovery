@@ -194,7 +194,7 @@ function InstitutionsPageInner() {
                       </div>
                     </div>
                     <div className="text-right shrink-0 mr-2">
-                      <div className="text-[11px] text-gray-400">Gjendja Debitore</div>
+                      <div className="text-[11px] text-gray-400">Borxhi Aktual</div>
                       <div className="text-[16px] font-bold text-gray-900 tabular">{formatCurrency(inst.totalOutstanding)}</div>
                       <div className="text-[11px] text-gray-400">{share.toFixed(1)}% e portofolit</div>
                     </div>

@@ -761,7 +761,7 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Balanca", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza",
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza",
                     ...(["all_promises","vonesa","premtime_thyera"].includes(view) ? ["Premtimi"] : []),
                   ].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>

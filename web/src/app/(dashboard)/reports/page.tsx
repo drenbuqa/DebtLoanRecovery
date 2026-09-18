@@ -14,7 +14,7 @@ const REPORTS = [
     name: "Gjendja e Dosjeve",
     desc: "Të gjitha dosjet aktuale me balancën, statusin dhe fazën e arkëtimit",
     icon: BarChart3,
-    columns: ["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Gjendja Debitore (EUR)", "DPD"],
+    columns: ["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Borxhi Aktual (EUR)", "DPD"],
     info: "Eksporton të gjitha dosjet me gjendjen aktuale debitore, ditët me vonesë, statusin dhe fazën e arkëtimit. Pa filtër datash — pasqyron gjithmonë portofolin aktual.",
   },
   {
@@ -86,7 +86,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
 
       if (report.code === "PORTFOLIO_SUMMARY") {
         const data = await fetchAllPages((p) => casesApi.list(p));
-        rows = [["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Gjendja Debitore (EUR)", "DPD"]];
+        rows = [["Referencë Dosje", "Debitor", "Institucion", "Status", "Fazë", "Borxhi Aktual (EUR)", "DPD"]];
         for (const c of data) {
           rows.push([
             c.caseReference,

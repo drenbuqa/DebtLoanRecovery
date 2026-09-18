@@ -436,7 +436,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
               <div className="h-5 w-12 bg-gray-100 rounded" />
             </div>
           )) : [
-            { label: "Gjendja Debitore", value: formatCurrency(stats.totalOutstanding), href: "/cases" },
+            { label: "Borxhi Aktual", value: formatCurrency(stats.totalOutstanding), href: "/cases" },
             { label: "Arkëtime Këtë Muaj", value: formatCurrency(stats.collectionsThisMonth), href: "/payments" },
             { label: "Dosje Aktive", value: stats.activeCases.toLocaleString(), href: "/cases" },
             { label: "Marrëveshje Aktive", value: stats.activeAgreements.toLocaleString(), alert: stats.overdueInstallments > 0, href: "/agreements" },
@@ -653,7 +653,7 @@ function ViewerDashboard() {
               <div className="h-2 w-16 bg-gray-100 rounded" /><div className="h-5 w-12 bg-gray-100 rounded" />
             </div>
           )) : [
-            { label: "Gjendja Debitore",        value: formatCurrency(stats.totalOutstanding),    sub: "Për të gjitha institucionet" },
+            { label: "Borxhi Aktual",        value: formatCurrency(stats.totalOutstanding),    sub: "Për të gjitha institucionet" },
             { label: "Arkëtime Këtë Muaj",       value: formatCurrency(stats.collectionsThisMonth),sub: "Muaji aktual" },
             { label: "Dosje Aktive",             value: stats.activeCases.toLocaleString(),        sub: "Aktualisht aktive",          href: "/cases" },
             { label: "Marrëveshje Aktive",       value: stats.activeAgreements.toLocaleString(),   sub: `${stats.overdueInstallments} me vonesë`, alert: stats.overdueInstallments > 0, href: "/agreements" },
