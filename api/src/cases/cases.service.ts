@@ -224,6 +224,23 @@ export class CasesService {
   }
 
   async findOne(id: string) {
+    // Lazily reconcile overdue installments/agreements before returning case detail
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    await this.prisma.agreementInstallment.updateMany({
+      where: { status: 'PENDING', dueDate: { lt: today }, agreement: { case: { OR: [{ id }, { caseReference: id }] } } },
+      data: { status: 'OVERDUE' },
+    });
+    const brokenIds = await this.prisma.agreement.findMany({
+      where: { status: 'ACTIVE', case: { OR: [{ id }, { caseReference: id }] }, installments: { some: { status: 'OVERDUE' } } },
+      select: { id: true },
+    });
+    if (brokenIds.length > 0) {
+      await this.prisma.agreement.updateMany({
+        where: { id: { in: brokenIds.map((a) => a.id) } },
+        data: { status: 'BROKEN' },
+      });
+    }
+
     const c = await this.prisma.case.findFirst({
       where: { OR: [{ id }, { caseReference: id }], deletedAt: null },
       select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },

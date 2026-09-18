@@ -19,7 +19,39 @@ const AGR_SELECT = {
 export class AgreementsService {
   constructor(private prisma: PrismaService) {}
 
+  private async reconcileOverdue() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Mark PENDING installments as OVERDUE when their due date has passed
+    await this.prisma.agreementInstallment.updateMany({
+      where: {
+        status: 'PENDING',
+        dueDate: { lt: today },
+        agreement: { status: 'ACTIVE' },
+      },
+      data: { status: 'OVERDUE' },
+    });
+
+    // Mark ACTIVE agreements as BROKEN when they have any overdue installment
+    const brokenIds = await this.prisma.agreement.findMany({
+      where: {
+        status: 'ACTIVE',
+        installments: { some: { status: 'OVERDUE' } },
+      },
+      select: { id: true },
+    });
+    if (brokenIds.length > 0) {
+      await this.prisma.agreement.updateMany({
+        where: { id: { in: brokenIds.map((a) => a.id) } },
+        data: { status: 'BROKEN' },
+      });
+    }
+  }
+
   async findAll(query: { page?: number; limit?: number; caseId?: string; status?: string; officerId?: string; officeId?: string }) {
+    await this.reconcileOverdue();
+
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 25, 100);
     const skip = (page - 1) * limit;
@@ -45,6 +77,7 @@ export class AgreementsService {
   }
 
   async findOne(id: string) {
+    await this.reconcileOverdue();
     const a = await this.prisma.agreement.findUnique({ where: { id }, select: AGR_SELECT });
     if (!a) throw new NotFoundException('Marrëveshja nuk u gjet');
     return a;
