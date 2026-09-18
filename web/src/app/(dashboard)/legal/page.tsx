@@ -267,6 +267,8 @@ export default function LegalPage() {
       const params: any = { page: p, limit: 100, ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}), ...(scopedToSelf && user?.id ? { officerId: user.id } : {}) };
       if (status === "IN_PROGRESS_VIEW") {
         params.view = "in_progress";
+      } else if (status === "JUDGMENT_VIEW") {
+        params.view = "judgment";
       } else if (status) {
         params.status = status;
       }
@@ -291,7 +293,7 @@ export default function LegalPage() {
     { key: "INITIATED", label: "Iniciuar" },
     { key: "IN_PROGRESS_VIEW", label: "Në Progres" },
     { key: "IN_PROGRESS", label: "Aktive" },
-    { key: "JUDGMENT", label: "Vendim" },
+    { key: "JUDGMENT_VIEW", label: "Vendim" },
     { key: "ENFORCEMENT", label: "Ekzekutim" },
     { key: "CLOSED", label: "Mbyllur" },
   ];

@@ -36,6 +36,13 @@ export class LegalService {
     if (query.view === 'in_progress') {
       where.activities = { some: { activityType: 'HEARING' } };
     }
+    // "judgment" view: proceedings with a court judgment registered (judgmentDate set OR JUDGMENT activity)
+    if (query.view === 'judgment') {
+      where.OR = [
+        { judgmentDate: { not: null } },
+        { activities: { some: { activityType: 'JUDGMENT' } } },
+      ];
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.legalProceeding.count({ where }),
