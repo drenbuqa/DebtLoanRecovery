@@ -31,7 +31,7 @@ export class AgreementsController {
 
   @Patch('installments/:id/pay')
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  payInstallment(@Param('id') id: string, @Body('paidAmount') paidAmount?: number) {
-    return this.svc.markInstallmentPaid(id, paidAmount);
+  payInstallment(@Param('id') id: string, @Body('paidAmount') paidAmount: number | undefined, @Request() req: any) {
+    return this.svc.markInstallmentPaid(id, paidAmount, req.user?.id);
   }
 }

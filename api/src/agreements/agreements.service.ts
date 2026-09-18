@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { AgreementStatus } from '@prisma/client';
+import { AgreementStatus, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const AGR_SELECT = {
@@ -94,8 +94,11 @@ export class AgreementsService {
     });
   }
 
-  async markInstallmentPaid(installmentId: string, paidAmount?: number) {
-    const inst = await this.prisma.agreementInstallment.findUnique({ where: { id: installmentId } });
+  async markInstallmentPaid(installmentId: string, paidAmount?: number, officerId?: string) {
+    const inst = await this.prisma.agreementInstallment.findUnique({
+      where: { id: installmentId },
+      include: { agreement: { select: { caseId: true, currency: true } } },
+    });
     if (!inst) throw new NotFoundException('Kësti nuk u gjet');
     if (inst.status === 'PAID') throw new BadRequestException('Ky këst është paguar tashmë');
 
@@ -105,29 +108,63 @@ export class AgreementsService {
     if (paid <= 0) throw new BadRequestException('Shuma e paguar duhet të jetë më e madhe se zero');
     if (paid > amount) throw new BadRequestException(`Shuma e paguar (${paid}) tejkalon shumën e këstit (${amount})`);
 
+    const caseId = inst.agreement.caseId;
+    const currency = inst.agreement.currency ?? 'EUR';
+    const today = new Date();
+
     return this.prisma.$transaction(async (tx) => {
+      // Mark installment paid
       const updated = await tx.agreementInstallment.update({
         where: { id: installmentId },
-        data: {
-          status: 'PAID',
-          paidAt: new Date(),
-          paidAmount: paid,
-        },
+        data: { status: 'PAID', paidAt: today, paidAmount: paid },
       });
 
-      // Check if all installments for this agreement are now settled (PAID or WAIVED)
+      // Check if all installments are now settled
       const remaining = await tx.agreementInstallment.count({
-        where: {
-          agreementId: inst.agreementId,
-          status: { notIn: ['PAID', 'WAIVED'] },
-        },
+        where: { agreementId: inst.agreementId, status: { notIn: ['PAID', 'WAIVED'] } },
       });
-
       if (remaining === 0) {
         await tx.agreement.update({
           where: { id: inst.agreementId },
           data: { status: AgreementStatus.COMPLETED },
         });
+      }
+
+      // Create linked payment record
+      const year = today.getFullYear();
+      const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM payments WHERE EXTRACT(YEAR FROM payment_date) = ${year}
+      `;
+      const ref = `PAY-${year}-${String(Number(count) + 1).padStart(5, '0')}`;
+      await tx.payment.create({
+        data: {
+          caseId,
+          officerId: officerId ?? (await tx.case.findUnique({ where: { id: caseId }, select: { assignedOfficerId: true } }))?.assignedOfficerId ?? '',
+          paymentReference: ref,
+          amount: paid,
+          currency,
+          paymentDate: today,
+          paymentMethod: PaymentMethod.BANK_TRANSFER,
+          notes: `Këst #${inst.installmentNumber} i marrëveshjes`,
+        },
+      });
+
+      // Update loan outstanding balance
+      const loan = await tx.loan.findFirst({
+        where: { case: { id: caseId } },
+        select: { id: true, currentOutstandingBalance: true },
+      });
+      if (loan) {
+        const newBalance = Math.max(0, Number(loan.currentOutstandingBalance) - paid);
+        await tx.loan.update({
+          where: { id: loan.id },
+          data: { currentOutstandingBalance: newBalance, lastPaymentDate: today },
+        });
+        if (officerId) {
+          await tx.loanBalanceHistory.create({
+            data: { loanId: loan.id, balanceDate: today, outstandingBalance: newBalance, source: 'PAYMENT', recordedById: officerId },
+          });
+        }
       }
 
       return updated;

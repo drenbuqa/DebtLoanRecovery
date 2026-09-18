@@ -1256,7 +1256,7 @@ export default function CaseDetailPage() {
                   </div>
                   {a.installments && (
                     <Table>
-                      <Thead><tr><Th>#</Th><Th>Data e Skadimit</Th><Th>Shuma</Th><Th>Paguar</Th><Th>Statusi</Th></tr></Thead>
+                      <Thead><tr><Th>#</Th><Th>Data e Skadimit</Th><Th>Shuma</Th><Th>Paguar</Th><Th>Statusi</Th><Th></Th></tr></Thead>
                       <Tbody>
                         {a.installments.map((ins: any) => (
                           <Tr key={ins.id}>
@@ -1269,6 +1269,22 @@ export default function CaseDetailPage() {
                                 <span className={`w-1.5 h-1.5 rounded-full ${ins.status === "PAID" ? "bg-emerald-400" : ins.status === "OVERDUE" ? "bg-red-400" : "bg-gray-300"}`} />
                                 {formatEnum(ins.status)}
                               </span>
+                            </Td>
+                            <Td>
+                              {ins.status !== "PAID" && ins.status !== "WAIVED" && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await agreementsApi.payInstallment(ins.id);
+                                      loadCase();
+                                      toast("Kësti u shënua si i paguar dhe pagesa u regjistrua.", "success");
+                                    } catch (e: any) { toast(e.message ?? "Gabim gjatë regjistrimit.", "error"); }
+                                  }}
+                                  className="px-2.5 py-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                                >
+                                  Paguaj Këst
+                                </button>
+                              )}
                             </Td>
                           </Tr>
                         ))}
