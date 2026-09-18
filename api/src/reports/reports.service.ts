@@ -967,6 +967,142 @@ export class ReportsService {
     res.send(buf);
   }
 
+  // ─── Activity Log Excel ──────────────────────────────────────────────────────
+
+  async activityLogXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
+    const where: any = {};
+    if (query.officerId) where.officerId = query.officerId;
+    if (query.officeId)  where.case = { officeId: query.officeId };
+    if (query.dateFrom || query.dateTo) {
+      where.occurredAt = {
+        ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
+        ...(query.dateTo   && { lte: new Date(query.dateTo) }),
+      };
+    }
+
+    const activities = await this.prisma.activity.findMany({
+      where,
+      orderBy: { occurredAt: 'desc' },
+      include: {
+        officer: { select: { id: true, fullName: true } },
+        case: {
+          include: {
+            loan: {
+              include: {
+                borrower: {
+                  include: {
+                    phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 2 },
+                  },
+                },
+                institution: true,
+                relatedParties: {
+                  include: {
+                    person: {
+                      include: {
+                        phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            assignedOfficer: { select: { id: true, fullName: true } },
+            secondaryOfficer: { select: { id: true, fullName: true } },
+            office: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+
+    const headers = [
+      // Activity-specific
+      'activity_date', 'activity_type', 'channel', 'outcome',
+      'promise_amount', 'next_action_date', 'officer', 'notes',
+      // Borrower & loan (migration format)
+      'personal_id', 'full_name', 'date_of_birth',
+      'phone1', 'phone2', 'email', 'address', 'city',
+      'loan_number', 'institution_name',
+      'assigned_officer_id', 'secondary_officer_id',
+      'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
+      'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
+      'days_past_due', 'npl_classification', 'office_code',
+      '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
+      '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
+      'case_reference', 'case_status', 'collection_stage',
+    ];
+
+    const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
+
+    const rows = activities.map((act) => {
+      const c = act.case;
+      const b = c.loan.borrower;
+      const phones = b.phones ?? [];
+      const parties = c.loan.relatedParties ?? [];
+      const guarantors = parties.filter((rp) => rp.role === 'GUARANTOR');
+      const coBorrower = parties.find((rp) => rp.role === 'CO_BORROWER');
+      const g1 = guarantors[0]?.person;
+      const g2 = guarantors[1]?.person;
+      const co = coBorrower?.person;
+
+      return [
+        d(act.occurredAt),
+        act.activityType,
+        act.channel ?? '',
+        act.outcome ?? '',
+        act.promiseAmount != null ? Number(act.promiseAmount) : '',
+        d(act.nextActionDate),
+        act.officer.fullName,
+        (act.notes ?? '').replace(/"/g, '""'),
+        b.personalId ?? '',
+        b.fullName ?? '',
+        d((b as any).dateOfBirth),
+        phones[0]?.phoneNumber ?? '',
+        phones[1]?.phoneNumber ?? '',
+        (b as any).email ?? '',
+        b.address ?? '',
+        b.city ?? '',
+        c.loan.loanNumber ?? '',
+        c.loan.institution?.name ?? '',
+        c.assignedOfficer?.id ?? '',
+        c.secondaryOfficer?.id ?? '',
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.currentOutstandingBalance ?? 0),
+        (c.loan as any).productType ?? '',
+        d((c.loan as any).disbursementDate),
+        d(c.loan.maturityDate),
+        d(c.loan.lastPaymentDate),
+        c.loan.daysPastDue ?? 0,
+        c.loan.nplClassification ?? '',
+        (c.office as any)?.code ?? '',
+        g1?.personalId ?? '',
+        g1?.fullName ?? '',
+        g1?.phones?.[0]?.phoneNumber ?? '',
+        g2?.personalId ?? '',
+        g2?.fullName ?? '',
+        g2?.phones?.[0]?.phoneNumber ?? '',
+        co?.personalId ?? '',
+        co?.fullName ?? '',
+        co?.phones?.[0]?.phoneNumber ?? '',
+        c.caseReference,
+        c.status,
+        c.collectionStage,
+      ];
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 4, 16) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Regjistri Aktiviteteve');
+
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
+  }
+
   // ─── PDF helpers ─────────────────────────────────────────────────────────────
 
   private header(doc: PDFKit.PDFDocument, title: string) {

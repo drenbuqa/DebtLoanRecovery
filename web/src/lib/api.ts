@@ -288,6 +288,16 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
+  downloadActivityLogXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.officerId) qs.set('officerId', params.officerId);
+    if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
+    const res = await fetch(`${API_BASE}/reports/activity-log/xlsx?${qs}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
+    return res.blob();
+  },
   downloadLegalCasesXlsx: async (params?: { officerId?: string; officeId?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);

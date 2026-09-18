@@ -55,8 +55,8 @@ const REPORTS = [
     name: "Regjistri i Aktiviteteve",
     desc: "Të gjitha aktivitetet e regjistruara në periudhën e zgjedhur",
     icon: Activity,
-    columns: ["Lloji", "Ref. Dosje", "Debitor", "Oficer", "Datë", "Rezultat", "Shënime"],
-    info: "Eksporton historikun e plotë të aktiviteteve. Përdorni intervalin kohor për të filtruar në një periudhë specifike.",
+    columns: ["Data", "Lloji", "Kanali", "Rezultati", "Shuma Premtimit", "Oficeri", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Dosje", "Faza"],
+    info: "Eksporton të gjitha aktivitetet e regjistruara me format të plotë — detajet e aktivitetit plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm aktivitetet e tij/saj.",
   },
 ];
 
@@ -152,22 +152,19 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         onClose();
         return;
       } else if (report.code === "ACTIVITY_LOG") {
-        const extra: any = {};
-        if (dateFrom) extra.from = dateFrom;
-        if (dateTo) extra.to = dateTo;
-        const data = await fetchAllPages((p) => activitiesApi.listAll(p), extra);
-        rows = [["Lloji", "Ref. Dosje", "Debitor", "Oficer", "Datë", "Rezultat", "Shënime"]];
-        for (const a of data) {
-          rows.push([
-            formatEnum(a.activityType),
-            a.case?.caseReference ?? "",
-            `${a.case?.loan?.borrower?.fullName}`.trim(),
-            a.officer?.fullName ?? "",
-            a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
-            a.outcome ? formatEnum(a.outcome) : "",
-            a.notes ?? "",
-          ]);
-        }
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+        const blob = await reportsApi.downloadActivityLogXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
       }
 
       setResult({ rows: rows.length - 1, preview: rows.slice(0, 6), all: rows });

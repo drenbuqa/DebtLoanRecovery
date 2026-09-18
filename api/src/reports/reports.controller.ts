@@ -84,4 +84,13 @@ export class ReportsController {
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
     return this.svc.legalCasesXlsx({ officerId, officeId }, res);
   }
+
+  @Get('activity-log/xlsx')
+  activityLogXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
+    const user = (req as any).user;
+    let { officerId, officeId } = q;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    return this.svc.activityLogXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
+  }
 }
