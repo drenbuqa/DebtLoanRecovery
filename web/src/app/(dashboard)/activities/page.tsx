@@ -57,7 +57,7 @@ const ACTIVITY_FILTER_GROUPS = [
   { key: "",                                                                       label: "Të gjitha" },
   { key: "CALL_BORROWER,CALL_GUARANTOR,PROMISE_TO_PAY",                            label: "Telefonata" },
   { key: "VISIT,VISIT_BORROWER,VISIT_GUARANTOR,FIELD_VISIT,MEETING_BORROWER,MEETING_GUARANTOR", label: "Vizita & Takime" },
-  { key: "SMS,WARNING_LETTER",                                                     label: "Komunikim" },
+  { key: "SMS,EMAIL,LETTER,WARNING_LETTER,OTHER",                                  label: "Komunikim" },
   { key: "PROMISE_TO_PAY",                                                         label: "Premtime" },
   { key: "PAYMENT_RECEIVED",                                                       label: "Pagesa" },
   { key: "LEGAL_ACTION",                                                           label: "Ligjore" },
