@@ -45,7 +45,7 @@ const CASE_LIST_SELECT = {
   assignedOfficer: { select: { id: true, fullName: true } },
   secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
-  promisesToPay: {
+  promises: {
     orderBy: { promiseDate: 'desc' as const },
     take: 1,
     select: { id: true, promiseDate: true, promisedAmount: true, status: true },
@@ -178,17 +178,17 @@ export class CasesService {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     if (query.view === 'promises_today') {
-      where.promisesToPay = { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } };
+      where.promises = { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } };
     } else if (query.view === 'all_promises') {
-      where.promisesToPay = { some: { status: 'PENDING' } };
+      where.promises = { some: { status: 'PENDING' } };
     } else if (query.view === 'vonesa') {
       // Promise date has passed, still no payment (status PENDING)
-      where.promisesToPay = { some: { promiseDate: { lt: today }, status: 'PENDING' } };
+      where.promises = { some: { promiseDate: { lt: today }, status: 'PENDING' } };
     } else if (query.view === 'premtime_thyera') {
       // Promise date was > 30 days ago, still no payment
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      where.promisesToPay = {
+      where.promises = {
         some: {
           promiseDate: { lt: thirtyDaysAgo },
           status: { in: ['PENDING', 'BROKEN'] },
