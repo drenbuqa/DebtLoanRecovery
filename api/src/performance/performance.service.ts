@@ -126,22 +126,23 @@ export class PerformanceService {
     const instWhere: any = { isActive: true };
     if (query.institutionId) instWhere.id = query.institutionId;
 
-    const [institutions, caseCounts, activeCaseCounts, paymentAgg, activityAgg, outstandingAgg] = await Promise.all([
+    const [institutions, caseAgg, paymentAgg, activityAgg] = await Promise.all([
       this.prisma.institution.findMany({
         where: instWhere,
         select: { id: true, name: true, shortName: true },
         orderBy: { name: 'asc' },
       }),
-      this.prisma.loan.groupBy({
-        by: ['institutionId'],
-        where: instWhere.id ? { institutionId: instWhere.id } : {},
-        _count: { id: true },
-      }),
-      this.prisma.loan.groupBy({
-        by: ['institutionId'],
-        where: { case: { status: 'ACTIVE' }, ...(instWhere.id ? { institutionId: instWhere.id } : {}) },
-        _count: { id: true },
-      }),
+      this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
+        SELECT
+          l.institution_id,
+          COUNT(l.id)::text AS total,
+          COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
+          COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding,
+          COALESCE(SUM(l.original_loan_amount), 0)::text AS original
+        FROM loans l
+        LEFT JOIN cases c ON c.loan_id = l.id
+        GROUP BY l.institution_id
+      `,
       this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
         SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
         FROM payments p
@@ -159,18 +160,13 @@ export class PerformanceService {
         WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
         GROUP BY l.institution_id
       `,
-      this.prisma.loan.groupBy({
-        by: ['institutionId'],
-        where: instWhere.id ? { institutionId: instWhere.id } : {},
-        _sum: { currentOutstandingBalance: true, originalLoanAmount: true },
-      }),
     ]);
 
-    const totalMap    = new Map(caseCounts.map((r) => [r.institutionId, r._count.id]));
-    const activeMap   = new Map(activeCaseCounts.map((r) => [r.institutionId, r._count.id]));
+    const totalMap    = new Map(caseAgg.map((r) => [r.institution_id, Number(r.total)]));
+    const activeMap   = new Map(caseAgg.map((r) => [r.institution_id, Number(r.active)]));
+    const outstandMap = new Map(caseAgg.map((r) => [r.institution_id, { outstanding: Number(r.outstanding), original: Number(r.original) }]));
     const payMap      = new Map(paymentAgg.map((r) => [r.institution_id, Number(r.total)]));
     const actMap      = new Map(activityAgg.map((r) => [r.institution_id, Number(r.cnt)]));
-    const outstandMap = new Map(outstandingAgg.map((r) => [r.institutionId, { outstanding: Number(r._sum.currentOutstandingBalance ?? 0), original: Number(r._sum.originalLoanAmount ?? 0) }]));
 
     return institutions.map((inst) => ({
       id: inst.id, name: inst.name, shortName: inst.shortName,
