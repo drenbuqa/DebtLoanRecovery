@@ -196,6 +196,7 @@ model Case {
   officeId            String?         @map("office_id") @db.Uuid
   assignedOfficerId   String?         @map("assigned_officer_id") @db.Uuid
   secondaryOfficerId  String?         @map("secondary_officer_id") @db.Uuid
+  importJobId         String?         @map("import_job_id") @db.Uuid
   registrationDate    DateTime?       @map("registration_date") @db.Date
   status              CaseStatus      @default(ACTIVE)
   collectionStage     CollectionStage @default(D1) @map("collection_stage")
@@ -211,6 +212,7 @@ model Case {
   secondaryOfficer User?               @relation("SecondaryOfficer", fields: [secondaryOfficerId], references: [id])
   loan             Loan                @relation(fields: [loanId], references: [id])
   office           Office?             @relation(fields: [officeId], references: [id])
+  importJob        ImportJob?          @relation(fields: [importJobId], references: [id])
   activities       Activity[]
   agreements       Agreement[]
   statusHistory    CaseStatusHistory[]
@@ -515,6 +517,7 @@ model ImportJob {
   institution Institution? @relation(fields: [institutionId], references: [id])
   uploadedBy  User         @relation(fields: [uploadedById], references: [id])
   errors      ImportError[]
+  cases       Case[]
 
   @@index([uploadedById])
   @@map("import_jobs")

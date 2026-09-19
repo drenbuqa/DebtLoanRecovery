@@ -142,7 +142,7 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string; dot: string }> = {
     COMPLETED:  { label: "Përfunduar",     color: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-    FAILED:     { label: "Dështuar",       color: "bg-red-50 text-red-700",         dot: "bg-red-500" },
+    FAILED:     { label: "Anuluar",        color: "bg-gray-100 text-gray-500",      dot: "bg-gray-400" },
     PROCESSING: { label: "Duke procesuar", color: "bg-amber-50 text-amber-700",     dot: "bg-amber-500" },
     PENDING:    { label: "Në pritje",      color: "bg-gray-100 text-gray-600",      dot: "bg-gray-400" },
   };
@@ -154,44 +154,237 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function HistoryRow({ job }: { job: any }) {
-  const [open, setOpen] = useState(false);
-  const hasErrors = job.errors?.length > 0;
+// ── Rollback modal ─────────────────────────────────────────────────────────────
+
+type RollbackState =
+  | { phase: "idle" }
+  | { phase: "checking" }
+  | { phase: "blocked"; reason: string; blockers: string[] }
+  | { phase: "confirm"; caseCount: number; cases: string[] }
+  | { phase: "deleting" }
+  | { phase: "done"; deleted: number }
+  | { phase: "error"; message: string };
+
+function RollbackModal({
+  job,
+  onClose,
+  onSuccess,
+}: {
+  job: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [state, setState] = useState<RollbackState>({ phase: "checking" });
+
+  useEffect(() => {
+    importApi
+      .rollbackCheck(job.id)
+      .then((r) => {
+        if (r.canRollback) {
+          setState({ phase: "confirm", caseCount: r.caseCount ?? 0, cases: r.cases ?? [] });
+        } else {
+          setState({ phase: "blocked", reason: r.reason ?? "Rollback i bllokuar", blockers: r.blockers ?? [] });
+        }
+      })
+      .catch((e: any) => setState({ phase: "error", message: e.message ?? "Gabim gjatë kontrollit" }));
+  }, [job.id]);
+
+  async function confirm() {
+    setState({ phase: "deleting" });
+    try {
+      const r = await importApi.rollback(job.id);
+      setState({ phase: "done", deleted: r.deleted });
+      setTimeout(() => { onSuccess(); onClose(); }, 1800);
+    } catch (e: any) {
+      setState({ phase: "error", message: e.message ?? "Gabim gjatë anulimit" });
+    }
+  }
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-      <div className={`flex items-center gap-3 px-4 py-3 transition-colors ${hasErrors ? "cursor-pointer hover:bg-gray-50" : ""}`}
-        onClick={() => hasErrors && setOpen(v => !v)}>
-        <FileSpreadsheet size={15} className="text-gray-400 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-medium text-gray-900 truncate">{job.fileName}</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">
-            {fmtDate(job.createdAt)} · {job.uploadedBy?.fullName ?? "—"}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+            <RotateCcw size={15} className="text-red-500" />
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-semibold text-gray-900">Anulo Importin</div>
+            <div className="text-[11px] text-gray-400 truncate">{job.fileName}</div>
+          </div>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 transition-colors p-1">
+            <XCircle size={16} />
+          </button>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="hidden md:flex items-center gap-3 text-[12px]">
-            <span className="text-emerald-600 font-semibold">{fmt(job.successfulRows)} ✓</span>
-            {job.failedRows  > 0 && <span className="text-red-500 font-semibold">{fmt(job.failedRows)} ✗</span>}
-            {job.skippedRows > 0 && <span className="text-gray-400">{fmt(job.skippedRows)} ~</span>}
-          </div>
-          <StatusBadge status={job.status} />
-          {hasErrors && (open ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />)}
+
+        {/* Body */}
+        <div className="px-5 py-4">
+          {state.phase === "checking" && (
+            <div className="flex items-center gap-3 py-4">
+              <svg className="animate-spin h-4 w-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <span className="text-[13px] text-gray-600">Duke kontrolluar nëse anulimi është i mundshëm…</span>
+            </div>
+          )}
+
+          {state.phase === "blocked" && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+                <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-semibold text-amber-800 mb-1">Anulimi nuk është i mundshëm</p>
+                  <p className="text-[12px] text-amber-700 leading-relaxed">{state.reason}</p>
+                </div>
+              </div>
+              <p className="text-[12px] text-gray-500">
+                Për të anuluar këtë import, duhet të fshini manualisht të dhënat e regjistruara pas importit.
+              </p>
+            </div>
+          )}
+
+          {state.phase === "confirm" && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
+                <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-semibold text-red-800 mb-1">
+                    Do të fshihen {state.caseCount} raste dhe kreditë e tyre
+                  </p>
+                  <p className="text-[12px] text-red-700 leading-relaxed">
+                    Ky veprim është i pakthyeshëm. Rastet e importuara nga ky skedar do të fshihen përgjithmonë.
+                  </p>
+                </div>
+              </div>
+              {state.cases.length > 0 && (
+                <div className="border border-gray-100 rounded-lg max-h-32 overflow-y-auto">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Rastet që do të fshihen</span>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {state.cases.map((ref) => (
+                      <div key={ref} className="px-3 py-1.5 text-[12px] font-mono text-gray-700">{ref}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {state.phase === "deleting" && (
+            <div className="flex items-center gap-3 py-4">
+              <svg className="animate-spin h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <span className="text-[13px] text-gray-600">Duke fshirë rastet…</span>
+            </div>
+          )}
+
+          {state.phase === "done" && (
+            <div className="flex items-center gap-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <CheckCircle size={15} className="text-emerald-500 shrink-0" />
+              <p className="text-[13px] font-semibold text-emerald-800">
+                {state.deleted} raste u fshinë me sukses
+              </p>
+            </div>
+          )}
+
+          {state.phase === "error" && (
+            <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
+              <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
+              <p className="text-[13px] text-red-700">{state.message}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 pb-4">
+          {(state.phase === "blocked" || state.phase === "error") && (
+            <button onClick={onClose}
+              className="px-4 py-2 text-[13px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              Mbyll
+            </button>
+          )}
+          {state.phase === "confirm" && (
+            <>
+              <button onClick={onClose}
+                className="px-4 py-2 text-[13px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                Anulo
+              </button>
+              <button onClick={confirm}
+                className="px-4 py-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                Po, fshi rastet
+              </button>
+            </>
+          )}
         </div>
       </div>
-      {open && hasErrors && (
-        <div className="border-t border-red-100 divide-y divide-red-50 max-h-48 overflow-y-auto bg-red-50/30">
-          {job.errors.map((e: any, i: number) => (
-            <div key={i} className="px-4 py-2 flex items-start gap-2">
-              <span className="text-[11px] font-mono bg-red-100 text-red-600 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                Rreshti {e.rowNumber}
-              </span>
-              <p className="text-[12px] text-gray-700">{e.errorMessage}</p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
+  );
+}
+
+function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [showRollback, setShowRollback] = useState(false);
+  const hasErrors = job.errors?.length > 0;
+  const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0;
+
+  return (
+    <>
+      {showRollback && (
+        <RollbackModal
+          job={job}
+          onClose={() => setShowRollback(false)}
+          onSuccess={onRollback}
+        />
+      )}
+      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div className="flex items-center gap-3 px-4 py-3 transition-colors">
+          <FileSpreadsheet size={15} className="text-gray-400 shrink-0" />
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => hasErrors && setOpen(v => !v)}>
+            <div className="text-[13px] font-medium text-gray-900 truncate">{job.fileName}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">
+              {fmtDate(job.createdAt)} · {job.uploadedBy?.fullName ?? "—"}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden md:flex items-center gap-3 text-[12px]">
+              <span className="text-emerald-600 font-semibold">{fmt(job.successfulRows)} ✓</span>
+              {job.failedRows  > 0 && <span className="text-red-500 font-semibold">{fmt(job.failedRows)} ✗</span>}
+              {job.skippedRows > 0 && <span className="text-gray-400">{fmt(job.skippedRows)} ~</span>}
+            </div>
+            <StatusBadge status={job.status} />
+            {canShowRollback && (
+              <button
+                onClick={() => setShowRollback(true)}
+                title="Anulo importin"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-gray-500 bg-gray-50 hover:bg-red-50 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded-lg transition-all">
+                <RotateCcw size={11} /> Anulo
+              </button>
+            )}
+            {hasErrors && (
+              <button onClick={() => setOpen(v => !v)} className="text-gray-400 hover:text-gray-600 p-0.5">
+                {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </button>
+            )}
+          </div>
+        </div>
+        {open && hasErrors && (
+          <div className="border-t border-red-100 divide-y divide-red-50 max-h-48 overflow-y-auto bg-red-50/30">
+            {job.errors.map((e: any, i: number) => (
+              <div key={i} className="px-4 py-2 flex items-start gap-2">
+                <span className="text-[11px] font-mono bg-red-100 text-red-600 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                  Rreshti {e.rowNumber}
+                </span>
+                <p className="text-[12px] text-gray-700">{e.errorMessage}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -290,25 +483,24 @@ function ReferencePanel() {
             {tab === "officers" && (
               <div className="space-y-1">
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kolona <span className="font-mono bg-gray-100 px-1 rounded">Kodi</span> përdoret për ndryshime me Excel.
-                  Kopjoni UUID-në për migrim direkt.
+                  Kopjoni kodin numerik dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">assigned_officer_id</span> ose <span className="font-mono bg-gray-100 px-1 rounded">secondary_officer_id</span> kur përdorni ndryshime me Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.officers.map((o, idx) => (
-                    <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{o.userCode ?? idx + 1}</span>
+                  {data.officers.map((o, idx) => {
+                    const code = o.userCode ?? idx + 1;
+                    return (
+                      <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                          <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
+                          <div className="text-[11px] text-gray-400">{o.office?.name ?? ""} · {o.role}</div>
+                        </div>
+                        <CopyBtn text={String(code)} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
-                        <div className="text-[11px] text-gray-400">{o.office?.name ?? ""} · {o.role}</div>
-                      </div>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="font-mono text-[11px] text-gray-500 truncate max-w-[160px]">{o.id}</span>
-                        <CopyBtn text={o.id} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -354,17 +546,14 @@ function ReferencePanel() {
             {tab === "npl" && (
               <div>
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span> kur përdorni ndryshime me Excel.
+                  Kopjoni vlerën dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span>.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {Object.entries(NPL_CODES).map(([code, cat]) => (
-                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
-                      </div>
-                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{cat}</span>
-                      <span className="text-[12px] text-gray-400 flex-1">{NPL_DESC[cat]}</span>
-                      <CopyBtn text={String(code)} />
+                  {Object.entries(NPL_DESC).map(([cat, desc]) => (
+                    <div key={cat} className="flex items-center px-3 py-2.5 hover:bg-gray-50 gap-3">
+                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-32">{cat}</span>
+                      <span className="text-[12px] text-gray-400 flex-1">{desc}</span>
+                      <CopyBtn text={cat} />
                     </div>
                   ))}
                 </div>
@@ -431,11 +620,11 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
       const descs: Record<string,string> = { PERFORMING:"Pa vonesë",WATCH:"1–90 ditë",SUBSTANDARD:"91–180 ditë",DOUBTFUL:"181–360 ditë",LOSS:"mbi 360 ditë" };
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-          {Object.entries(NPL_CODES).map(([code, val]) => (
-            <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
+          {Object.entries(descs).map(([val, desc]) => (
+            <div key={val} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
               <span className="font-mono font-semibold text-gray-800 w-28">{val}</span>
-              <span className="text-gray-400">{descs[val]}</span>
+              <span className="text-gray-400 flex-1">{desc}</span>
+              <CopyBtn text={val} />
             </div>
           ))}
         </div>
@@ -499,20 +688,27 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
 
             {/* Left: code reference */}
             <div>
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
-              </p>
-              <div className="text-[11px] text-gray-400 mb-2">
-                Kolona A = numri i rastit &nbsp;·&nbsp; Kolona B = kodi
+              <div className="mb-3">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Kolona A = numri i rastit &nbsp;·&nbsp; Kolona B = kodi
+                </p>
               </div>
               <CodeTable />
             </div>
 
             {/* Right: upload */}
             <div className="flex flex-col gap-3">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                Ngarko Dokumentin Excel
-              </p>
+              <div className="mb-3">
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Ngarko Dokumentin Excel
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Ngarkoni dokumentin me ndryshimet e përgatitura
+                </p>
+              </div>
 
               {result ? (
                 <div className="space-y-3">
@@ -764,7 +960,13 @@ export default function ImportPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {jobs.map(j => <HistoryRow key={j.id} job={j} />)}
+              {jobs.map(j => (
+                <HistoryRow
+                  key={j.id}
+                  job={j}
+                  onRollback={() => importApi.jobs().then(setJobs).catch(() => {})}
+                />
+              ))}
             </div>
           )}
         </div>

@@ -257,7 +257,7 @@ export default function ActivitiesPage() {
     setLogPromiseDate(""); setLogNextDate("");
   }
   async function submitLog() {
-    if (!logCaseId) { setLogError("Ju lutem zgjidhni një dosje."); return; }
+    if (!logCaseId) { setLogError("Ju lutem zgjidhni një rast."); return; }
     if (!logType) { setLogError("Zgjidhni llojin e aktivitetit."); return; }
     const outcomeOptions = LOG_OUTCOME_MAP[logType] ?? [];
     if (outcomeOptions.length > 0 && !logOutcome) { setLogError("Zgjidhni rezultatin."); return; }
@@ -316,7 +316,7 @@ export default function ActivitiesPage() {
         title="Aktivitete"
         subtitle={loading ? "Duke ngarkuar…" : `${total.toLocaleString()} ndërveprime të regjistruara`}
         help={[
-          { title: "Çfarë është kjo faqe?", body: "Regjistri i plotë i çdo kontakti me debitorët — telefonata, email, vizita, premtime pagese. Klikoni çdo rresht për të hapur dosjen." },
+          { title: "Çfarë është kjo faqe?", body: "Regjistri i plotë i çdo kontakti me debitorët — telefonata, email, vizita, premtime pagese. Klikoni çdo rresht për të hapur rastin." },
           { title: "Vizita në Terren", body: "Filtro sipas 'Vizita Terren' për të parë vetëm vizitat fizike. Butonin 'Regjistro Vizitë' e keni në krye për të shtuar vizitë të re." },
         ]}
       />
@@ -340,7 +340,7 @@ export default function ActivitiesPage() {
 
                 {/* Case search */}
                 <div>
-                  <label className={lbl}>Dosje <span className="text-red-500">*</span></label>
+                  <label className={lbl}>Rast <span className="text-red-500">*</span></label>
                   <div className="relative" ref={caseSearchRef}>
                     {logCaseId ? (
                       <div className="flex items-center gap-2 px-3 py-2 border border-brand-400 rounded-lg bg-brand-50">
@@ -380,7 +380,7 @@ export default function ActivitiesPage() {
                         )}
                         {showCaseDropdown && caseResults.length === 0 && !caseSearching && caseQuery.trim() && (
                           <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl px-3 py-3 text-[13px] text-gray-400">
-                            Nuk u gjet asnjë dosje.
+                            Nuk u gjet asnjë rast.
                           </div>
                         )}
                       </>
@@ -642,7 +642,7 @@ export default function ActivitiesPage() {
               <div className="text-[12px] text-gray-400 max-w-xs">
                 {(typeFilter || actDateFrom || actDateTo || officerFilter || q)
                   ? "Provoni të ndryshoni filtrat ose kërkimin."
-                  : "Aktivitetet regjistrohen nga oficerët gjatë punës me dosjet."}
+                  : "Aktivitetet regjistrohen nga oficerët gjatë punës me rastet."}
               </div>
             </div>
             {(typeFilter || actDateFrom || actDateTo || officerFilter || q) && (

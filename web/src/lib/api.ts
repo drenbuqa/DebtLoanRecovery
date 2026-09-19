@@ -282,6 +282,20 @@ export const importApi = {
     form.append('type', type);
     return importFetch('/import/bulk-update', form);
   },
+  rollbackCheck: (jobId: string) => req<{ canRollback: boolean; reason: string | null; caseCount?: number; cases?: string[]; blockers?: string[] }>(`/import/jobs/${jobId}/rollback-check`),
+  rollback: async (jobId: string) => {
+    const token = typeof window !== 'undefined' ? document.cookie.match(/token=([^;]+)/)?.[1] : undefined;
+    const res = await fetch(`${API_BASE}/import/jobs/${jobId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || 'Gabim gjatë anulimit');
+    }
+    return res.json();
+  },
 };
 
 // Reports — PDF download via fetch with credentials

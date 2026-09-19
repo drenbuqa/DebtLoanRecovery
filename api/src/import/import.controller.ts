@@ -1,7 +1,7 @@
 import {
-  Controller, Post, Get, Res, Request, Query, Body,
+  Controller, Post, Get, Delete, Param, Res, Request, Query, Body,
   UseInterceptors, UploadedFile,
-  BadRequestException, UseGuards, Inject,
+  BadRequestException, NotFoundException, ForbiddenException, UseGuards, Inject,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -95,6 +95,27 @@ export class ImportController {
     const validTypes = ['officer', 'npl', 'institution', 'city'];
     if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
     return this.svc.bulkUpdate(file.buffer, type as any, req.user.id);
+  }
+
+  @Get('jobs/:id/rollback-check')
+  async rollbackCheck(@Param('id') id: string) {
+    try {
+      return await this.svc.rollbackCheck(id);
+    } catch (e: any) {
+      throw new NotFoundException(e.message);
+    }
+  }
+
+  @Delete('jobs/:id')
+  async rollback(@Param('id') id: string) {
+    let check: any;
+    try {
+      check = await this.svc.rollbackCheck(id);
+    } catch (e: any) {
+      throw new NotFoundException(e.message);
+    }
+    if (!check.canRollback) throw new ForbiddenException(check.reason);
+    return this.svc.rollback(id);
   }
 
   @Post('loans')

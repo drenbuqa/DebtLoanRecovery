@@ -160,8 +160,8 @@ export default function PaymentsPage() {
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
-        { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha dosjet. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
-        { title: "Si të regjistroni një pagesë", body: "Shkoni te dosja e debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Regjistro Pagesën' brenda dosjes. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
+        { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha rastet. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
+        { title: "Si të regjistroni një pagesë", body: "Shkoni te rasti i debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Regjistro Pagesën' brenda rastit. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
         { title: "Filtrimi sipas datës", body: "Përdorni zgjedhësin e datave në krye për të shfaqur vetëm pagesat nga një periudhë e caktuar — për shembull, të gjitha pagesat e marra këtë javë ose këtë muaj." },
       ]} />
 
@@ -199,7 +199,7 @@ export default function PaymentsPage() {
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Kërko debitor ose dosje…"
+                placeholder="Kërko debitor ose rast…"
                 className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
             </div>
             <MobileFilterSheet groups={[
@@ -225,7 +225,7 @@ export default function PaymentsPage() {
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Kërko debitor ose dosje…"
+                placeholder="Kërko debitor ose rast…"
                 className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
             </div>
             <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
@@ -313,7 +313,7 @@ export default function PaymentsPage() {
                 <div>
                   <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën pagesa</div>
                   <div className="text-[12px] text-gray-400 max-w-xs">
-                    {dateFrom || dateTo ? "Provoni të ndryshoni intervalin e datave." : "Pagesat e regjistruara ndaj dosjeve do të shfaqen këtu."}
+                    {dateFrom || dateTo ? "Provoni të ndryshoni intervalin e datave." : "Pagesat e regjistruara ndaj rasteve do të shfaqen këtu."}
                   </div>
                 </div>
               </div>

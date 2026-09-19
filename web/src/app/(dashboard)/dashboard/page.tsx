@@ -240,8 +240,8 @@ function OfficerDashboard({ user }: { user: any }) {
         title="Ballina Ime"
         subtitle={`${greeting}, ${firstName} · ${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`}
         help={[
-          { title: "Dosjet tuaja", body: "Këtu shfaqen vetëm dosjet që ju janë caktuar. Klikoni mbi çdo rresht për të hapur detajet e plota — informacionin e debitorit, historikun e pagesave dhe veprimet e ndërmarra." },
-          { title: "Si të regjistroni një telefonatë ose pagesë", body: "Klikoni mbi një dosje për ta hapur, pastaj përdorni butonat e veprimit në të djathtën e sipërme — 'Regjistro Aktivitet' për telefonata dhe vizita, 'Regjistro Pagesën' kur është marrë para." },
+          { title: "Rastet tuaja", body: "Këtu shfaqen vetëm rastet që ju janë caktuar. Klikoni mbi çdo rresht për të hapur detajet e plota — informacionin e debitorit, historikun e pagesave dhe veprimet e ndërmarra." },
+          { title: "Si të regjistroni një telefonatë ose pagesë", body: "Klikoni mbi një rast për ta hapur, pastaj përdorni butonat e veprimit në të djathtën e sipërme — 'Regjistro Aktivitet' për telefonata dhe vizita, 'Regjistro Pagesën' kur është marrë para." },
         ]}
       />
 
@@ -249,7 +249,7 @@ function OfficerDashboard({ user }: { user: any }) {
 
         {/* Summary strip */}
         <div className="grid grid-cols-2 gap-3">
-          <KpiCard label="Dosjet e Mia" value={loading ? "—" : fmtNum(cases.length)} href="/cases" />
+          <KpiCard label="Rastet e Mia" value={loading ? "—" : fmtNum(cases.length)} href="/cases" />
           <KpiCard label="Aktivitete Sot" value="→" href="/activities" />
         </div>
 
@@ -260,8 +260,8 @@ function OfficerDashboard({ user }: { user: any }) {
             <Card padding="none">
               <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-[13px] font-semibold text-gray-900">Dosjet e Mia</h3>
-                  <p className="text-[12px] text-gray-400">Dosjet e caktuara tek ju</p>
+                  <h3 className="text-[13px] font-semibold text-gray-900">Rastet e Mia</h3>
+                  <p className="text-[12px] text-gray-400">Rastet e caktuara tek ju</p>
                 </div>
                 <button onClick={() => router.push("/cases")}
                   className="text-[12px] text-brand-600 font-medium hover:underline transition-colors flex items-center gap-1">
@@ -269,7 +269,7 @@ function OfficerDashboard({ user }: { user: any }) {
                 </button>
               </div>
               {loading ? <Spinner /> : cases.length === 0 ? (
-                <div className="px-5 py-10 text-center text-[13px] text-gray-400">Nuk ka dosje të caktuara tek ju akoma</div>
+                <div className="px-5 py-10 text-center text-[13px] text-gray-400">Nuk ka rast të caktuara tek ju akoma</div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {cases.map((c) => {
@@ -310,7 +310,7 @@ function OfficerDashboard({ user }: { user: any }) {
               <h3 className="text-[12px] font-semibold text-gray-700 mb-3 uppercase tracking-wide">Veprime të shpejta</h3>
               <div className="space-y-1">
                 {[
-                  { label: "Dosjet e mia", href: "/cases", icon: FolderOpen },
+                  { label: "Rastet e mia", href: "/cases", icon: FolderOpen },
                   { label: "Vizita në terren", href: "/activities", icon: MapPin },
                   { label: "Aktivitete të fundit", href: "/activities", icon: Clock },
                 ].map((l) => (
@@ -390,7 +390,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
   return (
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={subtitle} help={[
-        { title: "Shifrat kryesore", body: "Këto tregojnë të dhënat më të rëndësishme të portofolit tuaj — gjendja debitore totale, shuma e arkëtuar këtë muaj, numri i dosjeve aktive dhe debitorët që premtuan pagesë sot. Klikoni çdo shifër për të parë listën e plotë." },
+        { title: "Shifrat kryesore", body: "Këto tregojnë të dhënat më të rëndësishme të portofolit tuaj — gjendja debitore totale, shuma e arkëtuar këtë muaj, numri i rasteve aktive dhe debitorët që premtuan pagesë sot. Klikoni çdo shifër për të parë listën e plotë." },
         { title: "Grafiku i arkëtimeve mujore", body: "Grafiku me shtylla tregon sa para u arkëtuan çdo muaj këtë vit. Vendosni kursorin mbi një shtyllë për të parë shumën e saktë. Një shtyllë më e lartë do të thotë muaj më i mirë." },
         { title: "Alarmet e ditës", body: "Ky është lista juaj e kontrollit ditor. 'Premtime pagese për sot' janë debitorët që thanë se do të paguanin sot — kontaktojini për konfirmim. 'Këste me vonesë' janë pagesat e rëna dakord që janë vonuar." },
         { title: "Tabela e performancës së oficerëve", body: "Tregon sa ka arkëtuar dhe sa aktivitete ka regjistruar çdo oficer këtë muaj. Përdoreni për të parë kush po arrin objektivat." },
@@ -412,7 +412,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                   {[
                     { step: "1", label: "Shto Institucione", desc: "Regjistroni institucionet financiare kredidhënëse që menaxhoni.", href: "/institutions" },
                     { step: "2", label: "Konfiguro Zyret dhe Përdoruesit", desc: "Krijoni zyra dhe ftoni oficerët në platformë.", href: "/admin/reference" },
-                    { step: "3", label: "Importo Dosjet e Kredive", desc: "Përdorni importin masiv në Raporte për të ngarkuar portofolio fillestar.", href: "/reports" },
+                    { step: "3", label: "Importo Rastet e Kredive", desc: "Përdorni importin masiv në Raporte për të ngarkuar portofolio fillestar.", href: "/reports" },
                   ].map((s) => (
                     <button key={s.step} onClick={() => router.push(s.href)}
                       className="bg-white border border-brand-200 rounded-lg p-3.5 text-left hover:border-brand-400 hover:shadow-sm transition-all">
@@ -437,10 +437,10 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
           )) : [
             { label: "Borxhi Aktual", value: formatCurrency(stats.totalOutstanding), href: "/cases" },
             { label: "Arkëtime Këtë Muaj", value: formatCurrency(stats.collectionsThisMonth), href: "/payments" },
-            { label: "Dosje Aktive", value: stats.activeCases.toLocaleString(), href: "/cases" },
+            { label: "Rast Aktive", value: stats.activeCases.toLocaleString(), href: "/cases" },
             { label: "Marrëveshje Aktive", value: stats.activeAgreements.toLocaleString(), alert: stats.overdueInstallments > 0, href: "/agreements" },
             { label: "Premtime Pagese për Sot", value: stats.promisesToday.toLocaleString(), alert: stats.promisesToday > 0, href: "/cases?view=promises_today" },
-            { label: "Dosje Juridike", value: stats.legalCases.toLocaleString(), href: "/legal" },
+            { label: "Rast Juridike", value: stats.legalCases.toLocaleString(), href: "/legal" },
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
@@ -479,8 +479,8 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                 )) : [
                   { icon: CheckSquare,  label: "Premtime pagese për sot",  val: stats.promisesToday,       href: "/cases?view=promises_today" },
                   { icon: AlertCircle,  label: "Këste me vonesë",          val: stats.overdueInstallments, href: "/agreements" },
-                  { icon: Scale,        label: "Dosje juridike",           val: stats.legalCases,          href: "/legal" },
-                  { icon: FolderOpen,   label: "Dosje aktive",             val: stats.activeCases,         href: "/cases" },
+                  { icon: Scale,        label: "Rast juridike",           val: stats.legalCases,          href: "/legal" },
+                  { icon: FolderOpen,   label: "Rast aktive",             val: stats.activeCases,         href: "/cases" },
                   { icon: FileCheck,    label: "Marrëveshje aktive",       val: stats.activeAgreements,    href: "/agreements" },
                 ].map((a) => (
                   <button key={a.label} onClick={() => router.push(a.href)}
@@ -496,7 +496,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             </Card>
 
             <Card className="flex-1 flex flex-col p-4 md:p-5">
-              <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
+              <CardHeader title="Sipas Zyrës" subtitle="Rast aktive" />
               <div className="flex-1 space-y-2">
                 {loading || !stats ? Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-0.5">
@@ -533,7 +533,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                 <tr>
                   <Th>Oficer</Th>
                   <Th>Zyrë</Th>
-                  <Th>Dosje</Th>
+                  <Th>Rast</Th>
                   <Th>Aktivitete</Th>
                   <Th>Arkëtuar</Th>
                 </tr>
@@ -643,7 +643,7 @@ function ViewerDashboard() {
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={`Pasqyrë e portofolit · ${MONTHS[now.getMonth()]} ${now.getFullYear()}`} help={[
         { title: "Niveli juaj i aksesit", body: "Keni akses vetëm për lexim — mund të shikoni gjithçka në platformë, por nuk mund të shtoni, ndryshoni apo fshini asnjë regjistrim. Kjo është projektuar për auditorët dhe drejtuesit që kanë nevojë të monitorojnë pa bërë ndryshime." },
-        { title: "Shifrat kryesore", body: "Këto tregojnë gjendjen aktuale të portofolit — gjendja debitore totale, para të arkëtuara këtë muaj, dosjet e hapura dhe dosjet në procedim juridik. Klikoni çdo shifër për të parë listën e plotë pas saj." },
+        { title: "Shifrat kryesore", body: "Këto tregojnë gjendjen aktuale të portofolit — gjendja debitore totale, para të arkëtuara këtë muaj, rastet e hapura dhe rastet në procedim juridik. Klikoni çdo shifër për të parë listën e plotë pas saj." },
       ]} />
       <div className="p-4 md:p-6 space-y-5">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3">
@@ -654,10 +654,10 @@ function ViewerDashboard() {
           )) : [
             { label: "Borxhi Aktual",        value: formatCurrency(stats.totalOutstanding),    sub: "Për të gjitha institucionet" },
             { label: "Arkëtime Këtë Muaj",       value: formatCurrency(stats.collectionsThisMonth),sub: "Muaji aktual" },
-            { label: "Dosje Aktive",             value: stats.activeCases.toLocaleString(),        sub: "Aktualisht aktive",          href: "/cases" },
+            { label: "Rast Aktive",             value: stats.activeCases.toLocaleString(),        sub: "Aktualisht aktive",          href: "/cases" },
             { label: "Marrëveshje Aktive",       value: stats.activeAgreements.toLocaleString(),   sub: `${stats.overdueInstallments} me vonesë`, alert: stats.overdueInstallments > 0, href: "/agreements" },
             { label: "Premtime Pagese për Sot",  value: stats.promisesToday.toLocaleString(),      sub: "Kërkon ndjekje", alert: stats.promisesToday > 0, href: "/cases?view=promises_today" },
-            { label: "Dosje Juridike",           value: stats.legalCases.toLocaleString(),         sub: "Në procedim",                href: "/legal" },
+            { label: "Rast Juridike",           value: stats.legalCases.toLocaleString(),         sub: "Në procedim",                href: "/legal" },
           ].map((k) => <KpiCard key={k.label} {...k} />)}
         </div>
 
@@ -683,7 +683,7 @@ function ViewerDashboard() {
           </div>
           <div className="flex flex-col gap-4 h-full">
             <Card className="flex-1 flex flex-col p-4 md:p-5">
-              <CardHeader title="Sipas Zyrës" subtitle="Dosje aktive" />
+              <CardHeader title="Sipas Zyrës" subtitle="Rast aktive" />
               <div className="flex-1 space-y-2">
                 {loading ? Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between py-0.5">
@@ -703,7 +703,7 @@ function ViewerDashboard() {
               <h3 className="text-[12px] font-semibold text-gray-700 mb-3 uppercase tracking-wide">Shfleto</h3>
               <div className="space-y-1">
                 {[
-                  { label: "Dosjet", href: "/cases", icon: FolderOpen },
+                  { label: "Rastet", href: "/cases", icon: FolderOpen },
                   { label: "Raporte", href: "/reports", icon: BarChart3 },
                   { label: "Performanca", href: "/performance", icon: TrendingUp },
                   { label: "Procedime juridike", href: "/legal", icon: Scale },

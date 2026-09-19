@@ -71,7 +71,7 @@ function GlobalSearch() {
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
         onKeyDown={onKey}
-        placeholder="Kërko dosje, debitorë…"
+        placeholder="Kërko rast, debitorë…"
         data-global-search
         className="w-full h-8 pl-8 pr-8 bg-gray-50 border border-gray-200 rounded-md text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-brand-400 focus:border-brand-400 transition"
       />
@@ -90,7 +90,7 @@ function GlobalSearch() {
             <div className="px-4 py-3 text-[12px] text-gray-400">Nuk u gjet asgjë për "<strong>{query}</strong>"</div>
           ) : (
             <>
-              <div className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Dosjet</div>
+              <div className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Rastet</div>
               {results.map((c) => {
                 const borrower = c.loan?.borrower;
                 const name = borrower ? `${borrower.fullName}` : "—";
@@ -234,7 +234,7 @@ function NotificationsPanel() {
                   </div>
                   <div>
                     <div className="text-[13px] font-medium text-gray-900">
-                      {alerts.legalCases} dosje juridike aktive
+                      {alerts.legalCases} rast juridike aktive
                     </div>
                     <div className="text-[11px] text-gray-400">Procedime që kërkojnë vëmendje</div>
                   </div>
@@ -258,8 +258,8 @@ function NotificationsPanel() {
 // ── Help panel ───────────────────────────────────────────────
 const DEFAULT_HELP: HelpItem[] = [
   { title: "Si të lëvizni në platformë", body: "Përdorni menunë në të majtë për të kaluar ndërmjet seksioneve. Nëse jeni me telefon ose tablet, shtypni ikonën e menusë në krye për ta hapur atë." },
-  { title: "Si të gjeni një debitor ose dosje", body: "Shkruani emrin e debitorit, numrin personal ose numrin e dosjes në shiritin e kërkimit në krye. Rezultatet shfaqen menjëherë ndërsa shkruani — klikoni mbi të dhënën për të hapur dosjen." },
-  { title: "Navigim i shpejtë", body: "Shtypni / në tastierë për të kaluar direkt te shiriti i kërkimit. Përdorni g pastaj d për Ballinën, c për Dosjet, a për Aktivitetet, ose b për t'u kthyer mbrapa." },
+  { title: "Si të gjeni një debitor ose rast", body: "Shkruani emrin e debitorit, numrin personal ose numrin e rastit në shiritin e kërkimit në krye. Rezultatet shfaqen menjëherë ndërsa shkruani — klikoni mbi të dhënën për të hapur rastin." },
+  { title: "Navigim i shpejtë", body: "Shtypni / në tastierë për të kaluar direkt te shiriti i kërkimit. Përdorni g pastaj d për Ballinën, c për Rastet, a për Aktivitetet, ose b për t'u kthyer mbrapa." },
   { title: "Nuk dini çfarë të bëni?", body: "Pyesni menaxherin tuaj ose administratorin e sistemit. Mund të klikoni gjithashtu butonin ? në çdo faqe për të parë udhëzime specifike për atë seksion." },
 ];
 
@@ -352,7 +352,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Kërko dosje, debitorë, kredi…"
+              placeholder="Kërko rast, debitorë, kredi…"
               className="flex-1 text-[15px] text-gray-900 placeholder:text-gray-400 bg-transparent outline-none"
             />
             {query && (
@@ -389,7 +389,7 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
             </div>
           ) : results.length > 0 ? (
             <>
-              <div className="px-4 pt-4 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dosjet</div>
+              <div className="px-4 pt-4 pb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rastet</div>
               {results.map((c) => {
                 const borrower = c.loan?.borrower;
                 const name = borrower ? `${borrower.fullName}` : "—";
@@ -424,9 +424,9 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
               <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
                 <Search size={18} className="text-gray-400" />
               </div>
-              <div className="text-[14px] font-medium text-gray-600">Kërko dosje</div>
+              <div className="text-[14px] font-medium text-gray-600">Kërko rast</div>
               <div className="text-[12px] text-gray-400 mt-1 leading-relaxed">
-                Shkruani emrin e debitorit,<br />numrin e dosjes ose kredisë
+                Shkruani emrin e debitorit,<br />numrin e rastit ose kredisë
               </div>
             </div>
           )}

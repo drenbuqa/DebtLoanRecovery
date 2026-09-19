@@ -670,6 +670,7 @@ export class ImportService {
               officeId: office?.id,
               assignedOfficerId: assignedOfficerId ?? undefined,
               secondaryOfficerId: secondaryOfficerId ?? undefined,
+              importJobId: job.id,
               status: 'ACTIVE',
               collectionStage: 'D1',
             },
@@ -760,6 +761,90 @@ export class ImportService {
     1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
   };
 
+  // ── Import rollback ────────────────────────────────────────────────────────────
+
+  async rollbackCheck(jobId: string) {
+    const job = await this.prisma.importJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, fileName: true, successfulRows: true, completedAt: true, cases: { select: { id: true, caseReference: true } } },
+    });
+    if (!job) throw new Error('Importi nuk u gjet');
+
+    const caseIds = job.cases.map((c) => c.id);
+    if (caseIds.length === 0) {
+      return { canRollback: false, reason: 'Ky import nuk ka krijuar asnjë rast', blockers: [] };
+    }
+
+    // Check for any follow-up data on these cases
+    const [activities, payments, agreements, legalProceedings, documents] = await Promise.all([
+      this.prisma.activity.count({ where: { caseId: { in: caseIds } } }),
+      this.prisma.payment.count({ where: { caseId: { in: caseIds } } }),
+      this.prisma.agreement.count({ where: { caseId: { in: caseIds } } }),
+      this.prisma.legalProceeding.count({ where: { caseId: { in: caseIds } } }),
+      this.prisma.document.count({ where: { caseId: { in: caseIds } } }),
+    ]);
+
+    const blockers: string[] = [];
+    if (activities > 0)       blockers.push(`${activities} aktivitet${activities !== 1 ? 'e' : ''}`);
+    if (payments > 0)         blockers.push(`${payments} pagesë${payments !== 1 ? '' : ''}`);
+    if (agreements > 0)       blockers.push(`${agreements} marrëveshje`);
+    if (legalProceedings > 0) blockers.push(`${legalProceedings} procedurë ligjore`);
+    if (documents > 0)        blockers.push(`${documents} dokument${documents !== 1 ? 'e' : ''}`);
+
+    if (blockers.length > 0) {
+      return {
+        canRollback: false,
+        reason: `Rastet e këtij importi kanë të dhëna të regjistruara: ${blockers.join(', ')}. Fshirja do të shkatërronte këto të dhëna.`,
+        blockers,
+        caseCount: caseIds.length,
+      };
+    }
+
+    return {
+      canRollback: true,
+      reason: null,
+      caseCount: caseIds.length,
+      cases: job.cases.map((c) => c.caseReference),
+    };
+  }
+
+  async rollback(jobId: string) {
+    const check = await this.rollbackCheck(jobId);
+    if (!check.canRollback) throw new Error(check.reason ?? 'Rollback i bllokuar');
+
+    const job = await this.prisma.importJob.findUnique({
+      where: { id: jobId },
+      select: { cases: { select: { id: true, loanId: true, loan: { select: { borrowerId: true } } } } },
+    });
+    if (!job) throw new Error('Importi nuk u gjet');
+
+    const caseIds  = job.cases.map((c) => c.id);
+    const loanIds  = job.cases.map((c) => c.loanId);
+    const borrowerIds = [...new Set(job.cases.map((c) => c.loan.borrowerId))];
+
+    await this.prisma.$transaction(async (tx) => {
+      // Delete in dependency order
+      await tx.loanParty.deleteMany({ where: { loanId: { in: loanIds } } });
+      await tx.loanBalanceHistory.deleteMany({ where: { loanId: { in: loanIds } } });
+      await tx.case.deleteMany({ where: { id: { in: caseIds } } });
+      await tx.loan.deleteMany({ where: { id: { in: loanIds } } });
+      // Only delete persons not referenced by other loans
+      for (const borrowerId of borrowerIds) {
+        const otherLoans = await tx.loan.count({ where: { borrowerId } });
+        if (otherLoans === 0) {
+          await tx.personPhone.deleteMany({ where: { personId: borrowerId } });
+          await tx.person.deleteMany({ where: { id: borrowerId } });
+        }
+      }
+      // Mark job as rolled back
+      await tx.importJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
+    });
+
+    return { deleted: caseIds.length };
+  }
+
+  // ── Bulk partial update ────────────────────────────────────────────────────────
+
   async bulkUpdate(buffer: Buffer, type: 'officer'|'npl'|'institution'|'city', performedById: string) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -816,9 +901,9 @@ export class ImportService {
           await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
           updated++;
         } else if (type === 'npl') {
-          const code = parseInt(codeRaw);
-          const npl = ImportService.NPL_CODES[code];
-          if (!npl) { errors.push(`${rowLabel}: kodi NPL ${code} nuk është i vlefshëm (1-5)`); skipped++; continue; }
+          const npl = codeRaw.toUpperCase();
+          const valid = ['PERFORMING','WATCH','SUBSTANDARD','DOUBTFUL','LOSS'];
+          if (!valid.includes(npl)) { errors.push(`${rowLabel}: vlera NPL "${codeRaw}" nuk është e vlefshme (${valid.join(', ')})`); skipped++; continue; }
           await this.prisma.loan.update({ where: { id: cas.loanId }, data: { nplClassification: npl as any } });
           updated++;
         } else if (type === 'institution') {

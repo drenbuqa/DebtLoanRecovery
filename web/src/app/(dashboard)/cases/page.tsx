@@ -29,7 +29,7 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
   React.useEffect(() => {
     (casesApi as any).deletePreview(caseId)
       .then((p: any) => setPreview(p))
-      .catch(() => setError("Nuk mund të lexohen të dhënat e dosjes."))
+      .catch(() => setError("Nuk mund të lexohen të dhënat e rastit."))
       .finally(() => setLoading(false));
   }, [caseId]);
 
@@ -38,7 +38,7 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
     setError(null);
     try {
       await casesApi.delete(caseId);
-      toast("Dosja u fshi me sukses.", "success");
+      toast("Rasti u fshi me sukses.", "success");
       onDeleted();
     } catch {
       setError("Fshirja dështoi. Provoni përsëri.");
@@ -54,7 +54,7 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
             <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
               <Trash2 size={15} className="text-red-500" />
             </div>
-            <span className="text-[14px] font-semibold text-gray-900">Fshi Dosjen</span>
+            <span className="text-[14px] font-semibold text-gray-900">Fshi Rastin</span>
           </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
             <X size={15} />
@@ -83,7 +83,7 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
                   <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-[12px] text-amber-800 leading-relaxed">
-                    Kjo dosje ka <strong>{preview.counts.payments} pagesë</strong> të regjistruar. Pagesat gjithashtu do të fshihen.
+                    Kjo rast ka <strong>{preview.counts.payments} pagesë</strong> të regjistruar. Pagesat gjithashtu do të fshihen.
                   </p>
                 </div>
               )}
@@ -126,7 +126,7 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
             className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {deleting ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-            {deleting ? "Duke fshirë..." : "Fshi Dosjen"}
+            {deleting ? "Duke fshirë..." : "Fshi Rastin"}
           </button>
         </div>
       </div>
@@ -555,11 +555,11 @@ function CasesPageInner() {
     <div className="flex flex-col">
       {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={load} />}
       {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); load(); }} />}
-      <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej dosje`} help={[
-        { title: "Si të gjeni një dosje", body: "Shkruani emrin e debitorit, numrin personal ose referencën e dosjes në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm dosjet me premtime të vonuara ose vetëm dosjet juridike." },
+      <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej rast`} help={[
+        { title: "Si të gjeni një rast", body: "Shkruani emrin e debitorit, numrin personal ose referencën e rastit në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm rastet me premtime të vonuara ose vetëm rastet juridike." },
         { title: "Çfarë do të thotë D1, D2, D3, D4?", body: "Këto tregojnë sa gjatë ka qenë borxhi i vonuar. D1 nënkupton 30–60 ditë vonesë (fazë fillestare), D2 është 60–90 ditë, D3 është 90–180 ditë (serioz) dhe D4 është mbi 180 ditë (risk më i lartë). Sa më i madh numri, aq më e vështirë është rikuperimi i borxhit." },
-        { title: "Si të hapni një dosje", body: "Klikoni çdo rresht për të hapur dosjen e plotë — do të shihni të dhënat e debitorit, informacionin e kredisë, të gjitha thirrjet dhe vizitat e regjistruara, pagesat e marra dhe çdo procedurë juridike." },
-        { title: "Statusi i dosjes i shpjeguar", body: "Aktive nënkupton se dosja është në punë. Juridike nënkupton se është eskaluar në procedura gjyqësore. Mbyllur nënkupton se është zgjidhur, shlyer ose paguar plotësisht." },
+        { title: "Si të hapni një rast", body: "Klikoni çdo rresht për të hapur rastin e plotë — do të shihni të dhënat e debitorit, informacionin e kredisë, të gjitha thirrjet dhe vizitat e regjistruara, pagesat e marra dhe çdo procedurë juridike." },
+        { title: "Statusi i rastit i shpjeguar", body: "Aktive nënkupton se rasti është në punë. Juridike nënkupton se është eskaluar në procedura gjyqësore. Mbyllur nënkupton se është zgjidhur, shlyer ose paguar plotësisht." },
       ]} />
 
       {/* ── Mobile layout ── */}
@@ -571,7 +571,7 @@ function CasesPageInner() {
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400"
-                placeholder="Kërko debitor, dosje…"
+                placeholder="Kërko debitor, rast…"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
@@ -618,7 +618,7 @@ function CasesPageInner() {
 
           {/* Count + refresh */}
           <div className="flex items-center justify-between px-0.5">
-            <span className="text-[12px] text-gray-400">{meta.total.toLocaleString()} dosje</span>
+            <span className="text-[12px] text-gray-400">{meta.total.toLocaleString()} rast</span>
             <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
@@ -647,7 +647,7 @@ function CasesPageInner() {
                 <Briefcase size={22} className="text-gray-400" />
               </div>
               <div className="text-center">
-                <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën dosje</div>
+                <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën rast</div>
                 <div className="text-[12px] text-gray-400">Provoni të ndryshoni filtrat.</div>
               </div>
             </div>
@@ -686,7 +686,7 @@ function CasesPageInner() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400"
-              placeholder="Kërko debitor, ref. dosje, kredi…"
+              placeholder="Kërko debitor, ref. rast, kredi…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
@@ -731,7 +731,7 @@ function CasesPageInner() {
             </button>
           ))}
           <div className="ml-auto flex items-center gap-1 pb-px shrink-0">
-            <span className="text-[12px] text-gray-400">{!loading && `${meta.total.toLocaleString()} dosje`}</span>
+            <span className="text-[12px] text-gray-400">{!loading && `${meta.total.toLocaleString()} rast`}</span>
             <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
@@ -752,8 +752,8 @@ function CasesPageInner() {
                 <Briefcase size={22} className="text-gray-400" />
               </div>
               <div>
-                <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën dosje</div>
-                <div className="text-[12px] text-gray-400 max-w-xs">Provoni të ndryshoni filtrat ose krijoni një dosje të re për të filluar.</div>
+                <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën rast</div>
+                <div className="text-[12px] text-gray-400 max-w-xs">Provoni të ndryshoni filtrat ose krijoni një rast të re për të filluar.</div>
               </div>
             </div>
           ) : (
@@ -777,7 +777,7 @@ function CasesPageInner() {
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const npl: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
-                  const latestPromise = c.promisesToPay?.[0];
+                  const latestPromise = (c.promises ?? c.promisesToPay)?.[0];
                   const promiseDaysOverdue = latestPromise
                     ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
                     : 0;
@@ -846,7 +846,7 @@ function CasesPageInner() {
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeletingCaseId(c.id); }}
                             className="w-6 h-6 flex items-center justify-center rounded text-gray-200 group-hover:text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title="Fshi dosjen"
+                            title="Fshi rastin"
                           >
                             <Trash2 size={12} />
                           </button>

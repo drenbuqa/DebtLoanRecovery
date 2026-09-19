@@ -190,7 +190,7 @@ function InstitutionsPageInner() {
                     <div className="flex-1 min-w-0">
                       <span className="text-[14px] font-semibold text-gray-900">{inst.name}</span>
                       <div className="text-[12px] text-gray-400 mt-0.5">
-                        {inst.totalLoans} hua · {inst.activeCases} dosje aktive
+                        {inst.totalLoans} hua · {inst.activeCases} rast aktive
                       </div>
                     </div>
                     <div className="text-right shrink-0 mr-2">
