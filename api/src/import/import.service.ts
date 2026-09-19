@@ -387,6 +387,28 @@ export class ImportService {
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   }
 
+  private friendlyImportError(raw: string): string {
+    if (raw.includes('too long for the column') || raw.includes('value too long')) {
+      if (raw.includes('personPhone') || raw.includes('phone')) {
+        return 'Numri i telefonit është shumë i gjatë (maks. 30 karaktere). Kontrolloni kolonat e telefonit.';
+      }
+      if (raw.includes('person')) {
+        return 'Një fushë e personit (emri ose ID) është shumë e gjatë. Kontrolloni të dhënat e klientit.';
+      }
+      return 'Një vlerë në këtë rresht është shumë e gjatë për bazën e të dhënave. Shkurtoni vlerën dhe provoni përsëri.';
+    }
+    if (raw.includes('Unique constraint') || raw.includes('unique constraint')) {
+      return 'Ky klient ose kredi ekziston tashmë në sistem.';
+    }
+    if (raw.includes('Foreign key constraint') || raw.includes('foreign key')) {
+      return 'Institucioni ose zyrtari i specifikuar nuk ekziston në sistem.';
+    }
+    if (raw.includes('prisma.') || raw.includes('Invalid `prisma')) {
+      return 'Gabim gjatë ruajtjes së të dhënave. Kontrolloni formatin e rreshtit.';
+    }
+    return raw;
+  }
+
   async listJobs(limit = 20): Promise<any[]> {
     const jobs = await this.prisma.importJob.findMany({
       orderBy: { createdAt: 'desc' },
@@ -632,10 +654,12 @@ export class ImportService {
               lName = split?.lastName ?? '';
             }
             if (!fName) return; // no usable name
+            const safePid = pid.slice(0, 30);
+            const safeFullName = (fName + (lName ? " " + lName : "")).trim().slice(0, 200);
             const person = await tx.person.upsert({
-              where: { personalId: pid },
-              create: { personalId: pid, fullName: (fName + (lName ? " " + lName : "")).trim() },
-              update: { fullName: (fName + (lName ? " " + lName : "")).trim() },
+              where: { personalId: safePid },
+              create: { personalId: safePid, fullName: safeFullName },
+              update: { fullName: safeFullName },
             });
             if (rawPhone?.trim()) {
               const ph = rawPhone.trim().slice(0, 30);
@@ -680,7 +704,8 @@ export class ImportService {
         succeeded++;
       } catch (e: any) {
         failed++;
-        const msg = e.message ?? String(e);
+        const raw = e.message ?? String(e);
+        const msg = this.friendlyImportError(raw);
         errors.push({ row: rowNum, loan_number: loanNum, error: msg });
         // Persist error to DB
         await this.prisma.importError.create({
