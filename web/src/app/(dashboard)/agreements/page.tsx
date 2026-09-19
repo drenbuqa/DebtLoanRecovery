@@ -68,7 +68,7 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const amountError  = fieldError("totalAmount",      totalAmount,      { required: true, custom: (v) => isNaN(parseFloat(v)) || parseFloat(v) <= 0 ? "Shuma duhet të jetë pozitive" : null });
   const countError   = fieldError("installmentCount", installmentCount, { required: true, custom: (v) => { const n = parseInt(v); return (isNaN(n) || n < 1 || n > 120) ? "Ndërmjet 1 dhe 120" : null; } });
   const startError   = fieldError("startDate",        startDate,        { required: true });
-  const caseError    = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një rast" : null;
+  const caseError    = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një klient" : null;
 
   const inp = (hasErr: boolean) =>
     `w-full px-3 py-2 text-[13px] border rounded-lg focus:outline-none transition-colors ${hasErr ? "border-red-400 focus:border-red-400 bg-red-50/30" : "border-gray-200 focus:border-brand-400"}`;
@@ -112,7 +112,7 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Case search */}
-          <AF label="Rast" required error={caseError}>
+          <AF label="Klient" required error={caseError}>
             {selectedCase ? (
               <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-xl">
                 <div>
@@ -266,7 +266,7 @@ export default function AgreementsPage() {
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Kërko debitor ose rast…"
+                  placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
               </div>
               {can("agreement:create") && (
@@ -310,7 +310,7 @@ export default function AgreementsPage() {
               <div className="relative flex-1 max-w-xs">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Kërko debitor ose rast…"
+                  placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
               </div>
               <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
@@ -362,7 +362,7 @@ export default function AgreementsPage() {
               </div>
               <div>
                 <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk u gjetën marrëveshje</div>
-                <div className="text-[12px] text-gray-400 max-w-xs">Marrëveshjet e ripagimit të krijuara për rastet do të shfaqen këtu.</div>
+                <div className="text-[12px] text-gray-400 max-w-xs">Marrëveshjet e ripagimit të krijuara për klientët do të shfaqen këtu.</div>
               </div>
             </div>
           ) : (

@@ -74,7 +74,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
   }
 
   const filingDateError = fieldError("filingDate", filingDate, { required: true });
-  const caseError = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një rast" : null;
+  const caseError = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një klient" : null;
 
   async function submit() {
     setCaseAttempted(true);
@@ -120,7 +120,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Case search */}
-          <LF label="Rast" required error={caseError}>
+          <LF label="Klient" required error={caseError}>
             {selectedCase ? (
               <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-xl">
                 <div>
@@ -135,7 +135,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
             ) : (
               <div className="relative">
                 <input value={caseSearch} onChange={(e) => searchCases(e.target.value)}
-                  placeholder="Kërko sipas referencës së rastit ose emrit të debitorit…"
+                  placeholder="Kërko sipas referencës së klientit ose emrit të debitorit…"
                   className={inp(!!caseError)} />
                 {caseResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
@@ -181,7 +181,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
           <LF label="Shënime">
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
-              placeholder="Shënime mbi rastin, të dhëna të avokatit, shuma e kërkesës…"
+              placeholder="Shënime mbi klientin, të dhëna të avokatit, shuma e kërkesës…"
               className={`${inp(false)} resize-none`} />
           </LF>
 
@@ -317,7 +317,7 @@ export default function LegalPage() {
           onCreated={() => { setShowNew(false); load(1); toast("Procedimi gjyqësor u krijua"); }}
         />
       )}
-      <Topbar title="Procedime Gjyqësore" subtitle={scopedToSelf ? "Rastet tuaja në procedim gjyqësor" : "Procedime aktive dhe të mbyllura"} />
+      <Topbar title="Procedime Gjyqësore" subtitle={scopedToSelf ? "Klientët tuaja në procedim gjyqësor" : "Procedime aktive dhe të mbyllura"} />
 
       <div className="p-4 md:p-6 space-y-5">
 
@@ -328,7 +328,7 @@ export default function LegalPage() {
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Kërko debitor ose rast…"
+                  placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400" />
               </div>
               {can("legal:create") && (
@@ -372,7 +372,7 @@ export default function LegalPage() {
               <div className="relative flex-1 max-w-xs">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Kërko debitor ose rast…"
+                  placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
               </div>
               <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
@@ -427,7 +427,7 @@ export default function LegalPage() {
               </div>
               <div>
                 <div className="text-[13px] font-semibold text-gray-700 mb-1">Nuk ka procedime gjyqësore</div>
-                <div className="text-[12px] text-gray-400 max-w-xs">Rastet e eskaluara në veprim gjyqësor do të shfaqen këtu.</div>
+                <div className="text-[12px] text-gray-400 max-w-xs">Klientët e eskaluara në veprim gjyqësor do të shfaqen këtu.</div>
               </div>
             </div>
           ) : (
@@ -435,7 +435,7 @@ export default function LegalPage() {
               <Table>
                 <Thead>
                   <tr>
-                    <Th>Ref. Rastit</Th>
+                    <Th>Ref. Klientit</Th>
                     <Th>Debitor</Th>
                     <Th>Institucioni</Th>
                     <Th>Gjykata</Th>

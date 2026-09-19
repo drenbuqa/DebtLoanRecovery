@@ -28,7 +28,7 @@ export function formatDateShort(date: string | Date) {
 }
 
 const ENUM_SQ: Record<string, string> = {
-  // Statuset e rastit
+  // Statuset e klientit
   ACTIVE: "Aktive", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "E Çregjistruar", INACTIVE: "Joaktive",
   // Fazat e arkëtimit
   D1: "D1", D2: "D2", D3: "D3", D4: "D4", LEGAL: "Juridike",

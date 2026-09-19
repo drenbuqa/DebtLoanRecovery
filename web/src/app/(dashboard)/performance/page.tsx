@@ -127,7 +127,7 @@ function PerformancePageInner() {
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(activeTab === "officers" ? [
-            { label: isOfficer ? "Rastet Aktive Tuaja" : "Oficerë të Gjurmuar", value: isOfficer ? (officers[0]?.activeCases ?? 0) : officers.length },
+            { label: isOfficer ? "Klientët Aktive Tuaja" : "Oficerë të Gjurmuar", value: isOfficer ? (officers[0]?.activeCases ?? 0) : officers.length },
             { label: "Aktivitete Totale", value: totalActivities.toLocaleString() },
             { label: "Totali i Mbledhur", value: formatCurrency(totalCollected) },
             { label: isOfficer ? "Premtime të Hapura" : "Mesatare për Oficer", value: isOfficer ? (officers[0]?.promises ?? 0) : (officers.length ? formatCurrency(totalCollected / officers.length) : "€0") },
@@ -135,7 +135,7 @@ function PerformancePageInner() {
             { label: "Institucione", value: institutionStats.length },
             { label: "Totali i Mbledhur", value: formatCurrency(totalInstCollected) },
             { label: "Borxhi Total Aktual", value: formatCurrency(totalInstOutstanding) },
-            { label: "Rast Aktive", value: institutionStats.reduce((s, i) => s + i.activeCases, 0).toLocaleString() },
+            { label: "Klient Aktive", value: institutionStats.reduce((s, i) => s + i.activeCases, 0).toLocaleString() },
           ]).map((s) => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4"
               style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
@@ -177,7 +177,7 @@ function PerformancePageInner() {
                 <tr>
                   <Th>Oficer</Th>
                   <Th>Zyrë</Th>
-                  <Th>Rast Aktive</Th>
+                  <Th>Klient Aktive</Th>
                   <Th>Telefonata</Th>
                   <Th>Vizita</Th>
                   <Th>Premtime</Th>
@@ -240,8 +240,8 @@ function PerformancePageInner() {
               <Thead>
                 <tr>
                   <Th>Institucioni</Th>
-                  <Th>Rast Totale</Th>
-                  <Th>Rast Aktive</Th>
+                  <Th>Klient Totale</Th>
+                  <Th>Klient Aktive</Th>
                   <Th>Borxhi Aktual</Th>
                   <Th>Borxhi Origjinal</Th>
                   <Th>Aktivitete</Th>

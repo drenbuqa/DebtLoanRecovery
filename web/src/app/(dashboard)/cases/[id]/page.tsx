@@ -88,7 +88,7 @@ const ACT_TYPE_OPTIONS = [
 ];
 
 const CASE_CATEGORY_OPTIONS = [
-  { value: "no_contact_yet",    label: "Nuk kemi arritur të merremi me rastin" },
+  { value: "no_contact_yet",    label: "Nuk kemi arritur të merremi me klientin" },
   { value: "unreachable",       label: "I Pakontaktuar / Pagjetur" },
   { value: "no_agreement",      label: "Biseduar me kredimarresin — nuk ka marrëveshje" },
   { value: "with_agreement",    label: "Rasti me Marrëveshje" },
@@ -257,9 +257,9 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                   </div>
                 )}
 
-                {/* Kategoria e Rastit */}
+                {/* Kategoria e Klientit */}
                 <div>
-                  <label className={lbl}>Kategoria e Rastit</label>
+                  <label className={lbl}>Kategoria e Klientit</label>
                   <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
                 </div>
 
@@ -535,10 +535,10 @@ function MoreMenu({ onAgreement, onStatusUpdate, onEdit, onDelete }: { onAgreeme
   }, []);
 
   const items = [
-    ...(onEdit ? [{ label: "Ndrysho Detajet e Rastit", action: onEdit, danger: false }] : []),
+    ...(onEdit ? [{ label: "Ndrysho Detajet e Klientit", action: onEdit, danger: false }] : []),
     ...(onStatusUpdate ? [{ label: "Ndrysho Statusin / Fazën", action: onStatusUpdate, danger: false }] : []),
     ...(onAgreement ? [{ label: "Krijo Marrëveshje", action: onAgreement, danger: false }] : []),
-    ...(onDelete ? [{ label: "Fshi Rastin", action: onDelete, danger: true }] : []),
+    ...(onDelete ? [{ label: "Fshi Klientin", action: onDelete, danger: true }] : []),
   ];
 
   return (
@@ -658,7 +658,7 @@ export default function CaseDetailPage() {
       const c = await casesApi.get(caseId);
       setCaseData(c);
     } catch (e: any) {
-      setCaseError(e.message ?? "Gabim gjatë ngarkimit të rastit");
+      setCaseError(e.message ?? "Gabim gjatë ngarkimit të klientit");
     } finally { setLoadingCase(false); }
   }
 
@@ -714,7 +714,7 @@ export default function CaseDetailPage() {
   function deleteActivity(actId: string) {
     openConfirm({
       title: "Fshi aktivitetin",
-      message: "Ky aktivitet do të fshihet përgjithmonë nga kronologjia e rastit.",
+      message: "Ky aktivitet do të fshihet përgjithmonë nga kronologjia e klientit.",
       confirmLabel: "Fshi",
       variant: "danger",
       onConfirm: async () => {
@@ -726,9 +726,9 @@ export default function CaseDetailPage() {
 
   function deleteCase() {
     openConfirm({
-      title: "Fshi rastin",
+      title: "Fshi klientin",
       message: `Rasti ${caseData?.caseReference} dhe të gjitha të dhënat e saj (aktivitete, dokumente, pagesa) do të fshihen përgjithmonë. Ky veprim nuk mund të zhbëhet.`,
-      confirmLabel: "Fshi Rastin",
+      confirmLabel: "Fshi Klientin",
       variant: "danger",
       onConfirm: async () => {
         await casesApi.delete(caseId);
@@ -786,7 +786,7 @@ export default function CaseDetailPage() {
   if (loadingCase) {
     return (
       <div className="flex items-center justify-center h-64 gap-2 text-sm text-gray-400">
-        <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar rastin…
+        <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar klientin…
       </div>
     );
   }
@@ -799,11 +799,11 @@ export default function CaseDetailPage() {
         </div>
         <div>
           <div className="text-[15px] font-semibold text-gray-800 mb-1">Rasti nuk u gjet</div>
-          <div className="text-[13px] text-gray-400 max-w-xs">{caseError ?? "Kjo rast nuk ekziston ose nuk keni akses."}</div>
+          <div className="text-[13px] text-gray-400 max-w-xs">{caseError ?? "Kjo klient nuk ekziston ose nuk keni akses."}</div>
         </div>
         <button onClick={() => router.push("/cases")}
           className="px-4 py-2 text-[13px] font-medium text-brand-700 border border-brand-200 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors">
-          ← Kthehu te rastet
+          ← Kthehu te klientët
         </button>
       </div>
     );
@@ -827,7 +827,7 @@ export default function CaseDetailPage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Rastit</label>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Klientit</label>
                 <Select value={statusForm.status} onChange={(v) => setStatusForm(f => ({ ...f, status: v }))}
                   placeholder="Pa ndryshim" clearable
                   options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
@@ -861,7 +861,7 @@ export default function CaseDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowEditCase(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Detajet e Rastit</h2>
+              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Detajet e Klientit</h2>
               <button onClick={() => setShowEditCase(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -1035,10 +1035,10 @@ export default function CaseDetailPage() {
             {/* Timeline */}
             <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-5 py-3.5 border-b border-gray-100">
-                <h3 className="text-[13px] font-semibold text-gray-900">Kronologjia e Rastit</h3>
+                <h3 className="text-[13px] font-semibold text-gray-900">Kronologjia e Klientit</h3>
               </div>
               {activities.length === 0 ? (
-                <EmptyState icon={Clock} title="Nuk ka aktivitete" description="Regjistroni një telefonatë, vizitë ose shënim për të filluar kronologjinë e rastit." action={{ label: "Regjistro Aktivitet", onClick: () => setShowLogActivity(true) }} />
+                <EmptyState icon={Clock} title="Nuk ka aktivitete" description="Regjistroni një telefonatë, vizitë ose shënim për të filluar kronologjinë e klientit." action={{ label: "Regjistro Aktivitet", onClick: () => setShowLogActivity(true) }} />
               ) : (
                 <div className="divide-y divide-gray-50">
                   {activities.map((a: any, i: number) => {
@@ -1081,7 +1081,7 @@ export default function CaseDetailPage() {
             <div className="space-y-4">
               {/* Case stats — real data */}
               <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-                <h3 className="text-[12px] font-semibold text-gray-900 mb-3">Përmbledhje e Rastit</h3>
+                <h3 className="text-[12px] font-semibold text-gray-900 mb-3">Përmbledhje e Klientit</h3>
                 <div className="space-y-2.5">
                   {[
                     { label: "Rasti u hap", val: caseData?.createdAt ? new Date(caseData.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
@@ -1199,7 +1199,7 @@ export default function CaseDetailPage() {
                 </button>
               </div>
               {payments.length === 0 ? (
-                <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë rast." action={{ label: "Regjistro Pagesën", onClick: () => setShowAddPayment(true) }} />
+                <EmptyState icon={CreditCard} title="Nuk ka pagesa" description="Regjistroni një pagesë për të filluar gjurmimin e arkëtimeve për këtë klient." action={{ label: "Regjistro Pagesën", onClick: () => setShowAddPayment(true) }} />
               ) : (
                 <Table>
                   <Thead><tr><Th>Referenca</Th><Th>Data</Th><Th>Shuma</Th><Th>Shënim</Th>{(user?.role === "ADMIN" || user?.role === "MANAGER") && <Th />}</tr></Thead>
@@ -1308,7 +1308,7 @@ export default function CaseDetailPage() {
             <div className="space-y-4">
               {lp.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200">
-                  <EmptyState icon={Scale} title="Nuk ka procedime juridike" description="Veprimet juridike të iniciuara për këtë rast do të shfaqen këtu." />
+                  <EmptyState icon={Scale} title="Nuk ka procedime juridike" description="Veprimet juridike të iniciuara për këtë klient do të shfaqen këtu." />
                 </div>
               ) : lp.map((p: any) => (
                 <div key={p.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">

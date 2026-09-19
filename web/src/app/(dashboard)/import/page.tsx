@@ -250,17 +250,17 @@ function RollbackModal({
                 <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[13px] font-semibold text-red-800 mb-1">
-                    Do të fshihen {state.caseCount} raste dhe kreditë e tyre
+                    Do të fshihen {state.caseCount} klientë dhe kreditë e tyre
                   </p>
                   <p className="text-[12px] text-red-700 leading-relaxed">
-                    Ky veprim është i pakthyeshëm. Rastet e importuara nga ky skedar do të fshihen përgjithmonë.
+                    Ky veprim është i pakthyeshëm. Klientët e importuara nga ky skedar do të fshihen përgjithmonë.
                   </p>
                 </div>
               </div>
               {state.cases.length > 0 && (
                 <div className="border border-gray-100 rounded-lg max-h-32 overflow-y-auto">
                   <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                    <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Rastet që do të fshihen</span>
+                    <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Klientët që do të fshihen</span>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {state.cases.map((ref) => (
@@ -278,7 +278,7 @@ function RollbackModal({
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              <span className="text-[13px] text-gray-600">Duke fshirë rastet…</span>
+              <span className="text-[13px] text-gray-600">Duke fshirë klientët…</span>
             </div>
           )}
 
@@ -286,7 +286,7 @@ function RollbackModal({
             <div className="flex items-center gap-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
               <CheckCircle size={15} className="text-emerald-500 shrink-0" />
               <p className="text-[13px] font-semibold text-emerald-800">
-                {state.deleted} raste u fshinë me sukses
+                {state.deleted} klientë u fshinë me sukses
               </p>
             </div>
           )}
@@ -315,7 +315,7 @@ function RollbackModal({
               </button>
               <button onClick={confirm}
                 className="px-4 py-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
-                Po, fshi rastet
+                Po, fshi klientët
               </button>
             </>
           )}
@@ -571,7 +571,7 @@ function ReferencePanel() {
 type BulkType = "officer" | "npl" | "institution" | "city";
 
 const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
-  { key: "officer",     label: "Zyrtar",        desc: "Ndrysho oficerina e rastit" },
+  { key: "officer",     label: "Zyrtar",        desc: "Ndrysho oficerina e klientit" },
   { key: "npl",         label: "Kategoria NPL",  desc: "Ndrysho klasifikimin NPL të kredisë" },
   { key: "institution", label: "Institucioni",   desc: "Ndrysho bankën/institucionin e kredisë" },
   { key: "city",        label: "Qyteti",         desc: "Ndrysho qytetin e huamarrësit" },
@@ -693,7 +693,7 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
                   Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  Kolona A = numri i rastit &nbsp;·&nbsp; Kolona B = kodi
+                  Kolona A = numri i klientit &nbsp;·&nbsp; Kolona B = kodi
                 </p>
               </div>
               <CodeTable />
@@ -716,7 +716,7 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
                     <CheckCircle size={14} className={`shrink-0 mt-0.5 ${result.errors.length === 0 ? "text-emerald-600" : "text-amber-600"}`} />
                     <div className="text-[12px]">
                       <span className={`font-semibold ${result.errors.length === 0 ? "text-emerald-800" : "text-amber-800"}`}>
-                        {result.updated} raste u përditësuan
+                        {result.updated} klientë u përditësuan
                       </span>
                       {result.skipped > 0 && <span className="text-gray-500 ml-2">· {result.skipped} anashkaluar</span>}
                     </div>
@@ -744,7 +744,7 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                       <Upload size={18} className="text-gray-300" />
                       <p className="text-[12px] text-gray-500">Tërhiq ose kliko për të zgjedhur</p>
-                      <p className="text-[11px] text-gray-400">Kolona A: numri i rastit · Kolona B: kodi</p>
+                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: kodi</p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 border border-brand-200 bg-brand-50 rounded-xl">

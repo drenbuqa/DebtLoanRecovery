@@ -12,18 +12,18 @@ import { AccessGuard } from "@/components/AccessGuard";
 const REPORTS = [
   {
     code: "PORTFOLIO_SUMMARY",
-    name: "Gjendja e Rasteve",
-    desc: "Të gjitha rastet aktuale me balancën, statusin dhe fazën e arkëtimit",
+    name: "Gjendja e Klientëve",
+    desc: "Të gjitha klientët aktuale me balancën, statusin dhe fazën e arkëtimit",
     icon: BarChart3,
-    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Klasifikimi NPL", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Statusi", "Faza"],
-    info: "Eksporton rastet me format identik me importin — të gjitha fushat e borrowerit, kredisë, garantorëve dhe ko-huamarrësit. Oficeri shikon vetëm rastet e tij/saj; admini shikon të gjitha.",
+    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Klasifikimi NPL", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
+    info: "Eksporton klientët me format identik me importin — të gjitha fushat e borrowerit, kredisë, garantorëve dhe ko-huamarrësit. Oficeri shikon vetëm klientët e tij/saj; admini shikon të gjitha.",
   },
   {
     code: "COLLECTIONS",
     name: "Raporti i Arkëtimeve",
     desc: "Pagesat e arkëtuara, të ndara sipas periudhës dhe metodës",
     icon: CreditCard,
-    columns: ["Ref. Pagesë", "Data", "Shuma", "Metoda", "Kanali", "Zyrtari Arkëtues", "NID", "Emri", "Tel 1", "Tel 2", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Statusi", "Faza"],
+    columns: ["Ref. Pagesë", "Data", "Shuma", "Metoda", "Kanali", "Zyrtari Arkëtues", "NID", "Emri", "Tel 1", "Tel 2", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
     info: "Eksporton pagesat me format të plotë — të dhënat e pagesës plus të gjitha fushat e borrowerit, garantorëve dhe ko-huamarrësit nga formati i migrimit. Oficeri shikon vetëm pagesat e tij/saj.",
   },
   {
@@ -31,31 +31,31 @@ const REPORTS = [
     name: "Statusi i Marrëveshjeve",
     desc: "Të gjitha marrëveshjet aktive me ecurinë e kësteve",
     icon: FileCheck,
-    columns: ["Ref. Marrëveshje", "Statusi", "Totali", "Këste", "Paguar", "Vonuar", "Data e Ardhshme", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Faza"],
-    info: "Eksporton marrëveshjet me format të plotë — detajet e marrëveshjes dhe kësteve plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm rastet e tij/saj.",
+    columns: ["Ref. Marrëveshje", "Statusi", "Totali", "Këste", "Paguar", "Vonuar", "Data e Ardhshme", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Faza"],
+    info: "Eksporton marrëveshjet me format të plotë — detajet e marrëveshjes dhe kësteve plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm klientët e tij/saj.",
   },
   {
     code: "OVERDUE_INSTALLMENTS",
     name: "Këste me Vonesë",
     desc: "Këste që kanë kaluar datën e maturimit",
     icon: FileText,
-    columns: ["Ref. Marrëveshje", "Kësti #", "Data Maturimit", "Shuma", "Ditë Vonesë", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Faza"],
+    columns: ["Ref. Marrëveshje", "Kësti #", "Data Maturimit", "Shuma", "Ditë Vonesë", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Faza"],
     info: "Eksporton vetëm këste me status VONUAR, të renditura nga vonesa më e madhe. Çdo këst i vonuar del si rresht i veçantë me të gjitha të dhënat e borrowerit nga formati i migrimit.",
   },
   {
     code: "LEGAL_CASES",
-    name: "Rastet Gjyqësore",
+    name: "Klientët Gjyqësore",
     desc: "Procedurat gjyqësore aktive me datat e seancave të ardhshme",
     icon: Scale,
-    columns: ["Ref. Procedurës", "Statusi", "Gjykata", "Nr. Gjyqësor", "Dorëzuar", "Iniciuar", "Seanca e Ardhshme", "Vendim", "Shuma Vendimit", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Faza"],
-    info: "Eksporton të gjitha procedurat gjyqësore — detajet ligjore (gjykata, datat, vendimi) plus formatin e plotë të migrimit për çdo rast. Oficeri shikon vetëm rastet e tij/saj.",
+    columns: ["Ref. Procedurës", "Statusi", "Gjykata", "Nr. Gjyqësor", "Dorëzuar", "Iniciuar", "Seanca e Ardhshme", "Vendim", "Shuma Vendimit", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Faza"],
+    info: "Eksporton të gjitha procedurat gjyqësore — detajet ligjore (gjykata, datat, vendimi) plus formatin e plotë të migrimit për çdo klient. Oficeri shikon vetëm klientët e tij/saj.",
   },
   {
     code: "ACTIVITY_LOG",
     name: "Regjistri i Aktiviteteve",
     desc: "Të gjitha aktivitetet e regjistruara në periudhën e zgjedhur",
     icon: Activity,
-    columns: ["Data", "Lloji", "Kanali", "Rezultati", "Shuma Premtimit", "Oficeri", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Rast", "Faza"],
+    columns: ["Data", "Lloji", "Kanali", "Rezultati", "Shuma Premtimit", "Oficeri", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Faza"],
     info: "Eksporton të gjitha aktivitetet e regjistruara me format të plotë — detajet e aktivitetit plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm aktivitetet e tij/saj.",
   },
 ];
@@ -92,7 +92,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `gjendja-rasteve-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `gjendja-klientëve-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -146,7 +146,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `rastet-gjyqesore-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `klientët-gjyqesore-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();

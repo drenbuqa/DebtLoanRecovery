@@ -180,7 +180,7 @@ function OfficesPageInner() {
           {[
             { label: "Zyra",          value: merged.length },
             { label: "Oficerë",       value: totalOfficers },
-            { label: "Rast Aktive",  value: totalActive },
+            { label: "Klient Aktive",  value: totalActive },
             { label: "I Mbledhur",    value: formatCurrency(totalCollected), emerald: true },
             { label: "Aktivitete",    value: totalActivities },
           ].map((s: any) => (
@@ -240,7 +240,7 @@ function OfficesPageInner() {
 
                   {/* Stats grid */}
                   <div className="p-4 grid grid-cols-2 gap-2">
-                    <StatCell icon={FolderOpen}  label="Rast Aktive"  value={String(activeCases)} sub={`${totalC} gjithsej`} />
+                    <StatCell icon={FolderOpen}  label="Klient Aktive"  value={String(activeCases)} sub={`${totalC} gjithsej`} />
                     <StatCell icon={Users}        label="Oficerë"       value={String(officerCount)} />
                     <StatCell icon={CreditCard}   label={`I Mbledhur (${periodLabel})`} value={formatCurrency(collected)} />
                     <StatCell icon={Activity}     label={`Aktivitete (${periodLabel})`} value={String(activities)} />
