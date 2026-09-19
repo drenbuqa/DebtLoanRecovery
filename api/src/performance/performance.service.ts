@@ -147,7 +147,7 @@ export class PerformanceService {
         SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
         FROM payments p
         JOIN cases c ON c.id = p.case_id
-        JOIN loans l ON l.case_id = c.id
+        JOIN loans l ON l.id = c.loan_id
         WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
           AND p.voided_at IS NULL
         GROUP BY l.institution_id
@@ -156,7 +156,7 @@ export class PerformanceService {
         SELECT l.institution_id, COUNT(a.id)::text AS cnt
         FROM activities a
         JOIN cases c ON c.id = a.case_id
-        JOIN loans l ON l.case_id = c.id
+        JOIN loans l ON l.id = c.loan_id
         WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
         GROUP BY l.institution_id
       `,
