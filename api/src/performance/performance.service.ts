@@ -18,7 +18,7 @@ export class PerformanceService {
     const [officers, caseCounts, activityGroups, paymentGroups] = await Promise.all([
       this.prisma.user.findMany({
         where: officerWhere,
-        select: { id: true, userCode: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
+        select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
       }),
       this.prisma.case.groupBy({
         by: ['assignedOfficerId'],

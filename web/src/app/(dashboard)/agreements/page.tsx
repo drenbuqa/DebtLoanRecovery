@@ -19,15 +19,13 @@ import { useToast } from "@/components/ui/Toast";
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE:    "Aktive",
   COMPLETED: "E Përfunduar",
-  DEFAULTED: "E Dështuar",
-  BROKEN:    "E Thyer",
+  BROKEN:    "E Dështuar",
   CANCELLED: "E Anuluar",
 };
 
 const STATUS_DOT: Record<string, string> = {
   ACTIVE:    "bg-emerald-400",
   COMPLETED: "bg-gray-300",
-  DEFAULTED: "bg-orange-400",
   BROKEN:    "bg-red-400",
   CANCELLED: "bg-gray-200",
 };

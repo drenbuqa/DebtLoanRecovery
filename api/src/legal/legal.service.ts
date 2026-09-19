@@ -34,20 +34,20 @@ export class LegalService {
     if (query.officeId) where.case   = { officeId: query.officeId };
     // "in_progress" view: proceedings that have at least one hearing registered
     if (query.view === 'in_progress') {
-      where.activities = { some: { activityType: 'HEARING' } };
+      where.legalActivities = { some: { activityType: 'HEARING' } };
     }
     // "judgment" view: proceedings with a court judgment registered (judgmentDate set OR JUDGMENT activity)
     if (query.view === 'judgment') {
       where.OR = [
         { judgmentDate: { not: null } },
-        { activities: { some: { activityType: 'JUDGMENT' } } },
+        { legalActivities: { some: { activityType: 'JUDGMENT' } } },
       ];
     }
     // "enforcement" view: proceedings with enforcement registered (ENFORCEMENT activity OR status=ENFORCEMENT)
     if (query.view === 'enforcement') {
       where.OR = [
         { status: 'ENFORCEMENT' },
-        { activities: { some: { activityType: 'ENFORCEMENT' } } },
+        { legalActivities: { some: { activityType: 'ENFORCEMENT' } } },
       ];
     }
 

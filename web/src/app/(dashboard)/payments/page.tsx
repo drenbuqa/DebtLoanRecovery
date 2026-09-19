@@ -77,7 +77,7 @@ function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void
           <div className="text-[14px] font-semibold text-gray-900 truncate">{name}</div>
           <div className="text-[11px] text-gray-400 font-mono mt-0.5">{p.case?.caseReference ?? "—"}</div>
         </div>
-        <span className="text-[15px] font-bold text-emerald-700 tabular shrink-0">{formatCurrency(Number(p.amount))}</span>
+        <span className="text-[15px] font-bold text-gray-900 tabular shrink-0">{formatCurrency(Number(p.amount))}</span>
       </div>
       <div className="h-px bg-gray-100 mb-3" />
       <div className="flex items-center gap-3 text-[12px] text-gray-400">
@@ -345,7 +345,7 @@ export default function PaymentsPage() {
                         </Td>
                         <Td><span className="tabular text-gray-500 font-mono text-[12px]">{p.case?.loan?.loanNumber ?? "—"}</span></Td>
                         <Td><span className="text-gray-500 text-[12px]">{p.case?.loan?.institution?.shortName ?? "—"}</span></Td>
-                        <Td><span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span></Td>
+                        <Td><span className="font-semibold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span></Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
                             {new Date(p.paymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}

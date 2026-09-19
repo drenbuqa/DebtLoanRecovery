@@ -195,7 +195,7 @@ export class CasesService {
         },
       };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
-      where.status = { in: ['INACTIVE', 'CLOSED', 'SUSPENDED'] };
+      where.status = { in: ['CLOSED', 'SUSPENDED', 'WRITTEN_OFF'] };
     } else if (query.view === 'legal') {
       where.legalProceedings = { some: {} };
     }

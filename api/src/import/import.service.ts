@@ -783,14 +783,15 @@ export class ImportService {
       institutionByName = new Map(insts.map((i) => [i.name.toLowerCase().trim(), i.id]));
     }
 
-    // Pre-load officer codes by userCode field
+    // Pre-load officer codes (by userCode when available, else creation order)
     let officerByCode: Map<number, string> | null = null;
     if (type === 'officer') {
       const officers = await this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] as any[] } },
-        select: { id: true, userCode: true },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
       });
-      officerByCode = new Map(officers.map((o) => [o.userCode, o.id]));
+      officerByCode = new Map(officers.map((o, idx) => [idx + 1, o.id]));
     }
 
     for (let i = 0; i < dataRows.length; i++) {
