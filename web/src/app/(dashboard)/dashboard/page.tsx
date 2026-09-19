@@ -209,7 +209,6 @@ function KpiCard({ label, value, alert, href }: { label: string; value: string; 
     <div className="bg-white rounded-xl border border-gray-200 px-3 py-2.5 md:px-5 md:py-4 h-full flex flex-col justify-between min-h-[62px] md:min-h-0" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
       <div className="text-[10px] md:text-[11px] font-medium text-gray-400 uppercase tracking-wide leading-snug">{label}</div>
       <div className="text-[17px] md:text-[22px] font-bold tabular leading-tight mt-auto text-gray-900">{value}</div>
-      {alert && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1" />}
     </div>
   );
   if (href) return <a href={href} className="block h-full">{inner}</a>;

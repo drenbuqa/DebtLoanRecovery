@@ -273,8 +273,8 @@ function ReferencePanel() {
           <div className="flex border-b border-gray-100 px-5">
             {([
               { key: "officers", label: `Zyrtarët (${data.officers.length})` },
-              { key: "institutions", label: `Bankat (${data.institutions.length})` },
-              { key: "cities", label: `Qytetet (${data.cities.length})` },
+              { key: "institutions", label: `Bankat (${Object.keys(INSTITUTION_CODES).length})` },
+              { key: "cities", label: `Qytetet (${Object.keys(CITY_CODES).length})` },
               { key: "npl", label: "Kategoria NPL" },
             ] as const).map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
@@ -294,10 +294,10 @@ function ReferencePanel() {
                   Kopjoni UUID-në për migrim direkt.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.officers.map((o) => (
+                  {data.officers.map((o, idx) => (
                     <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
                       <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{o.userCode}</span>
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{o.userCode ?? idx + 1}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
@@ -416,9 +416,9 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
     if (type === "officer") {
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-          {officers.map((o) => (
+          {officers.map((o, idx) => (
             <div key={o.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="w-7 font-mono font-bold text-brand-700 text-center">{o.userCode}</span>
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{o.userCode ?? idx + 1}</span>
               <span className="flex-1 text-gray-800">{o.fullName}</span>
               <span className="text-gray-400 text-[11px]">{o.office?.name ?? ""}</span>
             </div>
