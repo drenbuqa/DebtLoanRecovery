@@ -213,6 +213,30 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
+// ── Static reference maps ──────────────────────────────────────────────────────
+
+const CITY_CODES: Record<number, string> = {
+  1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
+  7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
+  13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
+  19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
+  25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
+  31:'Gjakovë',32:'Dragash',33:'Rahovec',
+};
+
+const INSTITUTION_CODES: Record<number, string> = {
+  1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
+  6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
+  10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
+  14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
+  20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
+  25:'Ziraat Bankasi',26:'TIMI INVEST',
+};
+
+const NPL_CODES: Record<number, string> = {
+  1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
+};
+
 // ── Reference panel ────────────────────────────────────────────────────────────
 
 function ReferencePanel() {
@@ -270,10 +294,10 @@ function ReferencePanel() {
                   Kopjoni UUID-në për migrim direkt.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.officers.map((o, idx) => (
+                  {data.officers.map((o) => (
                     <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
                       <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{idx + 1}</span>
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{o.userCode}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
@@ -290,16 +314,18 @@ function ReferencePanel() {
             )}
 
             {tab === "institutions" && (
-              <div className="space-y-1">
-                <p className="text-[11px] text-gray-400 mb-3">Kopjoni emrin e saktë dhe ngjiseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">institution_name</span></p>
+              <div>
+                <p className="text-[11px] text-gray-400 mb-3">
+                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">institution_name</span> kur përdorni ndryshime me Excel.
+                </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.institutions.map((inst) => (
-                    <div key={inst.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-medium text-gray-800">{inst.name}</div>
-                        <div className="text-[11px] text-gray-400">{inst.shortName}</div>
+                  {Object.entries(INSTITUTION_CODES).map(([code, name]) => (
+                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
                       </div>
-                      <CopyBtn text={inst.name} />
+                      <span className="flex-1 text-[13px] text-gray-800">{name}</span>
+                      <CopyBtn text={String(code)} />
                     </div>
                   ))}
                 </div>
@@ -308,32 +334,37 @@ function ReferencePanel() {
 
             {tab === "cities" && (
               <div>
-                <p className="text-[11px] text-gray-400 mb-3">Qytetet ekzistuese në sistem. Kopjoni drejtshkrimin e saktë për kolonën <span className="font-mono bg-gray-100 px-1 rounded">city</span></p>
-                <div className="flex flex-wrap gap-2">
-                  {data.cities.map((city) => (
-                    <div key={city} className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg">
-                      <span className="text-[12px] text-gray-700">{city}</span>
-                      <CopyBtn text={city} />
+                <p className="text-[11px] text-gray-400 mb-3">
+                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">city</span> kur përdorni ndryshime me Excel.
+                </p>
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+                  {Object.entries(CITY_CODES).map(([code, name]) => (
+                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                      </div>
+                      <span className="flex-1 text-[13px] text-gray-800">{name}</span>
+                      <CopyBtn text={String(code)} />
                     </div>
                   ))}
-                  {data.cities.length === 0 && (
-                    <p className="text-[12px] text-gray-400">Nuk ka qytete të regjistruara ende.</p>
-                  )}
                 </div>
               </div>
             )}
 
             {tab === "npl" && (
               <div>
-                <p className="text-[11px] text-gray-400 mb-3">Vlerat e vlefshme për kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span></p>
+                <p className="text-[11px] text-gray-400 mb-3">
+                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span> kur përdorni ndryshime me Excel.
+                </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.nplCategories.map((cat) => (
-                    <div key={cat} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
-                      <div className="flex-1">
-                        <span className="font-mono text-[13px] font-semibold text-gray-800">{cat}</span>
-                        <span className="text-[12px] text-gray-400 ml-3">{NPL_DESC[cat]}</span>
+                  {Object.entries(NPL_CODES).map(([code, cat]) => (
+                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
                       </div>
-                      <CopyBtn text={cat} />
+                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{cat}</span>
+                      <span className="text-[12px] text-gray-400 flex-1">{NPL_DESC[cat]}</span>
+                      <CopyBtn text={String(code)} />
                     </div>
                   ))}
                 </div>
@@ -345,30 +376,6 @@ function ReferencePanel() {
     </div>
   );
 }
-
-// ── Static reference maps (mirror of backend ImportService statics) ────────────
-
-const CITY_CODES: Record<number, string> = {
-  1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
-  7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
-  13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
-  19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
-  25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
-  31:'Gjakovë',32:'Dragash',33:'Rahovec',
-};
-
-const INSTITUTION_CODES: Record<number, string> = {
-  1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
-  6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
-  10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
-  14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
-  20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
-  25:'Ziraat Bankasi',26:'TIMI INVEST',
-};
-
-const NPL_CODES: Record<number, string> = {
-  1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
-};
 
 // ── Bulk update panel ──────────────────────────────────────────────────────────
 
@@ -409,9 +416,9 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
     if (type === "officer") {
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-          {officers.map((o, idx) => (
+          {officers.map((o) => (
             <div key={o.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="w-7 font-mono font-bold text-brand-700 text-center">{idx + 1}</span>
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{o.userCode}</span>
               <span className="flex-1 text-gray-800">{o.fullName}</span>
               <span className="text-gray-400 text-[11px]">{o.office?.name ?? ""}</span>
             </div>

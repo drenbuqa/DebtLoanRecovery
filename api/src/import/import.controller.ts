@@ -36,8 +36,8 @@ export class ImportController {
     const [officers, institutions, cities] = await Promise.all([
       this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
-        select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
-        orderBy: { fullName: 'asc' },
+        select: { id: true, userCode: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
+        orderBy: { userCode: 'asc' },
       }),
       this.prisma.institution.findMany({
         where: { isActive: true },
