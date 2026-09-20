@@ -96,12 +96,12 @@ export class PaymentsService {
     nextPaymentAmount?: number;
   }) {
     const payment = await this.prisma.$transaction(async (tx) => {
-      // Collision-safe reference: count within the year inside the transaction
       const year = new Date().getFullYear();
+      const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
       const [{ count }] = await tx.$queryRaw<[{ count: bigint }]>`
         SELECT COUNT(*)::bigint AS count FROM payments WHERE EXTRACT(YEAR FROM payment_date) = ${year}
       `;
-      const ref = `PAY-${year}-${String(Number(count) + 1).padStart(5, '0')}`;
+      const ref = `PAY-${year}-${String(Number(count) + 1).padStart(5, '0')}-${rand}`;
       const created = await tx.payment.create({
         data: {
           caseId: dto.caseId,
