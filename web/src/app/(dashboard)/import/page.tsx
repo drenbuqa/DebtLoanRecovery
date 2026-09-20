@@ -5,7 +5,7 @@ import Topbar from "@/components/layout/Topbar";
 import { importApi } from "@/lib/api";
 import {
   Upload, Download, CheckCircle, XCircle, AlertTriangle,
-  FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp, Copy, Check,
+  FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp, Copy, Check, X, RefreshCw,
 } from "lucide-react";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -201,30 +201,29 @@ function RollbackModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-            <RotateCcw size={15} className="text-red-500" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+              <RotateCcw size={15} className="text-red-500" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-gray-900">Anulo Importin</div>
+              <div className="text-[11px] text-gray-400 truncate">{job.fileName}</div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold text-gray-900">Anulo Importin</div>
-            <div className="text-[11px] text-gray-400 truncate">{job.fileName}</div>
-          </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-500 transition-colors p-1">
-            <XCircle size={16} />
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+            <X size={15} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4">
+        <div className="px-6 py-5">
           {state.phase === "checking" && (
             <div className="flex items-center gap-3 py-4">
-              <svg className="animate-spin h-4 w-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
+              <RefreshCw size={16} className="animate-spin text-brand-500 shrink-0" />
               <span className="text-[13px] text-gray-600">Duke kontrolluar nëse anulimi është i mundshëm…</span>
             </div>
           )}
@@ -238,8 +237,8 @@ function RollbackModal({
                   <p className="text-[12px] text-amber-700 leading-relaxed">{state.reason}</p>
                 </div>
               </div>
-              <p className="text-[12px] text-gray-500">
-                Për të anuluar këtë import, duhet të fshini manualisht të dhënat e regjistruara pas importit.
+              <p className="text-[12px] text-gray-500 leading-relaxed">
+                Për të hequr të dhënat e këtij importi, duhet të fshini manualisht klientët e regjistruar.
               </p>
             </div>
           )}
@@ -253,16 +252,16 @@ function RollbackModal({
                     Do të fshihen {state.caseCount} klientë dhe kreditë e tyre
                   </p>
                   <p className="text-[12px] text-red-700 leading-relaxed">
-                    Ky veprim është i pakthyeshëm. Klientët e importuara nga ky skedar do të fshihen përgjithmonë.
+                    Ky veprim është <strong>i pakthyeshëm</strong>. Klientët e importuara nga ky skedar do të fshihen përgjithmonë.
                   </p>
                 </div>
               </div>
               {state.cases.length > 0 && (
-                <div className="border border-gray-100 rounded-lg max-h-32 overflow-y-auto">
+                <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                     <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Klientët që do të fshihen</span>
                   </div>
-                  <div className="divide-y divide-gray-50">
+                  <div className="divide-y divide-gray-50 max-h-32 overflow-y-auto">
                     {state.cases.map((ref) => (
                       <div key={ref} className="px-3 py-1.5 text-[12px] font-mono text-gray-700">{ref}</div>
                     ))}
@@ -274,10 +273,7 @@ function RollbackModal({
 
           {state.phase === "deleting" && (
             <div className="flex items-center gap-3 py-4">
-              <svg className="animate-spin h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
+              <RefreshCw size={16} className="animate-spin text-red-500 shrink-0" />
               <span className="text-[13px] text-gray-600">Duke fshirë klientët…</span>
             </div>
           )}
@@ -300,21 +296,20 @@ function RollbackModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 pb-4">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           {(state.phase === "blocked" || state.phase === "error") && (
-            <button onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
               Mbyll
             </button>
           )}
           {state.phase === "confirm" && (
             <>
-              <button onClick={onClose}
-                className="px-4 py-2 text-[13px] font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
                 Anulo
               </button>
               <button onClick={confirm}
-                className="px-4 py-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2">
+                <RotateCcw size={13} />
                 Po, fshi klientët
               </button>
             </>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, X } from "lucide-react";
 
 interface DatePickerProps {
   value: string; // "YYYY-MM-DD"
@@ -28,7 +28,7 @@ function parseDate(val: string): Date | null {
 function formatDisplay(val: string): string {
   const d = parseDate(val);
   if (!d) return "";
-  return d.toLocaleDateString("sq-AL", { day: "2-digit", month: "long", year: "numeric" });
+  return d.toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function toValue(y: number, m: number, d: number): string {
@@ -159,17 +159,29 @@ export function DatePicker({ value, onChange, placeholder = "Select date", class
         type="button"
         disabled={disabled}
         onClick={openCalendar}
-        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-[13px] rounded-lg border transition-all text-left
+        className={`w-full h-[34px] flex items-center justify-between gap-2 px-3 text-[13px] rounded-lg border transition-all text-left
           ${open
             ? "border-brand-400 shadow-[0_0_0_3px_rgba(167,139,250,0.15)] bg-white"
             : "border-gray-200 bg-white hover:border-gray-300"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
-        <span className={value ? "text-gray-900" : "text-gray-400"}>
+        <span className={`truncate flex-1 text-left ${value ? "text-gray-900" : "text-gray-400"}`}>
           {value ? formatDisplay(value) : placeholder}
         </span>
-        <CalendarDays size={13} className="text-gray-400 shrink-0" />
+        <span className="flex items-center gap-0.5 shrink-0">
+          {value && !disabled && (
+            <span
+              role="button"
+              tabIndex={-1}
+              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); onChange(""); }}
+              className="w-4 h-4 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <X size={11} />
+            </span>
+          )}
+          <CalendarDays size={13} className="text-gray-400" />
+        </span>
       </button>
 
       {/* Dropdown — rendered in a portal so it escapes modal overflow clipping */}

@@ -1,7 +1,8 @@
-import { IsString, IsNumber, IsOptional, IsDateString, IsUUID, MaxLength, Min, Max, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsUUID, IsNotEmpty, MaxLength, Min, Max, IsIn } from 'class-validator';
 
 const NPL_CLASSES = ['PERFORMING', 'WATCH', 'SUBSTANDARD', 'DOUBTFUL', 'LOSS'] as const;
 const STAGES = ['D1', 'D2', 'D3', 'D4', 'LEGAL', 'WRITTEN_OFF'] as const;
+const COLLECTION_STATUSES = ['KLIENT_I_RI', 'PAKONTAKTUAR', 'ZOTIM_PAGESE', 'ME_MARREVESHJE', 'KONTESTIM', 'NUK_PRANON', 'JURIDIKE', 'TJERA'] as const;
 
 export class CreateCaseDto {
   // Borrower
@@ -16,7 +17,7 @@ export class CreateCaseDto {
 
   // Loan
   @IsString({ message: 'Numri i kredisë duhet të jetë tekst' }) @MaxLength(50, { message: 'Numri i kredisë nuk mund të kalojë 50 karaktere' }) loanNumber: string;
-  @IsUUID('all', { message: 'Institucioni i zgjedhur nuk është i vlefshëm' }) institutionId: string;
+  @IsString() @IsNotEmpty({ message: 'Ju lutem zgjidhni një institucion' }) institutionId: string;
   @IsNumber({}, { message: 'Shuma e financuar duhet të jetë numër' }) @Min(0.01, { message: 'Shuma e financuar duhet të jetë më e madhe se zero' }) originalLoanAmount: number;
   @IsOptional() @IsNumber({}, { message: 'Shuma e disbursuar duhet të jetë numër' }) @Min(0.01) disbursedAmount?: number;
   @IsNumber({}, { message: 'Borgji aktual duhet të jetë numër' }) @Min(0, { message: 'Borgji aktual nuk mund të jetë negativ' }) currentOutstandingBalance: number;
@@ -29,9 +30,10 @@ export class CreateCaseDto {
   @IsOptional() @IsIn(NPL_CLASSES, { message: 'Kategoria sipas performancës nuk është e vlefshme' }) nplClassification?: string;
 
   // Case
-  @IsOptional() @IsUUID('all', { message: 'Zyra e zgjedhur nuk është e vlefshme' }) officeId?: string;
-  @IsOptional() @IsUUID('all', { message: 'Zyrtari primar nuk është i vlefshëm' }) assignedOfficerId?: string;
-  @IsOptional() @IsUUID('all', { message: 'Zyrtari sekondar nuk është i vlefshëm' }) secondaryOfficerId?: string;
+  @IsOptional() @IsString() officeId?: string;
+  @IsOptional() @IsString() assignedOfficerId?: string;
+  @IsOptional() @IsString() secondaryOfficerId?: string;
   @IsOptional() @IsIn(STAGES, { message: 'Kategoria sipas procedurës nuk është e vlefshme' }) collectionStage?: string;
+  @IsOptional() @IsIn(COLLECTION_STATUSES, { message: 'Statusi i zgjedhur nuk është i vlefshëm' }) collectionStatus?: string;
   @IsOptional() @IsDateString({}, { message: 'Data e regjistrimit nuk është e vlefshme' }) registrationDate?: string;
 }

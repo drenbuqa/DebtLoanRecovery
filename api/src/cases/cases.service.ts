@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CollectionStage, CaseStatus } from '@prisma/client';
+import { CollectionStage, CollectionStatus, CaseStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const CASE_LIST_SELECT = {
@@ -7,6 +7,7 @@ const CASE_LIST_SELECT = {
   caseReference: true,
   status: true,
   collectionStage: true,
+  collectionStatus: true,
   priorityScore: true,
   nextActionDate: true,
   createdAt: true,
@@ -56,6 +57,7 @@ const CASE_LIST_SELECT = {
 const CASE_DETAIL_EXTRA = {
   nextActionNote: true,
   secondaryOfficer: { select: { id: true, fullName: true } },
+  collectionStatus: true,
   registrationDate: true,
   loan: {
     select: {
@@ -149,6 +151,7 @@ export class CasesService {
     search?: string;
     status?: string;
     stage?: string;
+    collectionStatus?: string;
     institutionId?: string;
     officeId?: string;
     officerId?: string;
@@ -163,6 +166,7 @@ export class CasesService {
     const where: any = { deletedAt: null };
     if (query.status) where.status = query.status;
     if (query.stage) where.collectionStage = query.stage;
+    if (query.collectionStatus) where.collectionStatus = query.collectionStatus;
     if (query.from || query.to) {
       where.createdAt = {};
       if (query.from) where.createdAt.gte = new Date(query.from);
@@ -477,6 +481,10 @@ export class CasesService {
     const existing = await this.prisma.loan.findUnique({ where: { loanNumber: dto.loanNumber } });
     if (existing) throw new BadRequestException(`Numri i kredisë ${dto.loanNumber} ekziston tashmë`);
 
+    // Validate institution exists
+    const institution = await this.prisma.institution.findUnique({ where: { id: dto.institutionId } });
+    if (!institution) throw new BadRequestException('Institucioni i zgjedhur nuk u gjet. Ju lutem rifriskoني faqen dhe provoni përsëri.');
+
     // Upsert person (by personalId)
     const person = await this.prisma.person.upsert({
       where: { personalId: dto.personalId },
@@ -541,6 +549,7 @@ export class CasesService {
           secondaryOfficerId: dto.secondaryOfficerId,
           registrationDate: dto.registrationDate ? new Date(dto.registrationDate) : undefined,
           collectionStage: (dto.collectionStage as CollectionStage) ?? CollectionStage.D1,
+          collectionStatus: dto.collectionStatus ? (dto.collectionStatus as CollectionStatus) : CollectionStatus.KLIENT_I_RI,
           priorityScore: Math.min(dto.daysPastDue ?? 0, 999),
         },
         select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
@@ -564,9 +573,9 @@ export class CasesService {
     return result;
   }
 
-  async updateStatus(id: string, dto: { status?: string; collectionStage?: string; note?: string }, changedById: string) {
-    const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true } });
-    if (!current) throw new NotFoundException('Dosja nuk u gjet');
+  async updateStatus(id: string, dto: { status?: string; collectionStage?: string; collectionStatus?: string; note?: string }, changedById: string) {
+    const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true, collectionStatus: true } });
+    if (!current) throw new NotFoundException('Klienti nuk u gjet');
 
     const updates: any = {};
     const historyEntries: any[] = [];
@@ -574,16 +583,25 @@ export class CasesService {
     if (dto.status && dto.status !== current.status) {
       updates.status = dto.status as CaseStatus;
       historyEntries.push({ field: 'status', oldValue: current.status, newValue: dto.status, note: dto.note });
+      // Auto-set JURIDIKE faza when escalated to LEGAL, restore KLIENT_I_RI when de-escalated back
+      if (dto.status === 'LEGAL' && current.collectionStatus !== CollectionStatus.JURIDIKE) {
+        updates.collectionStatus = CollectionStatus.JURIDIKE;
+        historyEntries.push({ field: 'collectionStatus', oldValue: current.collectionStatus ?? '', newValue: 'JURIDIKE', note: 'Auto: status u bë LEGAL' });
+      }
     }
     if (dto.collectionStage && dto.collectionStage !== current.collectionStage) {
       updates.collectionStage = dto.collectionStage as CollectionStage;
       historyEntries.push({ field: 'collectionStage', oldValue: current.collectionStage, newValue: dto.collectionStage, note: dto.note });
     }
+    if (dto.collectionStatus !== undefined && dto.collectionStatus !== current.collectionStatus) {
+      updates.collectionStatus = dto.collectionStatus ? (dto.collectionStatus as CollectionStatus) : null;
+      historyEntries.push({ field: 'collectionStatus', oldValue: current.collectionStatus ?? '', newValue: dto.collectionStatus ?? '', note: dto.note });
+    }
 
     if (Object.keys(updates).length === 0) return current;
 
     const [updated] = await this.prisma.$transaction([
-      this.prisma.case.update({ where: { id }, data: updates, select: { id: true, status: true, collectionStage: true } }),
+      this.prisma.case.update({ where: { id }, data: updates, select: { id: true, status: true, collectionStage: true, collectionStatus: true } }),
       ...historyEntries.map((e) =>
         this.prisma.caseStatusHistory.create({
           data: { caseId: id, changedById, ...e },
@@ -591,6 +609,17 @@ export class CasesService {
       ),
     ]);
     return updated;
+  }
+
+  async setCollectionStatus(caseId: string, status: CollectionStatus, changedById: string) {
+    const current = await this.prisma.case.findUnique({ where: { id: caseId }, select: { collectionStatus: true } });
+    if (!current || current.collectionStatus === status) return;
+    await this.prisma.$transaction([
+      this.prisma.case.update({ where: { id: caseId }, data: { collectionStatus: status } }),
+      this.prisma.caseStatusHistory.create({
+        data: { caseId, changedById, field: 'collectionStatus', oldValue: current.collectionStatus ?? '', newValue: status },
+      }),
+    ]);
   }
 
   async getHistory(id: string) {

@@ -180,17 +180,17 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [originalAmount, setOriginalAmount] = useState("");
   const [currentBalance, setCurrentBalance] = useState("");
   const [city, setCity] = useState("");
-  const [collectionStage, setCollectionStage] = useState("D1");
   const [officerId, setOfficerId] = useState("");
   const [secondaryOfficerId, setSecondaryOfficerId] = useState("");
   const [institutionId, setInstitutionId] = useState("");
   const [nplClass, setNplClass] = useState("");
+  const [createFaza, setCreateFaza] = useState("");
   const [registrationDate, setRegistrationDate] = useState(today);
 
   const { touch, touchAll, fieldError } = useFormErrors();
 
   const institutionOptions = useMemo(
-    () => institutions.map((i: any) => ({ value: i.id, label: i.name })),
+    () => institutions.filter((i: any) => i.id).map((i: any) => ({ value: String(i.id), label: i.name })),
     [institutions]
   );
   const officerOptions = useMemo(
@@ -247,10 +247,10 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
         originalLoanAmount: parseFloat(originalAmount),
         currentOutstandingBalance: parseFloat(currentBalance),
         city: city || undefined,
-        collectionStage,
         assignedOfficerId: officerId || undefined,
         secondaryOfficerId: secondaryOfficerId || undefined,
         institutionId,
+        collectionStatus: createFaza || undefined,
         nplClassification: nplClass || undefined,
         registrationDate: registrationDate || undefined,
       });
@@ -377,17 +377,6 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                     <Select value={city} onChange={setCity} placeholder="Zgjidhni qytetin…" searchable dropUp clearable
                       options={KOSOVO_CITIES.map((c) => ({ value: c, label: c }))} />
                   </FL>
-                  <FL label="Kategoria / Procedura" error={null}>
-                    <Select value={collectionStage} onChange={setCollectionStage} dropUp
-                      options={[
-                        { value: "D1", label: "D1" },
-                        { value: "D2", label: "D2" },
-                        { value: "D3", label: "D3" },
-                        { value: "D4", label: "D4" },
-                        { value: "LEGAL", label: "Juridike" },
-                        { value: "WRITTEN_OFF", label: "I Shlyer" },
-                      ]} />
-                  </FL>
                   <FL label="Zyrtari Primar" error={null}>
                     <Select value={officerId} onChange={setOfficerId} placeholder="Pa caktim" searchable dropUp clearable
                       options={officerOptions} />
@@ -396,7 +385,19 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                     <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId} placeholder="Pa caktim" searchable dropUp clearable
                       options={officerOptions} />
                   </FL>
-                  <FL label="Kategoria / Performanca" error={null}>
+                  <FL label="Faza" error={null}>
+                    <Select value={createFaza} onChange={setCreateFaza} placeholder="Klienti i Ri (parazgjedhje)" dropUp clearable
+                      options={[
+                        { value: "KLIENT_I_RI",    label: "Klienti i Ri" },
+                        { value: "PAKONTAKTUAR",   label: "I Pakontaktuar / I Pagjetur" },
+                        { value: "ZOTIM_PAGESE",   label: "Me Zotim për Pagesë" },
+                        { value: "ME_MARREVESHJE", label: "Klient me Marrëveshje" },
+                        { value: "KONTESTIM",      label: "Kontestim i Borgjit" },
+                        { value: "NUK_PRANON",     label: "Nuk Pranon Marrëveshje" },
+                        { value: "TJERA",          label: "Të Tjera" },
+                      ]} />
+                  </FL>
+                  <FL label="Kategoria" error={null}>
                     <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori" dropUp clearable
                       options={[
                         { value: "PERFORMING",  label: "Performues" },
@@ -461,9 +462,11 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
             {c.caseReference} · {c.loan?.institution?.shortName ?? "—"}
           </div>
         </div>
-        <Badge variant={STAGE_BADGE[c.collectionStage] ?? "default"} className="shrink-0 text-[11px]">
-          {formatEnum(c.collectionStage)}
-        </Badge>
+        {c.collectionStatus ? (
+          <Badge variant="default" className="shrink-0 text-[11px]">{(({ KLIENT_I_RI: "I Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim", ME_MARREVESHJE: "Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" } as Record<string,string>)[c.collectionStatus]) ?? c.collectionStatus}</Badge>
+        ) : (
+          <Badge variant="default" className="shrink-0 text-[11px]">I Ri</Badge>
+        )}
       </div>
       <div className="h-px bg-gray-100 mb-3" />
       <div className="grid grid-cols-3 gap-2">
@@ -518,11 +521,12 @@ function CasesPageInner() {
   const [stage, setStage] = useState(searchParams.get("stage") ?? "");
   const [stageStatus, setStageStatus] = useState(searchParams.get("stage") ? `stage:${searchParams.get("stage")}` : searchParams.get("status") ? `status:${searchParams.get("status")}` : "");
 
+  const [fazaFilter, setFazaFilter] = useState("");
+
   function applyStageStatus(v: string) {
     setStageStatus(v);
     if (!v) { setStatus(""); setStage(""); }
-    else if (v.startsWith("stage:")) { setStage(v.slice(6)); setStatus(""); }
-    else { setStatus(v.slice(7)); setStage(""); }
+    else { setStatus(v.startsWith("status:") ? v.slice(7) : ""); setStage(""); }
     setPage(1);
   }
   const [page, setPage] = useState(1);
@@ -535,6 +539,7 @@ function CasesPageInner() {
       const res = await casesApi.list({
         page, limit: 50, search: search || undefined,
         view: view || undefined, status: status || undefined, stage: stage || undefined,
+        collectionStatus: fazaFilter || undefined,
         from: dateFrom || undefined, to: dateTo || undefined,
         ...(scopedToSelf   && user?.id       ? { officerId: user.id }       : {}),
         ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}),
@@ -547,7 +552,7 @@ function CasesPageInner() {
       setLoading(false);
       setPaging(false);
     }
-  }, [page, search, view, status, stage, dateFrom, dateTo]);
+  }, [page, search, view, status, stage, fazaFilter, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -557,7 +562,7 @@ function CasesPageInner() {
       {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); load(); }} />}
       <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej klient`} help={[
         { title: "Si të gjeni një klient", body: "Shkruani emrin e debitorit, numrin personal ose referencën e klientit në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm klientët me premtime të vonuara ose vetëm klientët juridike." },
-        { title: "Çfarë do të thotë D1, D2, D3, D4?", body: "Këto tregojnë sa gjatë ka qenë borxhi i vonuar. D1 nënkupton 30–60 ditë vonesë (fazë fillestare), D2 është 60–90 ditë, D3 është 90–180 ditë (serioz) dhe D4 është mbi 180 ditë (risk më i lartë). Sa më i madh numri, aq më e vështirë është rikuperimi i borxhit." },
+        { title: "Çfarë tregon statusi i koleksionit?", body: "Statusi i koleksionit tregon gjendjen e procesit të arkëtimit: I Pakontaktuar (klienti nuk është gjetur), Zotim Pagese (klienti ka dhënë zotim), Me Marrëveshje (ka marrëveshje aktive), Kontestim (klienti konteston borxhin), Nuk Pranon (refuzon marrëveshje), Të Tjera." },
         { title: "Si të hapni një klient", body: "Klikoni çdo rresht për të hapur klientin e plotë — do të shihni të dhënat e debitorit, informacionin e kredisë, të gjitha thirrjet dhe vizitat e regjistruara, pagesat e marra dhe çdo procedurë juridike." },
         { title: "Statusi i klientit i shpjeguar", body: "Aktive nënkupton se rasti është në punë. Juridike nënkupton se është eskaluar në procedura gjyqësore. Mbyllur nënkupton se është zgjidhur, shlyer ose paguar plotësisht." },
       ]} />
@@ -589,19 +594,32 @@ function CasesPageInner() {
             <MobileFilterSheet
               groups={[
                 {
-                  key: "stageStatus",
+                  key: "faza",
                   label: "Faza",
+                  value: fazaFilter,
+                  onChange: (v) => { setFazaFilter(v); setPage(1); },
+                  allLabel: "Të gjitha",
+                  options: [
+                    { value: "KLIENT_I_RI",    label: "Klienti i Ri" },
+                    { value: "PAKONTAKTUAR",   label: "I Pakontaktuar" },
+                    { value: "ZOTIM_PAGESE",   label: "Zotim Pagese" },
+                    { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
+                    { value: "KONTESTIM",      label: "Kontestim" },
+                    { value: "NUK_PRANON",     label: "Nuk Pranon" },
+                    { value: "JURIDIKE",       label: "Juridike" },
+                    { value: "TJERA",          label: "Të Tjera" },
+                  ],
+                },
+                {
+                  key: "stageStatus",
+                  label: "Statusi",
                   value: stageStatus,
                   onChange: applyStageStatus,
                   options: [
-                    { value: "stage:D1", label: "D1" },
-                    { value: "stage:D2", label: "D2" },
-                    { value: "stage:D3", label: "D3" },
-                    { value: "stage:D4", label: "D4" },
-                    { value: "stage:LEGAL", label: "Juridike" },
-                    { value: "stage:WRITTEN_OFF", label: "I Shlyer" },
-                    { value: "status:SUSPENDED", label: "Pezulluar" },
-                    { value: "status:CLOSED", label: "Mbyllur" },
+                    { value: "status:LEGAL",       label: "Juridike" },
+                    { value: "status:SUSPENDED",   label: "Pezulluar" },
+                    { value: "status:CLOSED",      label: "Mbyllur" },
+                    { value: "status:WRITTEN_OFF", label: "I Shlyer" },
                   ],
                 },
                 {
@@ -694,17 +712,25 @@ function CasesPageInner() {
 
           <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); setPage(1); }} />
 
-          <Select value={stageStatus} onChange={applyStageStatus} label="Faza" placeholder="Të gjitha" clearable
-            className="w-44"
+          <Select value={fazaFilter} onChange={(v) => { setFazaFilter(v); setPage(1); }} label="Faza" placeholder="Të gjitha" clearable
+            className="w-52"
             options={[
-              { value: "stage:D1",          label: "D1" },
-              { value: "stage:D2",          label: "D2" },
-              { value: "stage:D3",          label: "D3" },
-              { value: "stage:D4",          label: "D4" },
-              { value: "stage:LEGAL",       label: "Juridike" },
-              { value: "stage:WRITTEN_OFF", label: "I Shlyer" },
-              { value: "status:SUSPENDED",  label: "Pezulluar" },
-              { value: "status:CLOSED",     label: "Mbyllur" },
+              { value: "KLIENT_I_RI",    label: "Klienti i Ri" },
+              { value: "PAKONTAKTUAR",   label: "I Pakontaktuar" },
+              { value: "ZOTIM_PAGESE",   label: "Zotim Pagese" },
+              { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
+              { value: "KONTESTIM",      label: "Kontestim" },
+              { value: "NUK_PRANON",     label: "Nuk Pranon" },
+              { value: "JURIDIKE",       label: "Juridike" },
+              { value: "TJERA",          label: "Të Tjera" },
+            ]} />
+          <Select value={stageStatus} onChange={applyStageStatus} label="Statusi" placeholder="Të gjitha" clearable
+            className="w-40"
+            options={[
+              { value: "status:LEGAL",       label: "Juridike" },
+              { value: "status:SUSPENDED",   label: "Pezulluar" },
+              { value: "status:CLOSED",      label: "Mbyllur" },
+              { value: "status:WRITTEN_OFF", label: "I Shlyer" },
             ]} />
 
           {can("case:create") && (
@@ -761,7 +787,7 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Faza",
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues",
                     ...(["all_promises","vonesa","premtime_thyera"].includes(view) ? ["Premtimi"] : []),
                   ].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
@@ -776,7 +802,8 @@ function CasesPageInner() {
                   const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
-                  const npl: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
+                  const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
+                  const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
                   const latestPromise = (c.promises ?? c.promisesToPay)?.[0];
                   const promiseDaysOverdue = latestPromise
                     ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
@@ -810,7 +837,10 @@ function CasesPageInner() {
                         <span className="text-[11px] text-gray-500">{b?.city ?? "—"}</span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[10px] text-gray-500">{c.loan?.nplClassification ? (npl[c.loan.nplClassification] ?? c.loan.nplClassification) : "—"}</span>
+                        <span className="text-[10px] text-gray-600">{c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "—"}</span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="text-[10px] text-amber-700">{c.loan?.nplClassification ? (nplLabel[c.loan.nplClassification] ?? c.loan.nplClassification) : "—"}</span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-600">{guarantors[0]?.person?.fullName ?? "—"}</span>
@@ -820,9 +850,6 @@ function CasesPageInner() {
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-500">{coborrower?.person?.fullName ?? "—"}</span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <Badge variant={STAGE_BADGE[c.collectionStage] ?? "default"} className="text-[10px]">{formatEnum(c.collectionStage)}</Badge>
                       </td>
                       {["all_promises","vonesa","premtime_thyera"].includes(view) && (
                         <td className="px-3 py-2 whitespace-nowrap">

@@ -1,9 +1,9 @@
-import { IsString, IsNumber, IsPositive, IsDateString, IsOptional, IsIn, IsUUID, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsPositive, IsDateString, IsOptional, IsIn, IsNotEmpty, MaxLength } from 'class-validator';
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CHECK', 'CARD', 'OTHER'] as const;
 
 export class RegisterPaymentDto {
-  @IsUUID('4', { message: 'Dosja e zgjedhur nuk është e vlefshme' })
+  @IsString() @IsNotEmpty({ message: 'Ju lutem zgjidhni një klient' })
   caseId: string;
 
   @IsNumber({}, { message: 'Shuma duhet të jetë një numër' })

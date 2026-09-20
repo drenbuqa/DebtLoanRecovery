@@ -24,6 +24,7 @@ export class CasesController {
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('stage') stage?: string,
+    @Query('collectionStatus') collectionStatus?: string,
     @Query('institutionId') institutionId?: string,
     @Query('officeId') officeId?: string,
     @Query('officerId') officerId?: string,
@@ -44,7 +45,7 @@ export class CasesController {
     return this.svc.findAll({
       page: page ? +page : undefined,
       limit: limit ? +limit : undefined,
-      search, status, stage, institutionId, officeId, officerId, view, from, to,
+      search, status, stage, collectionStatus, institutionId, officeId, officerId, view, from, to,
     });
   }
 

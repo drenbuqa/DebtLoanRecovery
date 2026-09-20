@@ -20,6 +20,7 @@ export class ActivitiesService {
     updatedAddress?: string;
     updatedPhone?: string;
     caseCategory?: string;
+    collectionStatus?: string;
   }) {
     const activity = await this.prisma.activity.create({
       data: {
@@ -51,6 +52,19 @@ export class ActivitiesService {
       await this.prisma.case.update({
         where: { id: dto.caseId },
         data: { nextActionDate: new Date(dto.nextActionDate), nextActionNote: dto.notes },
+      });
+    }
+
+    // Auto-set collection status based on activity type
+    if (dto.activityType === 'PROMISE_TO_PAY') {
+      await this.prisma.case.update({
+        where: { id: dto.caseId },
+        data: { collectionStatus: 'ZOTIM_PAGESE' as any },
+      });
+    } else if (dto.collectionStatus) {
+      await this.prisma.case.update({
+        where: { id: dto.caseId },
+        data: { collectionStatus: dto.collectionStatus as any },
       });
     }
 

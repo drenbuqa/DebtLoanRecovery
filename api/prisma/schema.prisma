@@ -198,8 +198,9 @@ model Case {
   secondaryOfficerId  String?         @map("secondary_officer_id") @db.Uuid
   importJobId         String?         @map("import_job_id") @db.Uuid
   registrationDate    DateTime?       @map("registration_date") @db.Date
-  status              CaseStatus      @default(ACTIVE)
-  collectionStage     CollectionStage @default(D1) @map("collection_stage")
+  status              CaseStatus       @default(ACTIVE)
+  collectionStage     CollectionStage  @default(D1) @map("collection_stage")
+  collectionStatus    CollectionStatus? @map("collection_status")
   priorityScore       Int             @default(0) @map("priority_score")
   nextActionDate      DateTime?       @map("next_action_date") @db.Timestamptz(6)
   nextActionNote      String?         @map("next_action_note") @db.VarChar(500)
@@ -224,6 +225,7 @@ model Case {
 
   @@index([status])
   @@index([collectionStage])
+  @@index([collectionStatus])
   @@index([officeId])
   @@index([assignedOfficerId])
   @@index([deletedAt])
@@ -679,6 +681,17 @@ enum NplClass {
   SUBSTANDARD
   DOUBTFUL
   LOSS
+}
+
+enum CollectionStatus {
+  KLIENT_I_RI
+  PAKONTAKTUAR
+  ZOTIM_PAGESE
+  ME_MARREVESHJE
+  KONTESTIM
+  NUK_PRANON
+  JURIDIKE
+  TJERA
 }
 
 enum ImportType {

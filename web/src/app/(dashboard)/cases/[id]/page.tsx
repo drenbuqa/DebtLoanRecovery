@@ -70,6 +70,54 @@ const STAGE_DOT: Record<string, string> = {
   D4: "bg-red-500", LEGAL: "bg-brand-500", WRITTEN_OFF: "bg-gray-400",
 };
 
+// ── Faza (CollectionStatus) ──────────────────────────────────
+const FAZA_OPTIONS = [
+  { value: "KLIENT_I_RI",   label: "Klienti i Ri" },
+  { value: "PAKONTAKTUAR",  label: "I Pakontaktuar / I Pagjetur" },
+  { value: "ZOTIM_PAGESE",  label: "Me Zotim për Pagesë" },
+  { value: "ME_MARREVESHJE",label: "Klient me Marrëveshje" },
+  { value: "KONTESTIM",     label: "Kontestim i Borgjit" },
+  { value: "NUK_PRANON",    label: "Nuk Pranon Marrëveshje" },
+  { value: "JURIDIKE",      label: "Juridike" },
+  { value: "TJERA",         label: "Të Tjera" },
+];
+const FAZA_LABEL: Record<string, string> = {
+  KLIENT_I_RI:    "Klienti i Ri",
+  PAKONTAKTUAR:   "I Pakontaktuar",
+  ZOTIM_PAGESE:   "Zotim Pagese",
+  ME_MARREVESHJE: "Me Marrëveshje",
+  KONTESTIM:      "Kontestim",
+  NUK_PRANON:     "Nuk Pranon",
+  JURIDIKE:       "Juridike",
+  TJERA:          "Të Tjera",
+};
+const FAZA_DOT: Record<string, string> = {
+  KLIENT_I_RI:    "bg-blue-300",
+  PAKONTAKTUAR:   "bg-gray-400",
+  ZOTIM_PAGESE:   "bg-amber-400",
+  ME_MARREVESHJE: "bg-emerald-400",
+  KONTESTIM:      "bg-orange-500",
+  NUK_PRANON:     "bg-red-500",
+  JURIDIKE:       "bg-red-700",
+  TJERA:          "bg-gray-300",
+};
+
+// ── Kategoria (NPL) ──────────────────────────────────────────
+const NPL_OPTIONS = [
+  { value: "PERFORMING",  label: "Performues" },
+  { value: "WATCH",       label: "Nën Vëzhgim" },
+  { value: "SUBSTANDARD", label: "Nënstandard" },
+  { value: "DOUBTFUL",    label: "I Dyshimtë" },
+  { value: "LOSS",        label: "Humbje" },
+];
+const NPL_LABEL: Record<string, string> = {
+  PERFORMING:  "Performues",
+  WATCH:       "Nën Vëzhgim",
+  SUBSTANDARD: "Nënstandard",
+  DOUBTFUL:    "I Dyshimtë",
+  LOSS:        "Humbje",
+};
+
 // ── Tabs ────────────────────────────────────────────────────
 const TABS = ["Pasqyrë", "Financiar", "Pagesa", "Marrëveshjet", "Juridike", "Dokumenta"];
 
@@ -150,6 +198,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   const [updatedAddress, setUpdatedAddress] = useState("");
   const [updatedPhone, setUpdatedPhone] = useState("");
   const [caseCategory, setCaseCategory] = useState("");
+  const [collectionStatus, setCollectionStatus] = useState("");
   const [docFile, setDocFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -184,6 +233,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
         updatedAddress: updatedAddress.trim() || undefined,
         updatedPhone: updatedPhone.trim() || undefined,
         caseCategory: caseCategory || undefined,
+        collectionStatus: type === "PROMISE_TO_PAY" ? undefined : (collectionStatus || undefined),
       });
       // Upload document to case if attached
       if (docFile) {
@@ -257,10 +307,18 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                   </div>
                 )}
 
+                {/* Faza */}
+                {type !== "PROMISE_TO_PAY" && (
+                  <div>
+                    <label className={lbl}>Ndrysho Fazën e Klientit</label>
+                    <Select value={collectionStatus} onChange={setCollectionStatus} placeholder="Mbaj fazën aktuale…" options={FAZA_OPTIONS} clearable />
+                  </div>
+                )}
+
                 {/* Kategoria e Klientit */}
                 <div>
                   <label className={lbl}>Kategoria e Klientit</label>
-                  <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} />
+                  <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} clearable />
                 </div>
 
                 {/* Address + Phone side by side when both shown, full width when only phone */}
@@ -600,7 +658,7 @@ export default function CaseDetailPage() {
   const [caseVoidTarget, setCaseVoidTarget] = useState<any>(null);
   const [showAgreement, setShowAgreement] = useState(false);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
-  const [statusForm, setStatusForm] = useState({ status: "", collectionStage: "", note: "" });
+  const [statusForm, setStatusForm] = useState({ status: "", collectionStage: "", collectionStatus: "", note: "" });
   const [statusSaving, setStatusSaving] = useState(false);
 
   const [showEditCase, setShowEditCase] = useState(false);
@@ -625,6 +683,7 @@ export default function CaseDetailPage() {
       maturityDate: caseData?.loan?.maturityDate ? caseData.loan.maturityDate.slice(0, 10) : "",
       interestRate: caseData?.loan?.interestRate ?? "",
       productType: caseData?.loan?.productType ?? "",
+      collectionStatus: caseData?.collectionStatus ?? "",
       nplClassification: caseData?.loan?.nplClassification ?? "",
     });
     setEditError("");
@@ -642,6 +701,7 @@ export default function CaseDetailPage() {
         maturityDate: editForm.maturityDate || null,
         interestRate: editForm.interestRate !== "" ? parseFloat(editForm.interestRate) : undefined,
         productType: editForm.productType || undefined,
+        collectionStatus: editForm.collectionStatus || undefined,
         nplClassification: editForm.nplClassification || undefined,
       });
       await loadCase();
@@ -739,12 +799,12 @@ export default function CaseDetailPage() {
   }
 
   async function submitStatusUpdate() {
-    if (!statusForm.status && !statusForm.collectionStage) return;
+    if (!statusForm.status && !statusForm.collectionStage && !statusForm.collectionStatus) return;
     setStatusSaving(true);
     try {
       await casesApi.updateStatus(caseId, statusForm);
       setShowStatusUpdate(false);
-      setStatusForm({ status: "", collectionStage: "", note: "" });
+      setStatusForm({ status: "", collectionStage: "", collectionStatus: "", note: "" });
       await loadCase();
       toast("Statusi u përditësua");
     } catch (e: any) { alert(e.message); } finally { setStatusSaving(false); }
@@ -822,7 +882,7 @@ export default function CaseDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowStatusUpdate(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Statusin / Fazën</h2>
+              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Statusin</h2>
               <button onClick={() => setShowStatusUpdate(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4">
@@ -833,10 +893,10 @@ export default function CaseDetailPage() {
                   options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Arkëtimit</label>
-                <Select value={statusForm.collectionStage} onChange={(v) => setStatusForm(f => ({ ...f, collectionStage: v }))}
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
+                <Select value={statusForm.collectionStatus} onChange={(v) => setStatusForm(f => ({ ...f, collectionStatus: v }))}
                   placeholder="Pa ndryshim" clearable
-                  options={["D1","D2","D3","D4","LEGAL","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
+                  options={FAZA_OPTIONS} />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
@@ -902,16 +962,16 @@ export default function CaseDetailPage() {
                     className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Klasifikimi NPL</label>
+                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
+                  <Select value={editForm.collectionStatus ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, collectionStatus: v }))}
+                    dropUp placeholder="Asnjë" clearable
+                    options={FAZA_OPTIONS} />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Kategoria</label>
                   <Select value={editForm.nplClassification ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, nplClassification: v }))}
                     dropUp placeholder="Asnjë" clearable
-                    options={[
-                      { value: "PERFORMING",  label: "Performues" },
-                      { value: "WATCH",       label: "Nën Vëzhgim" },
-                      { value: "SUBSTANDARD", label: "Nënstandard" },
-                      { value: "DOUBTFUL",    label: "I Dyshimtë" },
-                      { value: "LOSS",        label: "Humbje" },
-                    ]} />
+                    options={NPL_OPTIONS} />
                 </div>
               </div>
               <div>
@@ -946,7 +1006,7 @@ export default function CaseDetailPage() {
           {(can("agreement:create") || can("case:edit") || can("case:delete")) && (
             <MoreMenu
               onEdit={can("case:edit") ? openEditCase : undefined}
-              onStatusUpdate={can("case:edit") ? () => { setStatusForm({ status: status, collectionStage: stage, note: "" }); setShowStatusUpdate(true); } : undefined}
+              onStatusUpdate={can("case:edit") ? () => { setStatusForm({ status: status, collectionStage: stage, collectionStatus: caseData?.collectionStatus ?? "", note: "" }); setShowStatusUpdate(true); } : undefined}
               onAgreement={can("agreement:create") ? () => setShowAgreement(true) : undefined}
               onDelete={can("case:delete") ? deleteCase : undefined}
             />
@@ -970,18 +1030,23 @@ export default function CaseDetailPage() {
           <div>
             <div className="flex items-center gap-2.5 mb-1.5">
               <h1 className="text-[20px] font-bold text-gray-900">{debtor}</h1>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-100 text-gray-600">
-                <span className={`w-1.5 h-1.5 rounded-full ${STAGE_DOT[stage] ?? "bg-gray-300"}`} />
-                {formatEnum(stage)}
-              </span>
-              {status !== "ACTIVE" && status !== stage && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-100 text-gray-600">
-                  {formatEnum(status)}
+              {/* Faza badge */}
+              {caseData?.collectionStatus && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-50 text-gray-700 border border-gray-200">
+                  <span className={`w-1.5 h-1.5 rounded-full ${FAZA_DOT[caseData.collectionStatus] ?? "bg-gray-300"}`} />
+                  {FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus}
                 </span>
               )}
+              {/* Kategoria (NPL) badge */}
               {caseData?.loan?.nplClassification && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-                  NPL · {formatEnum(caseData.loan.nplClassification)}
+                  {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
+                </span>
+              )}
+              {/* Case status badge (only when not ACTIVE) */}
+              {status !== "ACTIVE" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-100 text-gray-600">
+                  {formatEnum(status)}
                 </span>
               )}
             </div>
@@ -1157,7 +1222,8 @@ export default function CaseDetailPage() {
                     { label: "Data e Disbursimit", val: caseData?.loan?.disbursementDate ? new Date(caseData.loan.disbursementDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Data e Maturimit", val: caseData?.loan?.maturityDate ? new Date(caseData.loan.maturityDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Ditë Vonesë", val: `${dpd} ditë` },
-                    { label: "Klasifikimi NPL", val: caseData?.loan?.nplClassification ? formatEnum(caseData.loan.nplClassification) : "—" },
+                    { label: "Faza", val: caseData?.collectionStatus ? (FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus) : "—" },
+                    { label: "Kategoria", val: caseData?.loan?.nplClassification ? (NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification) : "—" },
                   ].map((r) => (
                     <div key={r.label} className="flex justify-between items-baseline">
                       <span className="text-[12px] text-gray-400">{r.label}</span>

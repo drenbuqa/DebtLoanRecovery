@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, MaxLength, IsIn, IsOptional, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsEmail, MinLength, MaxLength, IsIn, IsOptional, IsBoolean } from 'class-validator';
 
 const ROLES = ['ADMIN', 'MANAGER', 'OFFICER', 'VIEWER'] as const;
 
@@ -19,7 +19,7 @@ export class UpdateUserDto {
   role?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Zyra e zgjedhur nuk është e vlefshme' })
+  @IsString()
   officeId?: string;
 
   @IsOptional()

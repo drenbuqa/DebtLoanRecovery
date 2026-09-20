@@ -797,7 +797,11 @@ export class ImportService {
 
     const caseIds = job.cases.map((c) => c.id);
     if (caseIds.length === 0) {
-      return { canRollback: false, reason: 'Ky import nuk ka krijuar asnjë rast', blockers: [] };
+      return {
+        canRollback: false,
+        reason: 'Ky import u krye para se sistemi të fillonte të gjurmonte lidhjen midis importeve dhe rasteve. Anulimi automatik nuk është i mundshëm për importet e vjetra.',
+        blockers: [],
+      };
     }
 
     // Check for any follow-up data on these cases

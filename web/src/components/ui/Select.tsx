@@ -8,7 +8,7 @@ function useMounted() {
   useEffect(() => setMounted(true), []);
   return mounted;
 }
-import { ChevronDown, Check, Search } from "lucide-react";
+import { ChevronDown, Check, Search, X } from "lucide-react";
 
 export interface SelectOption {
   value: string;
@@ -84,11 +84,18 @@ export function Select({ value, onChange, options, placeholder = "Zgjidhni…", 
     setQuery("");
   }
 
+  function clear(e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange("");
+  }
+
   const filtered = searchable && query.trim()
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
   const openUp = dropUp || (ref.current ? (window.innerHeight - ref.current.getBoundingClientRect().bottom) < 220 : false);
+
+  const hasValue = value !== "" && value !== undefined;
 
   const dropdown = open ? (
     <div
@@ -107,14 +114,6 @@ export function Select({ value, onChange, options, placeholder = "Zgjidhni…", 
         </div>
       )}
       <div className="overflow-y-auto py-1 min-h-0 flex-1">
-        {clearable && placeholder && !query && (
-          <button type="button" onClick={() => pick("")}
-            className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] text-left transition-colors cursor-pointer
-              ${value === "" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-400 hover:bg-gray-50"}`}>
-            <span>{placeholder}</span>
-            {value === "" && <Check size={13} className="text-brand-600 shrink-0" />}
-          </button>
-        )}
         {filtered.length === 0 && (
           <div className="px-3.5 py-4 text-[12px] text-gray-400 text-center">Nuk u gjet asgjë</div>
         )}
@@ -155,16 +154,28 @@ export function Select({ value, onChange, options, placeholder = "Zgjidhni…", 
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           text-left`}
       >
-        <span className="flex items-center gap-1 min-w-0" style={{ fontFamily: "inherit", fontSize: 13, fontWeight: 400 }}>
+        <span className="flex items-center gap-1 min-w-0 flex-1" style={{ fontFamily: "inherit", fontSize: 13, fontWeight: 400 }}>
           {label && <span className="shrink-0" style={{ color: "#9ca3af" }}>{label} ·</span>}
-          <span className="truncate" style={{ color: "#6b7280" }}>
+          <span className={`truncate ${hasValue ? "text-gray-900" : "text-gray-400"}`}>
             {selected ? selected.label : placeholder}
           </span>
         </span>
-        <ChevronDown
-          size={13}
-          className={`text-gray-400 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-        />
+        <span className="flex items-center gap-0.5 shrink-0">
+          {clearable && hasValue && !disabled && (
+            <span
+              role="button"
+              tabIndex={-1}
+              onMouseDown={clear}
+              className="w-4 h-4 flex items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <X size={11} />
+            </span>
+          )}
+          <ChevronDown
+            size={13}
+            className={`text-gray-400 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          />
+        </span>
       </button>
 
       {mounted && createPortal(dropdown, document.body)}

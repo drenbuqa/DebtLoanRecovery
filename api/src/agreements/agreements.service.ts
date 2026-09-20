@@ -110,7 +110,7 @@ export class AgreementsService {
     `;
     const ref = `AGR-${year}-${String(Number(count) + 1).padStart(4, '0')}`;
 
-    return this.prisma.agreement.create({
+    const agreement = await this.prisma.agreement.create({
       data: {
         caseId: dto.caseId,
         agreementReference: ref,
@@ -125,6 +125,13 @@ export class AgreementsService {
       },
       select: AGR_SELECT,
     });
+
+    await this.prisma.case.update({
+      where: { id: dto.caseId },
+      data: { collectionStatus: 'ME_MARREVESHJE' as any },
+    });
+
+    return agreement;
   }
 
   async markInstallmentPaid(installmentId: string, paidAmount?: number, officerId?: string) {
