@@ -475,6 +475,7 @@ export class CasesService {
     assignedOfficerId?: string;
     secondaryOfficerId?: string;
     collectionStage?: string;
+    collectionStatus?: string;
     registrationDate?: string;
   }, createdById: string) {
     // Check loan number not already used
