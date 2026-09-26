@@ -107,8 +107,8 @@ export class ActivitiesService {
     }
 
     const ACTIVITY_SELECT = {
-      id: true, activityType: true, notes: true, outcome: true,
-      occurredAt: true, promiseAmount: true,
+      id: true, activityType: true, channel: true, notes: true, outcome: true,
+      occurredAt: true, nextActionDate: true, promiseAmount: true,
       officer: { select: { fullName: true } },
       case: {
         select: {
