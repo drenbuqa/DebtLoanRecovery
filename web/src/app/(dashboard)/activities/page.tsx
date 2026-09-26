@@ -17,8 +17,9 @@ import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import {
   RefreshCw, Phone, MapPin, CreditCard, FileText,
   CheckSquare, Clock, Mail, MessageSquare, ChevronLeft, ChevronRight,
-  Activity, Search, X, Plus, AlertTriangle,
+  Activity, Search, X, Plus, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
+import { downloadExcel } from "@/lib/exportExcel";
 
 // ── Activity type metadata ────────────────────────────────────────────────────
 const TYPE_META: Record<string, { icon: any; label: string; color: string; bg: string }> = {
@@ -208,6 +209,39 @@ export default function ActivitiesPage() {
   const loading = isLoading;
 
   useEffect(() => { setPage(1); }, [typeFilter, officerFilter, actDateFrom, actDateTo]);
+
+  const [exporting, setExporting] = useState(false);
+  async function exportToExcel() {
+    setExporting(true);
+    try {
+      const res = await activitiesApi.listAll({
+        limit: 5000, page: 1,
+        activityType: typeFilter || undefined,
+        from: actDateFrom || undefined, to: actDateTo || undefined,
+        officerId: scopedToSelf && user?.id ? user.id : (officerFilter || undefined),
+        officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+      });
+      const rows = res.data.map((a: any) => ({
+        "Data": a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
+        "Ora": a.occurredAt ? new Date(a.occurredAt).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" }) : "",
+        "Lloji": TYPE_META[a.activityType]?.label ?? a.activityType ?? "",
+        "Kanali": a.channel ?? "",
+        "Klienti": a.case?.caseReference ?? "",
+        "Debitori": a.case?.loan?.borrower?.fullName ?? "",
+        "Oficeri": a.officer?.fullName ?? "",
+        "Rezultati": a.outcome ?? "",
+        "Shënime": a.notes ?? "",
+        "Zotim (€)": a.promiseAmount ? Number(a.promiseAmount) : "",
+        "Data Veprimit Tjetër": a.nextActionDate ? new Date(a.nextActionDate).toLocaleDateString("sq-AL") : "",
+        "Adresa e Azhurnuar": a.updatedAddress ?? "",
+        "Telefon i Azhurnuar": a.updatedPhone ?? "",
+      }));
+      const date = new Date().toISOString().slice(0, 10);
+      downloadExcel(rows, `aktivitetet-${date}`);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   // Debounced case search
   useEffect(() => {
@@ -597,8 +631,13 @@ export default function ActivitiesPage() {
                   {label}
                 </button>
               ))}
-              <div className="ml-auto flex items-center gap-1 pb-px shrink-0">
+              <div className="ml-auto flex items-center gap-2 pb-px shrink-0">
                 <span className="text-[12px] text-gray-400">{!loading && `${filtered.length} ${filtered.length === 1 ? "aktivitet" : "aktivitete"}`}</span>
+                <button onClick={exportToExcel} disabled={exporting || loading}
+                  className="flex items-center gap-1.5 px-2.5 py-1 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                  <FileSpreadsheet size={13} className="text-emerald-600" />
+                  {exporting ? "Duke eksportuar…" : "Excel"}
+                </button>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 </button>

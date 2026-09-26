@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatEnum } from "@/lib/utils";
 import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { downloadExcel } from "@/lib/exportExcel";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
@@ -544,6 +545,54 @@ function CasesPageInner() {
   const loading = isLoading;
   const paging = isValidating && !isLoading;
 
+  const [exporting, setExporting] = useState(false);
+  async function exportToExcel() {
+    setExporting(true);
+    try {
+      const res = await casesApi.list({
+        limit: 5000, page: 1, search: search || undefined,
+        view: view || undefined, status: status || undefined, stage: stage || undefined,
+        collectionStatus: fazaFilter || undefined,
+        dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
+        officerId: scopedToSelf && user?.id ? user.id : undefined,
+        officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+      });
+      const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
+      const statusLabel: Record<string, string> = { ACTIVE: "Aktiv", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
+      const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
+      const rows = res.data.map((c: any) => {
+        const b = c.loan?.borrower;
+        const parties = c.loan?.relatedParties ?? [];
+        const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
+        const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
+        return {
+          "Ref. Klientit": c.caseReference,
+          "Emri i Plotë": b?.fullName ?? "",
+          "Nr. Personal": b?.personalId ?? "",
+          "Statusi": statusLabel[c.status] ?? c.status ?? "",
+          "Telefon": b?.phones?.[0]?.phoneNumber ?? "",
+          "Adresa": b?.address ?? "",
+          "Qyteti": b?.city ?? "",
+          "Banka": c.loan?.institution?.name ?? "",
+          "Nr. Kredie": c.loan?.loanNumber ?? "",
+          "Borxhi Aktual (€)": Number(c.loan?.currentOutstandingBalance ?? 0),
+          "Shuma Origjinale (€)": Number(c.loan?.originalLoanAmount ?? 0),
+          "Zyrtari Kryesor": c.assignedOfficer?.fullName ?? "",
+          "Zyrtari Dytësor": c.secondaryOfficer?.fullName ?? "",
+          "Faza": c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "",
+          "Kategoria": c.loan?.nplClassification ? (nplLabel[c.loan.nplClassification] ?? c.loan.nplClassification) : "",
+          "Garant 1": guarantors[0]?.person?.fullName ?? "",
+          "Garant 2": guarantors[1]?.person?.fullName ?? "",
+          "Bashkëkreditues": coborrower?.person?.fullName ?? "",
+          "Data Regjistrimit": c.createdAt ? new Date(c.createdAt).toLocaleDateString("sq-AL") : "",
+        };
+      });
+      const date = new Date().toISOString().slice(0, 10);
+      downloadExcel(rows, `klientet-${date}`);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="flex flex-col">
@@ -722,9 +771,14 @@ function CasesPageInner() {
               { value: "status:WRITTEN_OFF", label: "I Shlyer" },
             ]} />
 
+          <button onClick={exportToExcel} disabled={exporting || loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors ml-auto">
+            <FileSpreadsheet size={14} className={exporting ? "animate-pulse text-emerald-600" : "text-emerald-600"} />
+            {exporting ? "Duke eksportuar…" : "Eksporto Excel"}
+          </button>
           {can("case:create") && (
             <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
               <Plus size={14} /> Klient i Ri
             </button>
           )}

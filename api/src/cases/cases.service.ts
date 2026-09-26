@@ -160,7 +160,7 @@ export class CasesService {
     to?: string;
   }) {
     const page = query.page ?? 1;
-    const limit = Math.min(query.limit ?? 25, 100);
+    const limit = Math.min(query.limit ?? 25, 5000);
     const skip = (page - 1) * limit;
 
     const where: any = { deletedAt: null };
