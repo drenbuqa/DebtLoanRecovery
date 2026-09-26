@@ -57,7 +57,7 @@ const OUTCOME_META: Record<string, { label: string; color: string; bg: string }>
 
 const ACTIVITY_FILTER_GROUPS = [
   { key: "",                                                                       label: "Të gjitha" },
-  { key: "CALL_BORROWER,CALL_GUARANTOR,PROMISE_TO_PAY",                            label: "Telefonata" },
+  { key: "CALL_BORROWER,CALL_GUARANTOR,PROMISE_TO_PAY,SMS,WARNING_LETTER",          label: "Kontakte" },
   { key: "VISIT,VISIT_BORROWER,VISIT_GUARANTOR,FIELD_VISIT,MEETING_BORROWER,MEETING_GUARANTOR", label: "Vizita & Takime" },
   { key: "PROMISE_TO_PAY",                                                         label: "Premtime" },
   { key: "PAYMENT_RECEIVED",                                                       label: "Pagesa" },
