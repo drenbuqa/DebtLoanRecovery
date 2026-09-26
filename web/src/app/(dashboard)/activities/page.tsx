@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
-import { activities as activitiesApi, cases as casesApi, users as usersApi, fetchAllPages } from "@/lib/api";
+import { activities as activitiesApi, cases as casesApi, users as usersApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { useToast } from "@/components/ui/Toast";
@@ -214,13 +214,20 @@ export default function ActivitiesPage() {
   async function exportToExcel() {
     setExporting(true);
     try {
-      const extra = {
+      const exportParams = {
         activityType: typeFilter || undefined,
         from: actDateFrom || undefined, to: actDateTo || undefined,
         officerId: scopedToSelf && user?.id ? user.id : (officerFilter || undefined),
         officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
       };
-      const allActivities = await fetchAllPages((p) => activitiesApi.listAll({ ...extra, ...p }), {}, 500);
+      const allActivities: any[] = [];
+      let exportPage = 1;
+      while (true) {
+        const r = await activitiesApi.listAll({ ...exportParams, page: exportPage, limit: 500 });
+        allActivities.push(...r.data);
+        if (exportPage >= r.meta.pages) break;
+        exportPage++;
+      }
       const rows = allActivities.map((a: any) => ({
         "Data": a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
         "Ora": a.occurredAt ? new Date(a.occurredAt).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" }) : "",
