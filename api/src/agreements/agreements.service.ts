@@ -208,6 +208,22 @@ export class AgreementsService {
         },
       });
 
+      // Log a PAYMENT_RECEIVED activity so installment payments appear in the activities feed
+      const payOfficerId = officerId ?? (await tx.case.findUnique({ where: { id: caseId }, select: { assignedOfficerId: true } }))?.assignedOfficerId;
+      if (payOfficerId) {
+        await tx.activity.create({
+          data: {
+            caseId,
+            officerId: payOfficerId,
+            activityType: 'PAYMENT_RECEIVED' as any,
+            occurredAt: today,
+            promiseAmount: paid,
+            promiseCurrency: currency,
+            notes: `Këst #${inst.installmentNumber} i marrëveshjes`,
+          },
+        });
+      }
+
       // Update loan outstanding balance
       const loan = await tx.loan.findFirst({
         where: { case: { id: caseId } },

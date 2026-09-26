@@ -235,7 +235,7 @@ export default function ActivitiesPage() {
         "Oficeri": a.officer?.fullName ?? "",
         "Rezultati": a.outcome ?? "",
         "Shënime": a.notes ?? "",
-        "Zotim (€)": a.promiseAmount ? Number(a.promiseAmount) : "",
+        "Shuma (€)": a.promiseAmount ? Number(a.promiseAmount) : "",
         "Data Veprimit Tjetër": a.nextActionDate ? new Date(a.nextActionDate).toLocaleDateString("sq-AL") : "",
         "Adresa e Azhurnuar": a.updatedAddress ?? "",
         "Telefon i Azhurnuar": a.updatedPhone ?? "",
@@ -733,7 +733,9 @@ export default function ActivitiesPage() {
                             {officerName && <span className="text-[11px] text-gray-400 shrink-0">{officerName.split(" ")[0]}</span>}
                             {a.notes && <span className="text-[11px] text-gray-400 truncate">{officerName ? "· " : ""}{a.notes}</span>}
                             {a.promiseAmount > 0 && (
-                              <span className="text-[11px] font-semibold text-emerald-700 shrink-0">· Premtim €{Number(a.promiseAmount).toLocaleString()}</span>
+                              <span className="text-[11px] font-semibold text-emerald-700 shrink-0">
+                                · {a.activityType === 'PAYMENT_RECEIVED' ? 'Pagesë' : 'Premtim'} €{Number(a.promiseAmount).toLocaleString()}
+                              </span>
                             )}
                             {nextAction && <span className="text-[11px] text-gray-400 shrink-0">· {nextAction}</span>}
                             {!officerName && !a.notes && !a.promiseAmount && !nextAction && (
