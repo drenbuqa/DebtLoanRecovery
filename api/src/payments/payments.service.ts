@@ -118,6 +118,19 @@ export class PaymentsService {
         select: PAYMENT_SELECT,
       });
 
+      // Log a PAYMENT_RECEIVED activity so payments appear in the activities feed
+      await tx.activity.create({
+        data: {
+          caseId: dto.caseId,
+          officerId: dto.officerId,
+          activityType: 'PAYMENT_RECEIVED' as any,
+          occurredAt: new Date(dto.paymentDate),
+          promiseAmount: dto.amount,
+          promiseCurrency: dto.currency ?? 'EUR',
+          notes: dto.notes ?? `Pagesë e regjistruar: ${ref}`,
+        },
+      });
+
       // Reconcile outstanding balance from all payments — prevents drift from decrement/increment
       const loan = await tx.loan.findFirst({
         where: { case: { id: dto.caseId } },

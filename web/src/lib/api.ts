@@ -148,6 +148,10 @@ export const payments = {
     ).toString();
     return req<{ data: any[]; meta: any; stats: any }>(`/payments${qs ? `?${qs}` : ''}`);
   },
+  listAll: (params: Record<string, string | number | undefined> = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString();
+    return req<{ data: any[]; meta: any; stats: any }>(`/payments${qs ? `?${qs}` : ''}`);
+  },
   register: (data: any) =>
     req('/payments', { method: 'POST', body: JSON.stringify(data) }),
   void: (id: string, reason: string) =>

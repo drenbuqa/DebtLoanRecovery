@@ -10,7 +10,8 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileDown } from "lucide-react";
+import { downloadExcel } from "@/lib/exportExcel";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -107,6 +108,45 @@ export default function PaymentsPage() {
 
   const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
   const [searchQuery, setSearchQuery] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  async function exportToExcel() {
+    setExporting(true);
+    try {
+      const exportParams = {
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        officerId: scopedToSelf && user?.id ? user.id : undefined,
+        officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+      };
+      const allPayments: any[] = [];
+      let exportPage = 1;
+      while (true) {
+        const r = await paymentsApi.listAll({ ...exportParams, page: exportPage, limit: 500 });
+        allPayments.push(...r.data);
+        if (exportPage >= r.meta.pages) break;
+        exportPage++;
+      }
+      const rows = allPayments.map((p) => ({
+        "Referenca": p.paymentReference ?? "",
+        "Data": p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("sq-AL") : "",
+        "Debitori": p.case?.loan?.borrower?.fullName ?? "",
+        "Klienti (Ref)": p.case?.caseReference ?? "",
+        "Kredia #": p.case?.loan?.loanNumber ?? "",
+        "Institucioni": p.case?.loan?.institution?.shortName ?? "",
+        "Shuma": p.amount ? Number(p.amount) : "",
+        "Monedha": p.currency ?? "EUR",
+        "Metoda": METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod ?? "",
+        "Kanali": p.paymentChannel ?? "",
+        "Oficeri": p.officer?.fullName ?? "",
+        "Shënime": p.notes ?? "",
+      }));
+      const date = new Date().toISOString().slice(0, 10);
+      downloadExcel(rows, `pagesat-${date}`);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const swrKey = useMemo(() => ['payments-list', {
     page, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
@@ -280,9 +320,19 @@ export default function PaymentsPage() {
                 <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
                 {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
               </div>
-              <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
-                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={exportToExcel}
+                  disabled={exporting || loading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                >
+                  <FileDown size={13} />
+                  {exporting ? "Duke eksportuar…" : "Excel"}
+                </button>
+                <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                </button>
+              </div>
             </div>
 
             {error && (
