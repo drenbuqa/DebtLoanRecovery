@@ -32,6 +32,10 @@ export class LegalService {
     const where: any = {};
     if (query.status)   where.status = query.status;
     if (query.officeId) where.case   = { officeId: query.officeId };
+    // "initiated" view: INITIATED + IN_PROGRESS (active cases not yet in hearing phase)
+    if (query.view === 'initiated') {
+      where.status = { in: ['INITIATED', 'IN_PROGRESS'] };
+    }
     // "in_progress" view: proceedings that have at least one hearing registered
     if (query.view === 'in_progress') {
       where.legalActivities = { some: { activityType: 'HEARING' } };

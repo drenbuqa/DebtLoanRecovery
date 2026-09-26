@@ -266,6 +266,7 @@ export default function LegalPage() {
     if (statusFilter === "IN_PROGRESS_VIEW")  params.view = "in_progress";
     else if (statusFilter === "JUDGMENT_VIEW")    params.view = "judgment";
     else if (statusFilter === "ENFORCEMENT_VIEW") params.view = "enforcement";
+    else if (statusFilter === "INITIATED") params.view = "initiated";
     else if (statusFilter) params.status = statusFilter;
     return ['legal-list', params];
   }, [page, statusFilter, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
