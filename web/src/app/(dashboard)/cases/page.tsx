@@ -654,6 +654,7 @@ function CasesPageInner() {
                   value: stageStatus,
                   onChange: applyStageStatus,
                   options: [
+                    { value: "status:ACTIVE",      label: "Aktiv" },
                     { value: "status:LEGAL",       label: "Juridike" },
                     { value: "status:SUSPENDED",   label: "Pezulluar" },
                     { value: "status:CLOSED",      label: "Mbyllur" },
@@ -765,6 +766,7 @@ function CasesPageInner() {
           <Select value={stageStatus} onChange={applyStageStatus} label="Statusi" placeholder="Të gjitha" clearable
             className="w-40"
             options={[
+              { value: "status:ACTIVE",      label: "Aktiv" },
               { value: "status:LEGAL",       label: "Juridike" },
               { value: "status:SUSPENDED",   label: "Pezulluar" },
               { value: "status:CLOSED",      label: "Mbyllur" },
