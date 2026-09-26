@@ -8,7 +8,7 @@ import Topbar from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatEnum } from "@/lib/utils";
-import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
+import { cases as casesApi, institutions as instApi, users as usersApi, fetchAllPages } from "@/lib/api";
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
 import { Select } from "@/components/ui/Select";
@@ -549,18 +549,18 @@ function CasesPageInner() {
   async function exportToExcel() {
     setExporting(true);
     try {
-      const res = await casesApi.list({
-        limit: 5000, page: 1, search: search || undefined,
-        view: view || undefined, status: status || undefined, stage: stage || undefined,
-        collectionStatus: fazaFilter || undefined,
-        dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
+      const extra = {
+        search: search || undefined, view: view || undefined, status: status || undefined,
+        stage: stage || undefined, collectionStatus: fazaFilter || undefined,
+        from: dateFrom || undefined, to: dateTo || undefined,
         officerId: scopedToSelf && user?.id ? user.id : undefined,
         officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
-      });
+      };
+      const allCases = await fetchAllPages((p) => casesApi.list({ ...extra, ...p }), {}, 500);
       const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
       const statusLabel: Record<string, string> = { ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
       const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
-      const rows = res.data.map((c: any) => {
+      const rows = allCases.map((c: any) => {
         const b = c.loan?.borrower;
         const parties = c.loan?.relatedParties ?? [];
         const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");

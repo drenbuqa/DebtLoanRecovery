@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
-import { activities as activitiesApi, cases as casesApi, users as usersApi } from "@/lib/api";
+import { activities as activitiesApi, cases as casesApi, users as usersApi, fetchAllPages } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { useToast } from "@/components/ui/Toast";
@@ -214,14 +214,14 @@ export default function ActivitiesPage() {
   async function exportToExcel() {
     setExporting(true);
     try {
-      const res = await activitiesApi.listAll({
-        limit: 5000, page: 1,
+      const extra = {
         activityType: typeFilter || undefined,
         from: actDateFrom || undefined, to: actDateTo || undefined,
         officerId: scopedToSelf && user?.id ? user.id : (officerFilter || undefined),
         officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
-      });
-      const rows = res.data.map((a: any) => ({
+      };
+      const allActivities = await fetchAllPages((p) => activitiesApi.listAll({ ...extra, ...p }), {}, 500);
+      const rows = allActivities.map((a: any) => ({
         "Data": a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
         "Ora": a.occurredAt ? new Date(a.occurredAt).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" }) : "",
         "Lloji": TYPE_META[a.activityType]?.label ?? a.activityType ?? "",
