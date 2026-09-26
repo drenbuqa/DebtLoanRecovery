@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import useSWR from "swr";
 import Topbar from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
@@ -204,11 +205,6 @@ export default function AgreementsPage() {
   const { toast } = useToast();
   const [refreshing, triggerRefresh] = useRefreshing();
   const [showNew, setShowNew] = useState(false);
-  const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>(null);
-  const [stats, setStats] = useState<any>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -216,28 +212,25 @@ export default function AgreementsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  async function load(p = 1, status = statusFilter) {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, any> = { page: p, limit: 100, ...(status ? { status } : {}) };
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo)   params.dateTo   = dateTo;
-      if (scopedToSelf   && user?.id)       params.officerId = user.id;
-      if (scopedToOffice && user?.officeId) params.officeId  = user.officeId;
-      const res = await agreementsApi.list(params);
-      setData(res.data);
-      setMeta(res.meta);
-      setStats(res.stats ?? {});
-      setPage(p);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const swrKey = useMemo(() => ['agreements-list', {
+    page, status: statusFilter || undefined,
+    dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
+    officerId: scopedToSelf && user?.id ? user.id : undefined,
+    officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+  }], [page, statusFilter, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
-  useEffect(() => { load(); }, [scopedToSelf, user?.id]);
+  const { data: result, error, isLoading, mutate } = useSWR(
+    swrKey,
+    ([, params]: [string, any]) => agreementsApi.list({ limit: 100, ...params }),
+    { keepPreviousData: true },
+  );
+
+  const data = result?.data ?? [];
+  const meta = result?.meta ?? null;
+  const stats = result?.stats ?? {};
+  const loading = isLoading;
+
+  useEffect(() => { setPage(1); }, [statusFilter, dateFrom, dateTo]);
 
   const filterOptions = [
     { key: "", label: "Të gjitha" },
@@ -254,7 +247,7 @@ export default function AgreementsPage() {
 
   return (
     <div className="flex flex-col">
-      {showNew && <NewAgreementModal onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); load(1); toast("Marrëveshja u krijua"); }} />}
+      {showNew && <NewAgreementModal onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); mutate(); toast("Marrëveshja u krijua"); }} />}
       <Topbar title="Marrëveshjet" subtitle={scopedToSelf ? "Marrëveshjet tuaja aktive të ripagimit" : "Marrëveshjet e ripagimit dhe oraret e kësteve"} />
 
       <div className="p-4 md:p-6 space-y-5">
@@ -282,7 +275,7 @@ export default function AgreementsPage() {
                   key: "statusFilter",
                   label: "Statusi",
                   value: statusFilter,
-                  onChange: (v) => { setStatusFilter(v); load(1, v); },
+                  onChange: (v) => { setStatusFilter(v); },
                   allLabel: "Të gjitha",
                   options: filterOptions.filter((o) => o.key !== "").map((o) => ({ value: o.key, label: o.label })),
                 },
@@ -290,7 +283,7 @@ export default function AgreementsPage() {
                   key: "datePreset",
                   label: "Periudha",
                   value: datePreset,
-                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); load(1); },
+                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
                   allLabel: "Të gjitha datat",
                   options: [
                     { value: "today",      label: "Sot" },
@@ -313,7 +306,7 @@ export default function AgreementsPage() {
                   placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
               </div>
-              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
+              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
               {can("agreement:create") && (
                 <button onClick={() => setShowNew(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
@@ -324,7 +317,7 @@ export default function AgreementsPage() {
             <div className="flex border-b border-gray-200">
               {filterOptions.map(({ key, label }) => (
                 <button key={key}
-                  onClick={() => { setStatusFilter(key); load(1, key); }}
+                  onClick={() => { setStatusFilter(key); }}
                   className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                     statusFilter === key
                       ? "border-brand-600 text-brand-700"
@@ -340,14 +333,14 @@ export default function AgreementsPage() {
         <Card padding="none">
           <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Marrëveshjeve</h3>
-            <button onClick={() => triggerRefresh(() => load(page))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
 
           {error && (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-              {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+              {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
             </div>
           )}
 
@@ -446,12 +439,12 @@ export default function AgreementsPage() {
                 <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
                   <div className="flex items-center gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page - 1); }}
+                    <button disabled={meta.page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
                     <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
-                    <button disabled={meta.page >= meta.pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page + 1); }}
+                    <button disabled={meta.page >= meta.pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>

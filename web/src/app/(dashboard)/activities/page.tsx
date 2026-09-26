@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
 import { activities as activitiesApi, cases as casesApi, users as usersApi } from "@/lib/api";
@@ -149,10 +150,6 @@ export default function ActivitiesPage() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const [typeFilter, setTypeFilter] = useState("");
@@ -193,25 +190,24 @@ export default function ActivitiesPage() {
     }
   }, [scopedToSelf]);
 
-  const load = useCallback(async (p = 1) => {
-    setLoading(true); setError(null);
-    try {
-      const params: Record<string, any> = { page: p, limit: 100 };
-      if (typeFilter)  params.activityType = typeFilter;
-      if (actDateFrom) params.from = actDateFrom;
-      if (actDateTo)   params.to   = actDateTo;
-      if (!scopedToSelf && officerFilter) params.officerId = officerFilter;
-      if (scopedToSelf   && user?.id)       params.officerId = user.id;
-      if (scopedToOffice && user?.officeId) params.officeId  = user.officeId;
-      const res = await activitiesApi.listAll(params);
-      setData(res.data);
-      setMeta(res.meta);
-      setPage(p);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
-  }, [typeFilter, officerFilter, actDateFrom, actDateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
+  const swrKey = useMemo(() => ['activities-list', {
+    page, activityType: typeFilter || undefined,
+    from: actDateFrom || undefined, to: actDateTo || undefined,
+    officerId: scopedToSelf && user?.id ? user.id : (!scopedToSelf && officerFilter ? officerFilter : undefined),
+    officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+  }], [page, typeFilter, officerFilter, actDateFrom, actDateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
-  useEffect(() => { setData([]); load(1); }, [load]);
+  const { data: result, error, isLoading, isValidating, mutate } = useSWR(
+    swrKey,
+    ([, params]: [string, any]) => activitiesApi.listAll({ limit: 100, ...params }),
+    { keepPreviousData: true },
+  );
+
+  const data = result?.data ?? [];
+  const meta = result?.meta ?? null;
+  const loading = isLoading;
+
+  useEffect(() => { setPage(1); }, [typeFilter, officerFilter, actDateFrom, actDateTo]);
 
   // Debounced case search
   useEffect(() => {
@@ -284,7 +280,7 @@ export default function ActivitiesPage() {
           await docsApi2.upload(logCaseId, logDocFile, "CORRESPONDENCE");
         } catch {}
       }
-      closeLog(); load(1);
+      closeLog(); mutate();
       toast("Aktiviteti u regjistrua");
     } catch (e: any) { setLogError(e.message); }
     finally { setLogging(false); }
@@ -603,7 +599,7 @@ export default function ActivitiesPage() {
               ))}
               <div className="ml-auto flex items-center gap-1 pb-px shrink-0">
                 <span className="text-[12px] text-gray-400">{!loading && `${filtered.length} ${filtered.length === 1 ? "aktivitet" : "aktivitete"}`}</span>
-                <button onClick={() => triggerRefresh(() => load(1))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 </button>
               </div>
@@ -614,7 +610,7 @@ export default function ActivitiesPage() {
         {/* ── Error ───────────────────────────────────────────────────────── */}
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
-            {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+            {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
           </div>
         )}
 
@@ -716,12 +712,12 @@ export default function ActivitiesPage() {
               <div className="flex items-center justify-between text-[12px] text-gray-500 px-1">
                 <span>{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
                 <div className="flex items-center gap-2">
-                  <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                  <button disabled={page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                     <ChevronLeft size={15} />
                   </button>
                   <span className="tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                  <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                  <button disabled={page >= pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                     <ChevronRight size={15} />
                   </button>

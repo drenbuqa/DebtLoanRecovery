@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo, Suspense } from "react";
+import useSWR from "swr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
@@ -497,11 +498,6 @@ function CasesPageInner() {
   const { user, can, scopedToSelf, scopedToOffice } = useAuth();
   const [refreshing, triggerRefresh] = useRefreshing();
   const isMobile = useIsMobile();
-  const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState({ total: 0, page: 1, pages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [paging, setPaging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
 
@@ -531,35 +527,28 @@ function CasesPageInner() {
   }
   const [page, setPage] = useState(1);
 
-  const load = useCallback(async () => {
-    const isInitial = data.length === 0;
-    if (isInitial) setLoading(true); else setPaging(true);
-    setError(null);
-    try {
-      const res = await casesApi.list({
-        page, limit: 50, search: search || undefined,
-        view: view || undefined, status: status || undefined, stage: stage || undefined,
-        collectionStatus: fazaFilter || undefined,
-        from: dateFrom || undefined, to: dateTo || undefined,
-        ...(scopedToSelf   && user?.id       ? { officerId: user.id }       : {}),
-        ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}),
-      });
-      setData(res.data);
-      setMeta(res.meta);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-      setPaging(false);
-    }
-  }, [page, search, view, status, stage, fazaFilter, dateFrom, dateTo]);
+  const swrKey = useMemo(() => ['cases-list', {
+    page, search, view, status, stage, fazaFilter, dateFrom, dateTo,
+    officerId: scopedToSelf && user?.id ? user.id : undefined,
+    officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+  }], [page, search, view, status, stage, fazaFilter, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
-  useEffect(() => { load(); }, [load]);
+  const { data: result, error, isLoading, isValidating, mutate } = useSWR(
+    swrKey,
+    ([, params]: [string, any]) => casesApi.list({ limit: 50, ...params }),
+    { keepPreviousData: true },
+  );
+
+  const data = result?.data ?? [];
+  const meta = result?.meta ?? { total: 0, page: 1, pages: 1 };
+  const loading = isLoading;
+  const paging = isValidating && !isLoading;
+
 
   return (
     <div className="flex flex-col">
-      {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={load} />}
-      {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); load(); }} />}
+      {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={mutate} />}
+      {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); mutate(); }} />}
       <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej klient`} help={[
         { title: "Si të gjeni një klient", body: "Shkruani emrin e debitorit, numrin personal ose referencën e klientit në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm klientët me premtime të vonuara ose vetëm klientët juridike." },
         { title: "Çfarë tregon statusi i koleksionit?", body: "Statusi i koleksionit tregon gjendjen e procesit të arkëtimit: I Pakontaktuar (klienti nuk është gjetur), Zotim Pagese (klienti ka dhënë zotim), Me Marrëveshje (ka marrëveshje aktive), Kontestim (klienti konteston borxhin), Nuk Pranon (refuzon marrëveshje), Të Tjera." },
@@ -637,7 +626,7 @@ function CasesPageInner() {
           {/* Count + refresh */}
           <div className="flex items-center justify-between px-0.5">
             <span className="text-[12px] text-gray-400">{meta.total.toLocaleString()} klient</span>
-            <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400">
+            <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
@@ -645,7 +634,7 @@ function CasesPageInner() {
           {/* Cards or states */}
           {error ? (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
-              {error} <button onClick={load} className="underline ml-2">Riprovo</button>
+              {error} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button>
             </div>
           ) : loading ? (
             <div className="space-y-3">
@@ -758,7 +747,7 @@ function CasesPageInner() {
           ))}
           <div className="ml-auto flex items-center gap-1 pb-px shrink-0">
             <span className="text-[12px] text-gray-400">{!loading && `${meta.total.toLocaleString()} klient`}</span>
-            <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
@@ -767,7 +756,7 @@ function CasesPageInner() {
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           {error ? (
-            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error} <button onClick={load} className="underline ml-2">Riprovo</button></div>
+            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button></div>
           ) : loading ? (
             <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
               <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…

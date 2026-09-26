@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
@@ -98,12 +99,6 @@ export default function PaymentsPage() {
   const { user, scopedToSelf, scopedToOffice } = useAuth();
   const [refreshing, triggerRefresh] = useRefreshing();
 
-  const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [paging, setPaging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [datePreset, setDatePreset] = useState<DatePreset>("");
   const [dateFrom, setDateFrom] = useState("");
@@ -113,25 +108,25 @@ export default function PaymentsPage() {
   const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
   const [searchQuery, setSearchQuery] = useState("");
 
-  const load = useCallback(async (p = 1) => {
-    if (data.length === 0) setLoading(true); else setPaging(true);
-    setError(null);
-    try {
-      const params: Record<string, any> = { page: p, limit: 100 };
-      if (scopedToSelf   && user?.id)       params.officerId = user.id;
-      if (scopedToOffice && user?.officeId) params.officeId  = user.officeId;
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo)   params.dateTo   = dateTo;
-      const res = await paymentsApi.list(params);
-      setData(res.data);
-      setMeta(res.meta);
-      setStats(res.stats);
-      setPage(p);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); setPaging(false); }
-  }, [scopedToSelf, user?.id, dateFrom, dateTo, data.length]);
+  const swrKey = useMemo(() => ['payments-list', {
+    page, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
+    officerId: scopedToSelf && user?.id ? user.id : undefined,
+    officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+  }], [page, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
-  useEffect(() => { load(1); }, [load]);
+  const { data: result, error, isLoading, isValidating, mutate } = useSWR(
+    swrKey,
+    ([, params]: [string, any]) => paymentsApi.list({ limit: 100, ...params }),
+    { keepPreviousData: true },
+  );
+
+  const data = result?.data ?? [];
+  const meta = result?.meta ?? null;
+  const stats = result?.stats ?? null;
+  const loading = isLoading;
+  const paging = isValidating && !isLoading;
+
+  useEffect(() => { setPage(1); }, [dateFrom, dateTo]);
 
   const total = meta?.total ?? 0;
   const pages = meta?.pages ?? 1;
@@ -156,7 +151,7 @@ export default function PaymentsPage() {
         <VoidModal
           payment={voidTarget}
           onClose={() => setVoidTarget(null)}
-          onVoided={() => { setVoidTarget(null); load(page); }}
+          onVoided={() => { setVoidTarget(null); mutate(); }}
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
@@ -237,7 +232,7 @@ export default function PaymentsPage() {
           <div className="space-y-2.5">
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
-                {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+                {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
               </div>
             )}
             {loading ? (
@@ -260,7 +255,7 @@ export default function PaymentsPage() {
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                    <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
@@ -268,7 +263,7 @@ export default function PaymentsPage() {
                       {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
                       {page} / {pages}
                     </span>
-                    <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                    <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>
@@ -285,14 +280,14 @@ export default function PaymentsPage() {
                 <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
                 {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
               </div>
-              <button onClick={() => triggerRefresh(() => load(1))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
               </button>
             </div>
 
             {error && (
               <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-                {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+                {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
               </div>
             )}
 
@@ -372,7 +367,7 @@ export default function PaymentsPage() {
                   <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
                     <div className="flex items-center gap-2">
-                      <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page - 1); }}
+                      <button disabled={page <= 1 || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronLeft size={15} />
                       </button>
@@ -380,7 +375,7 @@ export default function PaymentsPage() {
                         {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
                         {page} / {pages}
                       </span>
-                      <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(page + 1); }}
+                      <button disabled={page >= pages || paging} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronRight size={15} />
                       </button>

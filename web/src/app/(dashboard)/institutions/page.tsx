@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 import Topbar from "@/components/layout/Topbar";
 import { formatCurrency } from "@/lib/utils";
 import { institutions as instApi } from "@/lib/api";
@@ -116,22 +117,17 @@ function EditModal({ inst, onClose, onSaved }: { inst: any; onClose: () => void;
 
 // ── Page ─────────────────────────────────────────────────────
 function InstitutionsPageInner() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [editInst, setEditInst] = useState<any>(null);
   const { toast } = useToast();
   const { can } = useAuth();
   const [confirmModal, openConfirm] = useConfirm();
 
-  async function load() {
-    setLoading(true); setError("");
-    try { setData(await instApi.stats()); }
-    catch (e: any) { setError(e.message); } finally { setLoading(false); }
-  }
-
-  useEffect(() => { load(); }, []);
+  const { data = [], error, isLoading: loading, mutate } = useSWR(
+    'institutions-stats',
+    () => instApi.stats(),
+    { keepPreviousData: true },
+  );
 
   function deleteInst(inst: any) {
     openConfirm({
@@ -144,7 +140,7 @@ function InstitutionsPageInner() {
       onConfirm: async () => {
         if (inst.totalLoans > 0) return;
         await instApi.delete(inst.id);
-        load();
+        mutate();
         toast("Institucioni u fshi");
       },
     });
@@ -155,8 +151,8 @@ function InstitutionsPageInner() {
   return (
     <div className="flex flex-col">
       {confirmModal}
-      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onSaved={() => { load(); toast("Institucioni u krijua"); }} />}
-      {editInst && <EditModal inst={editInst} onClose={() => setEditInst(null)} onSaved={() => { load(); toast("Institucioni u përditësua"); }} />}
+      {showCreate && <CreateModal onClose={() => setShowCreate(false)} onSaved={() => { mutate(); toast("Institucioni u krijua"); }} />}
+      {editInst && <EditModal inst={editInst} onClose={() => setEditInst(null)} onSaved={() => { mutate(); toast("Institucioni u përditësua"); }} />}
 
       <Topbar title="Institucione Financiare" subtitle="Bankat dhe IFM-të partnere" />
       <div className="p-4 md:p-6 space-y-5">

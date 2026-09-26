@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import useSWR from "swr";
 import Topbar from "@/components/layout/Topbar";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
@@ -63,17 +64,13 @@ function PerformancePageInner() {
   const [dateFrom, setDateFrom] = useState(() => presetToRange("month").from);
   const [dateTo,   setDateTo]   = useState(() => presetToRange("month").to);
   const [officeFilter, setOfficeFilter] = useState("");
-  const [officers, setOfficers] = useState<any[]>([]);
-  const [institutionStats, setInstitutionStats] = useState<any[]>([]);
-  const [offices, setOffices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [refreshing, triggerRefresh] = useRefreshing();
   const [activeTab, setActiveTab] = useState<"officers" | "institutions">("officers");
 
-  async function load() {
-    setLoading(true); setError("");
-    try {
+  const swrKey = useMemo(() => ['performance', dateFrom, dateTo, officeFilter, isAdmin, isOfficer], [dateFrom, dateTo, officeFilter, isAdmin, isOfficer]);
+
+  const { data: perfData, error, isLoading: loading, isValidating: refreshing, mutate } = useSWR(
+    swrKey,
+    async () => {
       const officerParams: any = { from: dateFrom, to: dateTo };
       if (!isOfficer && officeFilter) officerParams.officeId = officeFilter;
       const [o, off, instS] = await Promise.all([
@@ -81,13 +78,14 @@ function PerformancePageInner() {
         isAdmin ? officesApi.list() : Promise.resolve([]),
         perfApi.institutions({ from: dateFrom, to: dateTo }),
       ]);
-      setOfficers(o);
-      setOffices(off);
-      setInstitutionStats(instS);
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
-  }
+      return { officers: o, offices: off, institutionStats: instS };
+    },
+    { keepPreviousData: true },
+  );
 
-  useEffect(() => { load(); }, [dateFrom, dateTo, officeFilter]);
+  const officers       = perfData?.officers       ?? [];
+  const offices        = perfData?.offices        ?? [];
+  const institutionStats = perfData?.institutionStats ?? [];
 
   const totalCollected = officers.reduce((s, o) => s + o.collectedAmount, 0);
   const totalActivities = officers.reduce((s, o) => s + o.totalActivities, 0);
@@ -119,7 +117,7 @@ function PerformancePageInner() {
               />
             </div>
           )}
-          <button onClick={() => triggerRefresh(load)} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-auto">
+          <button onClick={() => mutate()} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-auto">
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
         </div>

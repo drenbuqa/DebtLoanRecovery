@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -334,39 +335,28 @@ function OfficerDashboard({ user }: { user: any }) {
 // ── MANAGER dashboard ─────────────────────────────────────────────────────────
 function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
   const router = useRouter();
-  const [stats, setStats] = useState<any>(null);
-  const [recentPayments, setRecentPayments] = useState<any[]>([]);
-  const [officers, setOfficers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const now = new Date();
+  const yr = now.getFullYear(); const mo = now.getMonth();
+  const monthFrom = new Date(yr, mo, 1).toISOString().slice(0, 10);
+  const monthTo   = new Date(yr, mo + 1, 0).toISOString().slice(0, 10);
+  const officeId  = isAdmin ? undefined : user?.officeId;
 
-  function getMonthRange() {
-    const yr = now.getFullYear(); const mo = now.getMonth();
-    const from = new Date(yr, mo, 1).toISOString().slice(0, 10);
-    const to = new Date(yr, mo + 1, 0).toISOString().slice(0, 10);
-    return { from, to };
-  }
-
-  async function load() {
-    setLoading(true); setError(null);
-    try {
-      const { from, to } = getMonthRange();
-      const officeId = isAdmin ? undefined : user?.officeId;
+  const { data: dashData, error, isLoading: loading, mutate } = useSWR(
+    user ? ['dashboard', officeId, monthFrom] : null,
+    async () => {
       const [s, p, o] = await Promise.all([
         casesApi.dashboardStats(officeId),
         paymentsApi.list({ limit: 5, ...(officeId ? { officeId } : {}) }),
-        perfApi.officers({ from, to }),
+        perfApi.officers({ from: monthFrom, to: monthTo }),
       ]);
-      setStats(s);
-      setRecentPayments(p.data);
-      setOfficers(o ?? []);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
-  }
+      return { stats: s, recentPayments: p.data, officers: o ?? [] };
+    },
+    { revalidateOnFocus: true },
+  );
 
-  useEffect(() => { load(); }, []);
+  const stats         = dashData?.stats ?? null;
+  const recentPayments = dashData?.recentPayments ?? [];
+  const officers      = dashData?.officers ?? [];
 
   const allMonths = Array.from({ length: 12 }, (_, i) =>
     `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
@@ -382,7 +372,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={subtitle} />
       <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={load} className="underline ml-1">Riprovo</button>
+        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
       </div>
     </div>
   );
@@ -607,20 +597,13 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
 // ── VIEWER dashboard ──────────────────────────────────────────────────────────
 function ViewerDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const now = new Date();
 
-  function load() {
-    setLoading(true); setError(null);
-    casesApi.dashboardStats()
-      .then((s) => setStats(s))
-      .catch((e: any) => setError(e.message ?? "Gabim i panjohur"))
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => { load(); }, []);
+  const { data: stats, error, isLoading: loading, mutate } = useSWR(
+    'viewer-dashboard',
+    () => casesApi.dashboardStats(),
+    { revalidateOnFocus: true },
+  );
 
   const allMonths2 = Array.from({ length: 12 }, (_, i) =>
     `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`
@@ -634,7 +617,7 @@ function ViewerDashboard() {
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={`Pasqyrë e portofolit · ${MONTHS[now.getMonth()]} ${now.getFullYear()}`} />
       <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={load} className="underline ml-1">Riprovo</button>
+        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
       </div>
     </div>
   );

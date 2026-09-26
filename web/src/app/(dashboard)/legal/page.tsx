@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import useSWR from "swr";
 import { useAuth } from "@/lib/auth";
 import Topbar from "@/components/layout/Topbar";
 import { useFormErrors } from "@/lib/form";
@@ -211,11 +212,6 @@ export default function LegalPage() {
   const { can, user, scopedToSelf, scopedToOffice } = useAuth();
   const { toast } = useToast();
   const [refreshing, triggerRefresh] = useRefreshing();
-  const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState<any>(null);
-  const [stats, setStats] = useState<any>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("INITIATED");
   const [searchQuery, setSearchQuery] = useState("");
@@ -254,41 +250,38 @@ export default function LegalPage() {
         notes: editNotes || undefined,
       });
       setEditLp(null);
-      load(page);
+      mutate();
       toast("Procedimi u përditësua");
     } catch (e: any) { setEditError(e.message); }
     finally { setEditSaving(false); }
   }
 
-  async function load(p = 1, status = statusFilter) {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: any = { page: p, limit: 100, ...(scopedToOffice && user?.officeId ? { officeId: user.officeId } : {}), ...(scopedToSelf && user?.id ? { officerId: user.id } : {}) };
-      if (status === "IN_PROGRESS_VIEW") {
-        params.view = "in_progress";
-      } else if (status === "JUDGMENT_VIEW") {
-        params.view = "judgment";
-      } else if (status === "ENFORCEMENT_VIEW") {
-        params.view = "enforcement";
-      } else if (status) {
-        params.status = status;
-      }
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo)   params.dateTo   = dateTo;
-      const res = await legalApi.list(params);
-      setData(res.data);
-      setMeta(res.meta);
-      setStats(res.stats ?? {});
-      setPage(p);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const swrKey = useMemo(() => {
+    const params: any = {
+      page, limit: 100,
+      dateFrom: dateFrom || undefined, dateTo: dateTo || undefined,
+      officerId: scopedToSelf && user?.id ? user.id : undefined,
+      officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
+    };
+    if (statusFilter === "IN_PROGRESS_VIEW")  params.view = "in_progress";
+    else if (statusFilter === "JUDGMENT_VIEW")    params.view = "judgment";
+    else if (statusFilter === "ENFORCEMENT_VIEW") params.view = "enforcement";
+    else if (statusFilter) params.status = statusFilter;
+    return ['legal-list', params];
+  }, [page, statusFilter, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
-  useEffect(() => { load(); }, [scopedToOffice, scopedToSelf, user?.officeId, user?.id]);
+  const { data: result, error, isLoading, mutate } = useSWR(
+    swrKey,
+    ([, params]: [string, any]) => legalApi.list(params),
+    { keepPreviousData: true },
+  );
+
+  const data = result?.data ?? [];
+  const meta = result?.meta ?? null;
+  const stats = result?.stats ?? {};
+  const loading = isLoading;
+
+  useEffect(() => { setPage(1); }, [statusFilter, dateFrom, dateTo]);
 
   const filterOptions = [
     { key: "", label: "Të gjitha" },
@@ -314,7 +307,7 @@ export default function LegalPage() {
       {showNew && (
         <NewProceedingModal
           onClose={() => setShowNew(false)}
-          onCreated={() => { setShowNew(false); load(1); toast("Procedimi gjyqësor u krijua"); }}
+          onCreated={() => { setShowNew(false); mutate(); toast("Procedimi gjyqësor u krijua"); }}
         />
       )}
       <Topbar title="Procedime Gjyqësore" subtitle={scopedToSelf ? "Klientët tuaja në procedim gjyqësor" : "Procedime aktive dhe të mbyllura"} />
@@ -344,7 +337,7 @@ export default function LegalPage() {
                   key: "statusFilter",
                   label: "Statusi",
                   value: statusFilter,
-                  onChange: (v) => { setStatusFilter(v); load(1, v); },
+                  onChange: (v) => { setStatusFilter(v); },
                   allLabel: "Të gjitha",
                   options: filterOptions.filter((o) => o.key !== "").map((o) => ({ value: o.key, label: o.label })),
                 },
@@ -352,7 +345,7 @@ export default function LegalPage() {
                   key: "datePreset",
                   label: "Periudha",
                   value: datePreset,
-                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); load(1); },
+                  onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
                   allLabel: "Të gjitha datat",
                   options: [
                     { value: "today",      label: "Sot" },
@@ -375,7 +368,7 @@ export default function LegalPage() {
                   placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
               </div>
-              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); load(1); }} />
+              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
               {can("legal:create") && (
                 <button onClick={() => setShowNew(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
@@ -386,7 +379,7 @@ export default function LegalPage() {
             <div className="flex border-b border-gray-200">
               {filterOptions.map(({ key, label }) => (
                 <button key={key}
-                  onClick={() => { setStatusFilter(key); load(1, key); }}
+                  onClick={() => { setStatusFilter(key); }}
                   className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                     statusFilter === key
                       ? "border-brand-600 text-brand-700"
@@ -405,14 +398,14 @@ export default function LegalPage() {
               <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Çështjeve Gjyqësore</h3>
               {meta && <p className="text-[12px] text-gray-400">{meta.total} procedime</p>}
             </div>
-            <button onClick={() => triggerRefresh(() => load(page))} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
 
           {error && (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-              {error} — <button onClick={() => load()} className="underline">Riprovo</button>
+              {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
             </div>
           )}
 
@@ -509,12 +502,12 @@ export default function LegalPage() {
                 <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
                   <div className="flex items-center gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page - 1); }}
+                    <button disabled={meta.page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
                     <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
-                    <button disabled={meta.page >= meta.pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); load(meta.page + 1); }}
+                    <button disabled={meta.page >= meta.pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>

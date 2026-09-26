@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { SWRConfig } from "swr";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { AuthProvider, useAuth } from "@/lib/auth";
@@ -43,10 +44,18 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AuthenticatedLayout>{children}</AuthenticatedLayout>
-      </ToastProvider>
-    </AuthProvider>
+    <SWRConfig value={{
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,
+      errorRetryCount: 3,
+      errorRetryInterval: 5000,
+    }}>
+      <AuthProvider>
+        <ToastProvider>
+          <AuthenticatedLayout>{children}</AuthenticatedLayout>
+        </ToastProvider>
+      </AuthProvider>
+    </SWRConfig>
   );
 }
