@@ -558,7 +558,7 @@ function CasesPageInner() {
         officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
       });
       const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
-      const statusLabel: Record<string, string> = { ACTIVE: "Aktiv", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
+      const statusLabel: Record<string, string> = { ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
       const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
       const rows = res.data.map((c: any) => {
         const b = c.loan?.borrower;
@@ -644,7 +644,6 @@ function CasesPageInner() {
                     { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
                     { value: "KONTESTIM",      label: "Kontestim" },
                     { value: "NUK_PRANON",     label: "Nuk Pranon" },
-                    { value: "JURIDIKE",       label: "Juridike" },
                     { value: "TJERA",          label: "Të Tjera" },
                   ],
                 },
@@ -654,7 +653,7 @@ function CasesPageInner() {
                   value: stageStatus,
                   onChange: applyStageStatus,
                   options: [
-                    { value: "status:ACTIVE",      label: "Aktiv" },
+                    { value: "status:ACTIVE",      label: "Aktive" },
                     { value: "status:LEGAL",       label: "Juridike" },
                     { value: "status:SUSPENDED",   label: "Pezulluar" },
                     { value: "status:CLOSED",      label: "Mbyllur" },
@@ -760,13 +759,12 @@ function CasesPageInner() {
               { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
               { value: "KONTESTIM",      label: "Kontestim" },
               { value: "NUK_PRANON",     label: "Nuk Pranon" },
-              { value: "JURIDIKE",       label: "Juridike" },
               { value: "TJERA",          label: "Të Tjera" },
             ]} />
           <Select value={stageStatus} onChange={applyStageStatus} label="Statusi" placeholder="Të gjitha" clearable
             className="w-40"
             options={[
-              { value: "status:ACTIVE",      label: "Aktiv" },
+              { value: "status:ACTIVE",      label: "Aktive" },
               { value: "status:LEGAL",       label: "Juridike" },
               { value: "status:SUSPENDED",   label: "Pezulluar" },
               { value: "status:CLOSED",      label: "Mbyllur" },
@@ -863,7 +861,7 @@ function CasesPageInner() {
                         {(() => {
                           const s = c.status;
                           const cfg: Record<string, { label: string; dot: string; text: string }> = {
-                            ACTIVE:     { label: "Aktiv",     dot: "bg-emerald-400", text: "text-emerald-700" },
+                            ACTIVE:     { label: "Aktive",    dot: "bg-emerald-400", text: "text-emerald-700" },
                             LEGAL:      { label: "Juridike",  dot: "bg-red-400",     text: "text-red-700" },
                             SUSPENDED:  { label: "Pezulluar", dot: "bg-amber-400",   text: "text-amber-700" },
                             CLOSED:     { label: "Mbyllur",   dot: "bg-gray-300",    text: "text-gray-500" },
