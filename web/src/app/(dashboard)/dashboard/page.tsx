@@ -372,7 +372,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={subtitle} />
       <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
+        Gabim gjatë ngarkimit të ballinës: {error?.message ?? String(error)}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
       </div>
     </div>
   );
@@ -617,7 +617,7 @@ function ViewerDashboard() {
     <div className="flex flex-col">
       <Topbar title="Ballina" subtitle={`Pasqyrë e portofolit · ${MONTHS[now.getMonth()]} ${now.getFullYear()}`} />
       <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-        Gabim gjatë ngarkimit të ballinës: {error}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
+        Gabim gjatë ngarkimit të ballinës: {error?.message ?? String(error)}. <button onClick={() => mutate()} className="underline ml-1">Riprovo</button>
       </div>
     </div>
   );

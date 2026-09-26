@@ -405,7 +405,7 @@ export default function LegalPage() {
 
           {error && (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
-              {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
+              {error?.message ?? String(error)} — <button onClick={() => mutate()} className="underline">Riprovo</button>
             </div>
           )}
 

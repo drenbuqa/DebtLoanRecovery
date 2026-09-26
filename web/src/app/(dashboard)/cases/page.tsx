@@ -634,7 +634,7 @@ function CasesPageInner() {
           {/* Cards or states */}
           {error ? (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
-              {error} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button>
+              {error?.message ?? String(error)} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button>
             </div>
           ) : loading ? (
             <div className="space-y-3">
@@ -756,7 +756,7 @@ function CasesPageInner() {
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden min-h-[400px]" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           {error ? (
-            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button></div>
+            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error?.message ?? String(error)} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button></div>
           ) : loading ? (
             <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
               <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…

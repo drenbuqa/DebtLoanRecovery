@@ -162,7 +162,7 @@ function PerformancePageInner() {
           ))}
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error?.message ?? String(error)}</div>}
 
         {loading ? (
           <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">

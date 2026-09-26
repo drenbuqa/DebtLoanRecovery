@@ -610,7 +610,7 @@ export default function ActivitiesPage() {
         {/* ── Error ───────────────────────────────────────────────────────── */}
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
-            {error} — <button onClick={() => mutate()} className="underline">Riprovo</button>
+            {error?.message ?? String(error)} — <button onClick={() => mutate()} className="underline">Riprovo</button>
           </div>
         )}
 
