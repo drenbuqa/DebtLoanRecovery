@@ -828,7 +828,7 @@ export default function CaseDetailPage() {
   const agreements = caseData?.agreements ?? [];
   const parties = caseData
     ? [
-        { name: debtor, role: "Debitor", personalId: caseData.loan?.borrower?.personalId, phone: caseData.loan?.borrower?.phones?.[0]?.phoneNumber, address: caseData.loan?.borrower?.address },
+        { name: debtor, role: "Debitor", personalId: caseData.loan?.borrower?.personalId, phone: caseData.loan?.borrower?.phones?.[0]?.phoneNumber, address: caseData.loan?.borrower?.address, city: caseData.loan?.borrower?.city },
         ...(caseData.loan?.relatedParties ?? []).map((rp: any) => ({
           name: rp.person?.fullName ?? "", role: rp.role,
           personalId: rp.person?.personalId, phone: rp.person?.phones?.[0]?.phoneNumber, address: "",
@@ -1061,6 +1061,10 @@ export default function CaseDetailPage() {
               <span>{office}</span>
               <span className="text-gray-200">·</span>
               <span>{officer}</span>
+              {caseData?.secondaryOfficer?.fullName && <>
+                <span className="text-gray-200">·</span>
+                <span className="text-gray-400">{caseData.secondaryOfficer.fullName} <span className="text-gray-300">(sekondar)</span></span>
+              </>}
             </div>
           </div>
 
@@ -1164,6 +1168,28 @@ export default function CaseDetailPage() {
                 </div>
               </div>
 
+              {/* Borrower info */}
+              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+                <h3 className="text-[12px] font-semibold text-gray-900 mb-3">Të Dhënat e Debitorit</h3>
+                <div className="space-y-2">
+                  {[
+                    { label: "Telefon", val: caseData?.loan?.borrower?.phones?.[0]?.phoneNumber ?? "—" },
+                    ...(caseData?.loan?.borrower?.phones?.slice(1) ?? []).map((ph: any, i: number) => ({
+                      label: `Telefon ${i + 2}`, val: ph.phoneNumber,
+                    })),
+                    { label: "Adresa", val: caseData?.loan?.borrower?.address ?? "—" },
+                    { label: "Qyteti", val: caseData?.loan?.borrower?.city ?? "—" },
+                    { label: "Data e lindjes", val: caseData?.loan?.borrower?.dateOfBirth ? new Date(caseData.loan.borrower.dateOfBirth).toLocaleDateString("sq-AL") : "—" },
+                    { label: "Email", val: caseData?.loan?.borrower?.email ?? "—" },
+                  ].map((r) => (
+                    <div key={r.label} className="flex justify-between items-baseline gap-2">
+                      <span className="text-[11px] text-gray-400 shrink-0">{r.label}</span>
+                      <span className="text-[12px] font-medium text-gray-800 text-right truncate">{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Contacts */}
               {parties.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
@@ -1179,6 +1205,7 @@ export default function CaseDetailPage() {
                         <div className="flex-1 min-w-0">
                           <div className="text-[12px] font-medium text-gray-900 truncate">{p.name}</div>
                           <div className="text-[11px] text-gray-400">{p.role}{p.phone ? ` · ${p.phone}` : ""}</div>
+                          {(p.address || (p as any).city) && <div className="text-[11px] text-gray-400 truncate">{[p.address, (p as any).city].filter(Boolean).join(", ")}</div>}
                         </div>
                         {p.phone && (
                           <a href={`tel:${p.phone}`} className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 shrink-0">
