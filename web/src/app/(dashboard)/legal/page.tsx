@@ -287,7 +287,6 @@ export default function LegalPage() {
     { key: "", label: "Të gjitha" },
     { key: "INITIATED", label: "Iniciuar" },
     { key: "IN_PROGRESS_VIEW", label: "Në Progres" },
-    { key: "IN_PROGRESS", label: "Aktive" },
     { key: "JUDGMENT_VIEW", label: "Vendim" },
     { key: "ENFORCEMENT_VIEW", label: "Ekzekutim" },
     { key: "CLOSED", label: "Mbyllur" },
