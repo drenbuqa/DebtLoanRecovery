@@ -1038,20 +1038,11 @@ export default function CaseDetailPage() {
                 </span>
               )}
               {/* Kategoria (NPL) badge */}
-              {caseData?.loan?.nplClassification && (() => {
-                const nplColor: Record<string, string> = {
-                  PERFORMING:  "bg-emerald-50 text-emerald-700 border border-emerald-200",
-                  WATCH:       "bg-blue-50 text-blue-700 border border-blue-200",
-                  SUBSTANDARD: "bg-amber-50 text-amber-700 border border-amber-200",
-                  DOUBTFUL:    "bg-orange-50 text-orange-700 border border-orange-200",
-                  LOSS:        "bg-red-50 text-red-700 border border-red-200",
-                };
-                return (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${nplColor[caseData.loan.nplClassification] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}>
-                    {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
-                  </span>
-                );
-              })()}
+              {caseData?.loan?.nplClassification && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
+                  {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
+                </span>
+              )}
               {/* Case status badge (only when not ACTIVE) */}
               {status !== "ACTIVE" && (() => {
                 const statusCfg: Record<string, { label: string; color: string }> = {
