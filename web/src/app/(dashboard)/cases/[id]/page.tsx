@@ -1038,17 +1038,35 @@ export default function CaseDetailPage() {
                 </span>
               )}
               {/* Kategoria (NPL) badge */}
-              {caseData?.loan?.nplClassification && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-                  {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
-                </span>
-              )}
+              {caseData?.loan?.nplClassification && (() => {
+                const nplColor: Record<string, string> = {
+                  PERFORMING:  "bg-emerald-50 text-emerald-700 border border-emerald-200",
+                  WATCH:       "bg-blue-50 text-blue-700 border border-blue-200",
+                  SUBSTANDARD: "bg-amber-50 text-amber-700 border border-amber-200",
+                  DOUBTFUL:    "bg-orange-50 text-orange-700 border border-orange-200",
+                  LOSS:        "bg-red-50 text-red-700 border border-red-200",
+                };
+                return (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${nplColor[caseData.loan.nplClassification] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                    {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
+                  </span>
+                );
+              })()}
               {/* Case status badge (only when not ACTIVE) */}
-              {status !== "ACTIVE" && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-100 text-gray-600">
-                  {formatEnum(status)}
-                </span>
-              )}
+              {status !== "ACTIVE" && (() => {
+                const statusCfg: Record<string, { label: string; color: string }> = {
+                  LEGAL:       { label: "Juridike",  color: "bg-red-100 text-red-700 border border-red-200" },
+                  SUSPENDED:   { label: "Pezulluar", color: "bg-amber-100 text-amber-700 border border-amber-200" },
+                  CLOSED:      { label: "Mbyllur",   color: "bg-gray-100 text-gray-500 border border-gray-200" },
+                  WRITTEN_OFF: { label: "I Shlyer",  color: "bg-gray-100 text-gray-500 border border-gray-200" },
+                };
+                const s = statusCfg[status];
+                return s ? (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${s.color}`}>
+                    {s.label}
+                  </span>
+                ) : null;
+              })()}
             </div>
             <div className="flex items-center gap-3 text-[12.5px] text-gray-400 flex-wrap">
               <span className="font-mono">{caseData?.loan?.borrower?.personalId ?? "—"}</span>
