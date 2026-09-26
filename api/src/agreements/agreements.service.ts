@@ -70,7 +70,11 @@ export class AgreementsService {
         ...(query.dateTo   && { lte: new Date(query.dateTo + 'T23:59:59') }),
       };
       if (statusFilter === 'COMPLETED') {
+        // Cases that HAVE made payments in the period
         where.installments = { some: { status: 'PAID', paidAt: dateRange } };
+      } else if (statusFilter === 'BROKEN') {
+        // Cases that have NOT made any payment in the period
+        where.installments = { none: { status: 'PAID', paidAt: dateRange } };
       } else {
         where.createdAt = dateRange;
       }
