@@ -528,7 +528,7 @@ function CasesPageInner() {
   const [page, setPage] = useState(1);
 
   const swrKey = useMemo(() => ['cases-list', {
-    page, search, view, status, stage, fazaFilter, dateFrom, dateTo,
+    page, search, view, status, stage, collectionStatus: fazaFilter || undefined, dateFrom, dateTo,
     officerId: scopedToSelf && user?.id ? user.id : undefined,
     officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
   }], [page, search, view, status, stage, fazaFilter, dateFrom, dateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
@@ -754,7 +754,7 @@ function CasesPageInner() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden min-h-[400px]" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           {error ? (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button></div>
           ) : loading ? (
