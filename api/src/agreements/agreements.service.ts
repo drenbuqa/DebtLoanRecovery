@@ -49,7 +49,7 @@ export class AgreementsService {
     }
   }
 
-  async findAll(query: { page?: number; limit?: number; caseId?: string; status?: string; officerId?: string; officeId?: string }) {
+  async findAll(query: { page?: number; limit?: number; caseId?: string; status?: string; officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) {
     await this.reconcileOverdue();
 
     const page = query.page ?? 1;
@@ -57,9 +57,24 @@ export class AgreementsService {
     const skip = (page - 1) * limit;
     const where: any = {};
     if (query.caseId)   where.caseId = query.caseId;
-    if (query.status)   where.status  = query.status;
+    // Map CANCELLED → BROKEN so legacy records surface under the right filter
+    const statusFilter = query.status === 'CANCELLED' ? 'BROKEN' : query.status;
+    if (statusFilter)   where.status  = statusFilter;
     if (query.officerId) where.case = { assignedOfficerId: query.officerId };
     if (query.officeId)  where.case = { ...where.case, officeId: query.officeId };
+
+    // Date filtering: for COMPLETED use installment paidAt; for others use createdAt
+    if (query.dateFrom || query.dateTo) {
+      const dateRange = {
+        ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
+        ...(query.dateTo   && { lte: new Date(query.dateTo + 'T23:59:59') }),
+      };
+      if (statusFilter === 'COMPLETED') {
+        where.installments = { some: { status: 'PAID', paidAt: dateRange } };
+      } else {
+        where.createdAt = dateRange;
+      }
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.agreement.count({ where }),

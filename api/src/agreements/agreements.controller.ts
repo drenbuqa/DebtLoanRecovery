@@ -13,7 +13,7 @@ export class AgreementsController {
     let { officerId, officeId } = q;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
-    return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, caseId: q.caseId, status: q.status, officerId, officeId });
+    return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, caseId: q.caseId, status: q.status, officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo });
   }
 
   @Get(':id')

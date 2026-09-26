@@ -21,14 +21,14 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE:    "Aktive",
   COMPLETED: "E Përfunduar",
   BROKEN:    "E Dështuar",
-  CANCELLED: "E Anuluar",
+  CANCELLED: "E Dështuar", // legacy — display same as BROKEN
 };
 
 const STATUS_DOT: Record<string, string> = {
   ACTIVE:    "bg-emerald-400",
   COMPLETED: "bg-gray-300",
   BROKEN:    "bg-red-400",
-  CANCELLED: "bg-gray-200",
+  CANCELLED: "bg-red-400", // legacy — same dot as BROKEN
 };
 
 function AF({ label, required, error, children }: { label: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
@@ -234,7 +234,9 @@ export default function AgreementsPage() {
 
   const filterOptions = [
     { key: "", label: "Të gjitha" },
-    ...Object.entries(STATUS_LABELS).map(([key, label]) => ({ key, label })),
+    { key: "ACTIVE",    label: "Aktive" },
+    { key: "COMPLETED", label: "E Përfunduar" },
+    { key: "BROKEN",    label: "E Dështuar" },
   ];
 
   const q = searchQuery.trim().toLowerCase();
