@@ -134,10 +134,7 @@ export default function PaymentsPage() {
         "Klienti (Ref)": p.case?.caseReference ?? "",
         "Kredia #": p.case?.loan?.loanNumber ?? "",
         "Institucioni": p.case?.loan?.institution?.shortName ?? "",
-        "Shuma": p.amount ? Number(p.amount) : "",
-        "Monedha": p.currency ?? "EUR",
-        "Metoda": METHOD_LABELS[p.paymentMethod] ?? p.paymentMethod ?? "",
-        "Kanali": p.paymentChannel ?? "",
+        "Shuma (€)": p.amount ? Number(p.amount) : "",
         "Oficeri": p.officer?.fullName ?? "",
         "Shënime": p.notes ?? "",
       }));
