@@ -776,7 +776,7 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Statusi", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues",
+                  {["Emri / ID", "Statusi", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues",
                     ...(["all_promises","vonesa","premtime_thyera"].includes(view) ? ["Premtimi"] : []),
                   ].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
@@ -804,6 +804,25 @@ function CasesPageInner() {
                         <div className="text-[10px] text-gray-400 font-mono">{b?.personalId ?? c.caseReference}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
+                        {(() => {
+                          const s = c.status;
+                          const cfg: Record<string, { label: string; dot: string; text: string }> = {
+                            ACTIVE:     { label: "Aktiv",     dot: "bg-emerald-400", text: "text-emerald-700" },
+                            LEGAL:      { label: "Juridike",  dot: "bg-red-400",     text: "text-red-700" },
+                            SUSPENDED:  { label: "Pezulluar", dot: "bg-amber-400",   text: "text-amber-700" },
+                            CLOSED:     { label: "Mbyllur",   dot: "bg-gray-300",    text: "text-gray-500" },
+                            WRITTEN_OFF:{ label: "I Shlyer",  dot: "bg-gray-400",    text: "text-gray-500" },
+                          };
+                          const c2 = cfg[s] ?? { label: s ?? "—", dot: "bg-gray-300", text: "text-gray-500" };
+                          return (
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${c2.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c2.dot}`} />
+                              {c2.label}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-600 font-mono">{phone ?? "—"}</span>
                       </td>
                       <td className="px-3 py-2 max-w-[120px]">
@@ -827,25 +846,6 @@ function CasesPageInner() {
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[10px] text-gray-600">{c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "—"}</span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {(() => {
-                          const s = c.status;
-                          const cfg: Record<string, { label: string; dot: string; text: string }> = {
-                            ACTIVE:     { label: "Aktiv",    dot: "bg-emerald-400", text: "text-emerald-700" },
-                            LEGAL:      { label: "Juridike", dot: "bg-red-400",     text: "text-red-700" },
-                            SUSPENDED:  { label: "Pezulluar",dot: "bg-amber-400",   text: "text-amber-700" },
-                            CLOSED:     { label: "Mbyllur",  dot: "bg-gray-300",    text: "text-gray-500" },
-                            WRITTEN_OFF:{ label: "I Shlyer", dot: "bg-gray-400",    text: "text-gray-500" },
-                          };
-                          const c2 = cfg[s] ?? { label: s ?? "—", dot: "bg-gray-300", text: "text-gray-500" };
-                          return (
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${c2.text}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c2.dot}`} />
-                              {c2.label}
-                            </span>
-                          );
-                        })()}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[10px] text-amber-700">{c.loan?.nplClassification ? (nplLabel[c.loan.nplClassification] ?? c.loan.nplClassification) : "—"}</span>
