@@ -616,12 +616,19 @@ export default function ActivitiesPage() {
                   options={officers.map((o: any) => ({ value: o.id, label: o.fullName }))}
                 />
               )}
-              {can("field-visit:create") && (
-                <button onClick={openLogModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
-                  <Plus size={14} /> Regjistro Aktivitet
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                <button onClick={exportToExcel} disabled={exporting || loading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                  <FileSpreadsheet size={13} />
+                  {exporting ? "Duke eksportuar…" : "Excel"}
                 </button>
-              )}
+                {can("field-visit:create") && (
+                  <button onClick={openLogModal}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
+                    <Plus size={14} /> Regjistro Aktivitet
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-hide">
               {ACTIVITY_FILTER_GROUPS.map(({ key, label }) => (
@@ -637,11 +644,6 @@ export default function ActivitiesPage() {
               ))}
               <div className="ml-auto flex items-center gap-2 pb-px shrink-0">
                 <span className="text-[12px] text-gray-400">{!loading && `${filtered.length} ${filtered.length === 1 ? "aktivitet" : "aktivitete"}`}</span>
-                <button onClick={exportToExcel} disabled={exporting || loading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                  <FileSpreadsheet size={13} />
-                  {exporting ? "Duke eksportuar…" : "Excel"}
-                </button>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 </button>

@@ -7,14 +7,140 @@ import Topbar from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency, formatEnum } from "@/lib/utils";
-import { payments as paymentsApi } from "@/lib/api";
+import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet, Plus } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
+
+function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string; onClose: () => void; onSuccess: () => void }) {
+  const [caseQuery, setCaseQuery] = useState("");
+  const [caseResults, setCaseResults] = useState<any[]>([]);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
+  const [nextDate, setNextDate] = useState("");
+  const [nextAmount, setNextAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function searchCases(q: string) {
+    setCaseQuery(q);
+    if (q.length < 2) { setCaseResults([]); return; }
+    try { const r = await casesApi.list({ search: q, limit: 6 }); setCaseResults(r.data); } catch {}
+  }
+
+  async function submit() {
+    if (!selectedCase) { setError("Ju lutem zgjidhni një klient"); return; }
+    if (!amount || parseFloat(amount) <= 0) { setError("Vendosni një shumë të vlefshme"); return; }
+    if (nextDate && (!nextAmount || parseFloat(nextAmount) <= 0)) { setError("Vendosni shumën për pagesën e ardhshme"); return; }
+    setLoading(true); setError("");
+    try {
+      await paymentsApi.register({
+        caseId: selectedCase.id,
+        officerId,
+        amount: parseFloat(amount),
+        paymentMethod: "BANK_TRANSFER",
+        paymentDate: date,
+        notes: notes || undefined,
+        nextPaymentDate: nextDate || undefined,
+        nextPaymentAmount: nextAmount ? parseFloat(nextAmount) : undefined,
+      });
+      onSuccess(); onClose();
+    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+  }
+
+  const inp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+
+          {/* Case search */}
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Klienti *</label>
+            {selectedCase ? (
+              <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-lg">
+                <div>
+                  <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
+                  <span className="text-[12px] text-gray-700 ml-2">{selectedCase.loan?.borrower?.fullName ?? ""}</span>
+                </div>
+                <button onClick={() => { setSelectedCase(null); setCaseQuery(""); setCaseResults([]); }}
+                  className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input value={caseQuery} onChange={(e) => searchCases(e.target.value)} autoFocus
+                  placeholder="Kërko sipas referencës ose emrit…"
+                  className="w-full pl-9 pr-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+                {caseResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                    {caseResults.map((c) => (
+                      <button key={c.id} onClick={() => { setSelectedCase(c); setCaseQuery(""); setCaseResults([]); }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                        <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
+                        <span className="text-[12px] text-gray-700 truncate">{c.loan?.borrower?.fullName ?? "—"}</span>
+                        <span className="ml-auto text-[11px] text-gray-400 shrink-0">{c.loan?.institution?.shortName}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
+              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
+            <DatePicker value={date} onChange={setDate} />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
+          </div>
+          <div className="border-t border-gray-100 pt-3">
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
+                <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00" className={inp} />
+              </div>
+            </div>
+            {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
+          </div>
+        </div>
+        <div className="px-6 pb-5 flex gap-3 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
+          <button onClick={submit} disabled={loading}
+            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke ruajtur…" : "Regjistro Pagesën"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
   const [reason, setReason] = useState("");
@@ -107,6 +233,7 @@ export default function PaymentsPage() {
   const [voidTarget, setVoidTarget] = useState<any>(null);
 
   const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const [showAddPayment, setShowAddPayment] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [exporting, setExporting] = useState(false);
 
@@ -184,6 +311,13 @@ export default function PaymentsPage() {
 
   return (
     <div className="flex flex-col">
+      {showAddPayment && (
+        <AddPaymentModal
+          officerId={user?.id}
+          onClose={() => setShowAddPayment(false)}
+          onSuccess={() => { setShowAddPayment(false); mutate(); }}
+        />
+      )}
       {voidTarget && (
         <VoidModal
           payment={voidTarget}
@@ -317,11 +451,15 @@ export default function PaymentsPage() {
                 <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
                 {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <button onClick={exportToExcel} disabled={exporting || loading}
                   className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                   <FileSpreadsheet size={13} />
                   {exporting ? "Duke eksportuar…" : "Excel"}
+                </button>
+                <button onClick={() => setShowAddPayment(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors">
+                  <Plus size={14} /> Regjistro Pagesë
                 </button>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
