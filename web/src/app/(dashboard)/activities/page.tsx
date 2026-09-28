@@ -638,8 +638,8 @@ export default function ActivitiesPage() {
               <div className="ml-auto flex items-center gap-2 pb-px shrink-0">
                 <span className="text-[12px] text-gray-400">{!loading && `${filtered.length} ${filtered.length === 1 ? "aktivitet" : "aktivitete"}`}</span>
                 <button onClick={exportToExcel} disabled={exporting || loading}
-                  className="flex items-center gap-1.5 px-2.5 py-1 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                  <FileSpreadsheet size={13} className="text-emerald-600" />
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                  <FileSpreadsheet size={13} />
                   {exporting ? "Duke eksportuar…" : "Excel"}
                 </button>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">

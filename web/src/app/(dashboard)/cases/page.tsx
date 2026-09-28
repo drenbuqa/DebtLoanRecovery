@@ -779,9 +779,9 @@ function CasesPageInner() {
             ]} />
 
           <button onClick={exportToExcel} disabled={exporting || loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[13px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors ml-auto">
-            <FileSpreadsheet size={14} className={exporting ? "animate-pulse text-emerald-600" : "text-emerald-600"} />
-            {exporting ? "Duke eksportuar…" : "Eksporto Excel"}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors ml-auto">
+            <FileSpreadsheet size={13} />
+            {exporting ? "Duke eksportuar…" : "Excel"}
           </button>
           {can("case:create") && (
             <button onClick={() => setShowCreate(true)}

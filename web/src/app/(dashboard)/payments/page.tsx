@@ -10,7 +10,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileDown } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
@@ -318,12 +318,9 @@ export default function PaymentsPage() {
                 {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={exportToExcel}
-                  disabled={exporting || loading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
-                >
-                  <FileDown size={13} />
+                <button onClick={exportToExcel} disabled={exporting || loading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                  <FileSpreadsheet size={13} />
                   {exporting ? "Duke eksportuar…" : "Excel"}
                 </button>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
