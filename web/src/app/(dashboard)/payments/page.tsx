@@ -11,6 +11,7 @@ import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet, Plus } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
 import { downloadExcel } from "@/lib/exportExcel";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
@@ -223,6 +224,7 @@ function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void
 export default function PaymentsPage() {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const { user, scopedToSelf, scopedToOffice } = useAuth();
   const [refreshing, triggerRefresh] = useRefreshing();
 
@@ -315,14 +317,14 @@ export default function PaymentsPage() {
         <AddPaymentModal
           officerId={user?.id}
           onClose={() => setShowAddPayment(false)}
-          onSuccess={() => { setShowAddPayment(false); mutate(); }}
+          onSuccess={() => { setShowAddPayment(false); mutate(); toast("Pagesa u regjistrua me sukses"); }}
         />
       )}
       {voidTarget && (
         <VoidModal
           payment={voidTarget}
           onClose={() => setVoidTarget(null)}
-          onVoided={() => { setVoidTarget(null); mutate(); }}
+          onVoided={() => { setVoidTarget(null); mutate(); toast("Pagesa u anulua"); }}
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[

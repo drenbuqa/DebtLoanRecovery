@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
 import { offices as officesApi, performance as perfApi } from "@/lib/api";
@@ -104,6 +105,7 @@ function StatCell({ icon: Icon, label, value, sub }: { icon: any; label: string;
 
 function OfficesPageInner() {
   const { can } = useAuth();
+  const { toast } = useToast();
   const [refreshing, triggerRefresh] = useRefreshing();
   const [offices, setOffices] = useState<any[]>([]);
   const [perf, setPerf] = useState<any[]>([]);
@@ -148,7 +150,7 @@ function OfficesPageInner() {
 
   return (
     <div className="flex flex-col">
-      {showAdd && <AddOfficeModal onClose={() => setShowAdd(false)} onCreated={load} />}
+      {showAdd && <AddOfficeModal onClose={() => setShowAdd(false)} onCreated={() => { load(); toast("Zyra u shtua me sukses"); }} />}
 
       <Topbar title="Zyret" subtitle="Pasqyrë e performancës në të gjitha zyret e arkëtimit" />
 
