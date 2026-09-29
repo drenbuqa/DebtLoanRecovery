@@ -102,8 +102,8 @@ export class ReportsService {
     if (c.payments.length) {
       this.sectionTitle(doc, 'Recent Payments');
       this.table(doc,
-        ['Date', 'Amount', 'Method', 'Officer'],
-        c.payments.map(p => [date(p.paymentDate), euro(p.amount), p.paymentMethod, p.officer.fullName]),
+        ['Date', 'Amount', 'Officer'],
+        c.payments.map(p => [date(p.paymentDate), euro(p.amount), p.officer.fullName]),
       );
     }
 
@@ -238,13 +238,12 @@ export class ReportsService {
     });
 
     const rows = [
-      ['payment_reference', 'date', 'amount', 'currency', 'method', 'channel', 'case_reference', 'loan_number', 'borrower', 'officer', 'notes'],
+      ['payment_reference', 'date', 'amount', 'currency', 'channel', 'case_reference', 'loan_number', 'borrower', 'officer', 'notes'],
       ...payments.map(p => [
         p.paymentReference,
         new Date(p.paymentDate).toISOString().slice(0, 10),
         Number(p.amount).toFixed(2),
         p.currency,
-        p.paymentMethod,
         p.paymentChannel ?? '',
         p.case.caseReference,
         p.case.loan.loanNumber,
@@ -504,7 +503,6 @@ export class ReportsService {
         d(p.paymentDate),
         Number(p.amount),
         p.currency,
-        p.paymentMethod,
         p.paymentChannel ?? '',
         (p.notes ?? '').replace(/"/g, '""'),
         p.officer.fullName,

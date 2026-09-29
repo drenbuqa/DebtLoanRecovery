@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { AgreementStatus, PaymentMethod } from '@prisma/client';
+import { AgreementStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const AGR_SELECT = {
@@ -218,7 +218,6 @@ export class AgreementsService {
           amount: paid,
           currency,
           paymentDate: today,
-          paymentMethod: PaymentMethod.BANK_TRANSFER,
           notes: `Këst #${inst.installmentNumber} i marrëveshjes`,
         },
       });
