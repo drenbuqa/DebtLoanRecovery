@@ -679,6 +679,50 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
             ))}
           </div>
 
+          {/* Excel structure reference */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2.5">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Si duhet të duket dokumenti Excel</p>
+            <div className="overflow-x-auto">
+              <table className="text-[12px] border-collapse" style={{ minWidth: 320 }}>
+                <thead>
+                  <tr>
+                    <th className="border border-gray-300 bg-gray-200 text-gray-500 font-semibold px-3 py-1 text-center text-[10px] w-10">nr</th>
+                    <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">A &nbsp;—&nbsp; Numri i klientit</th>
+                    <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">
+                      B &nbsp;—&nbsp; {type === "officer" ? "Kodi i zyrtatit" : type === "npl" ? "Vlera NPL" : type === "institution" ? "Kodi i institucionit" : "Kodi i qytetit"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-white">
+                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">1</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">Q71234567R</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
+                      {type === "officer" ? "3" : type === "npl" ? "WATCH" : type === "institution" ? "4" : "19"}
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-50/60">
+                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">2</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">M31234567N</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
+                      {type === "officer" ? "7" : type === "npl" ? "LOSS" : type === "institution" ? "9" : "5"}
+                    </td>
+                  </tr>
+                  <tr className="bg-white">
+                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">3</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-400">…</td>
+                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-400">…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="space-y-1 text-[11px] text-gray-500">
+              <p><span className="font-semibold text-gray-700">Kolona A</span> — numri i klientit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">Q71234567R</span>), ashtu siç shfaqet në tabelën e klientëve</p>
+              <p><span className="font-semibold text-gray-700">Kolona B</span> — {type === "npl" ? "vlera NPL me shkronja të mëdha (p.sh. WATCH, LOSS)" : "kodi numerik nga tabela e referencës majtas"}</p>
+            </div>
+            <p className="text-[11px] text-gray-400">Titujt e kolonave janë opsionalë — sistemi i njeh dhe i kapërcen automatikisht.</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
             {/* Left: code reference */}
@@ -688,7 +732,7 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
                   Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  Kolona A = numri i klientit &nbsp;·&nbsp; Kolona B = kodi
+                  Kopjoni kodin dhe vendoseni në kolonën A të dokumentit tuaj
                 </p>
               </div>
               <CodeTable />
@@ -739,7 +783,7 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                       <Upload size={18} className="text-gray-300" />
                       <p className="text-[12px] text-gray-500">Tërhiq ose kliko për të zgjedhur</p>
-                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: kodi</p>
+                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: {type === "npl" ? "vlera NPL" : "kodi"}</p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 border border-brand-200 bg-brand-50 rounded-xl">

@@ -381,6 +381,7 @@ export default function AgreementsPage() {
                     const total = a.installments?.length ?? a.installmentCount;
                     const dotCls = STATUS_DOT[a.status] ?? "bg-gray-300";
                     const statusLabel = STATUS_LABELS[a.status] ?? formatEnum(a.status);
+                    const overdueInsts = a.installments?.filter((i: any) => i.status === "OVERDUE") ?? [];
                     const nextInst = nextDueInstallment(a.installments);
                     const nextDueDate = nextInst ? new Date(nextInst.dueDate) : null;
                     const nextIsOverdue = nextDueDate && nextDueDate < new Date();
@@ -408,12 +409,18 @@ export default function AgreementsPage() {
                           </div>
                         </Td>
                         <Td>
-                          {nextDueDate ? (
+                          {overdueInsts.length > 0 ? (
                             <div>
-                              <span className={`tabular text-[12px] font-medium ${nextIsOverdue ? "text-red-600" : "text-gray-700"}`}>
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                                {overdueInsts.length} këst{overdueInsts.length !== 1 ? "e" : ""} me vonesë
+                              </span>
+                              {nextDueDate && <div className="text-[10px] text-gray-400 tabular mt-0.5">{nextDueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</div>}
+                            </div>
+                          ) : nextDueDate ? (
+                            <div>
+                              <span className="tabular text-[12px] font-medium text-gray-700">
                                 {nextDueDate.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}
                               </span>
-                              {nextIsOverdue && <div className="text-[10px] text-red-500">Me Vonesë</div>}
                               {nextInst?.amount && <div className="text-[10px] text-gray-400 tabular">{formatCurrency(Number(nextInst.amount))}</div>}
                             </div>
                           ) : (

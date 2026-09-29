@@ -47,6 +47,21 @@ export class AgreementsService {
         data: { status: 'BROKEN' },
       });
     }
+
+    // Restore BROKEN agreements back to ACTIVE when all installments are now paid/waived or future-pending
+    const recoverIds = await this.prisma.agreement.findMany({
+      where: {
+        status: 'BROKEN',
+        installments: { none: { status: 'OVERDUE' } },
+      },
+      select: { id: true },
+    });
+    if (recoverIds.length > 0) {
+      await this.prisma.agreement.updateMany({
+        where: { id: { in: recoverIds.map((a) => a.id) } },
+        data: { status: 'ACTIVE' },
+      });
+    }
   }
 
   async findAll(query: { page?: number; limit?: number; caseId?: string; status?: string; officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) {

@@ -540,10 +540,17 @@ function CasesPageInner() {
     { keepPreviousData: true },
   );
 
+  // Track whether only the page changed (safe to show stale data) vs filter changed (show spinner)
+  const filterKey = useMemo(() => JSON.stringify({ search, view, status, stage, fazaFilter, dateFrom, dateTo }),
+    [search, view, status, stage, fazaFilter, dateFrom, dateTo]);
+  const [lastLoadedFilterKey, setLastLoadedFilterKey] = useState(filterKey);
+  useEffect(() => { if (!isValidating) setLastLoadedFilterKey(filterKey); }, [isValidating, filterKey]);
+  const filterChanged = filterKey !== lastLoadedFilterKey;
+
   const data = result?.data ?? [];
   const meta = result?.meta ?? { total: 0, page: 1, pages: 1 };
-  const loading = isLoading;
-  const paging = isValidating && !isLoading;
+  const loading = isLoading || (isValidating && filterChanged);
+  const paging = isValidating && !isLoading && !filterChanged;
 
   const [exporting, setExporting] = useState(false);
   async function exportToExcel() {
@@ -719,7 +726,7 @@ function CasesPageInner() {
               {data.map((c) => (
                 <CaseCard key={c.id} c={c} onClick={() => router.push(`/cases/${c.id}`)} />
               ))}
-              {meta.pages > 1 && (
+              {meta.pages > 1 && !paging && (
                 <div className="flex items-center justify-center gap-3 pt-1 pb-2">
                   <button onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
@@ -741,7 +748,7 @@ function CasesPageInner() {
       ) : (
 
       /* ── Desktop layout ── */
-      <div className="p-4 md:p-6 space-y-3">
+      <div className="p-4 md:p-6 flex flex-col gap-3" style={{ height: "calc(100vh - 56px)" }}>
 
         {/* Toolbar */}
         <div className="flex items-center gap-2">
@@ -815,15 +822,15 @@ function CasesPageInner() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden min-h-[400px]" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+        <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
           {error ? (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">Ka ndodhur një gabim: {error?.message ?? String(error)} <button onClick={() => mutate()} className="underline ml-2">Riprovo</button></div>
           ) : loading ? (
-            <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
+            <div className="flex items-center justify-center flex-1 gap-2 text-[13px] text-gray-400">
               <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…
             </div>
           ) : data.length === 0 && !paging ? (
-            <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
+            <div className="flex flex-col items-center justify-center flex-1 px-6 text-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                 <Briefcase size={22} className="text-gray-400" />
               </div>
@@ -833,13 +840,11 @@ function CasesPageInner() {
               </div>
             </div>
           ) : (
-            <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-x-auto`}>
+            <div className={`flex-1 min-h-0 transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-auto`}>
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues",
-                    ...(["all_promises","vonesa","premtime_thyera"].includes(view) ? ["Premtimi"] : []),
-                  ].map((h, i) => (
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi"].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
                   ))}
                   {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
@@ -915,23 +920,21 @@ function CasesPageInner() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-500">{coborrower?.person?.fullName ?? "—"}</span>
                       </td>
-                      {["all_promises","vonesa","premtime_thyera"].includes(view) && (
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {latestPromise ? (
-                            <div>
-                              <div className="text-[11px] font-medium text-gray-700">
-                                {new Date(latestPromise.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
-                              </div>
-                              <div className="text-[10px] text-gray-400">{formatCurrency(Number(latestPromise.promisedAmount ?? 0))}</div>
-                              {promiseDaysOverdue > 0 && (
-                                <div className={`text-[10px] font-semibold ${promiseDaysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
-                                  {promiseDaysOverdue} ditë vonesë
-                                </div>
-                              )}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {latestPromise ? (
+                          <div>
+                            <div className="text-[11px] font-medium text-gray-700">
+                              {new Date(latestPromise.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
                             </div>
-                          ) : "—"}
-                        </td>
-                      )}
+                            <div className="text-[10px] text-gray-400">{formatCurrency(Number(latestPromise.promisedAmount ?? 0))}</div>
+                            {promiseDaysOverdue > 0 && (
+                              <div className={`text-[10px] font-semibold ${promiseDaysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
+                                {promiseDaysOverdue} ditë vonesë
+                              </div>
+                            )}
+                          </div>
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
                       {can("case:delete") && (
                         <td className="px-2 py-2">
                           <button
@@ -952,7 +955,7 @@ function CasesPageInner() {
           )}
 
           {/* Pagination */}
-          {meta.pages > 1 && (
+          {meta.pages > 1 && !paging && (
             <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
               <span className="text-[12px] text-gray-400">
                 {((page - 1) * 50) + 1}–{Math.min(page * 50, meta.total)} nga {meta.total.toLocaleString()}

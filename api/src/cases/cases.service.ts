@@ -47,9 +47,9 @@ const CASE_LIST_SELECT = {
   secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
   promises: {
-    orderBy: { promiseDate: 'desc' as const },
+    orderBy: { createdAt: 'desc' as const },
     take: 1,
-    select: { id: true, promiseDate: true, promisedAmount: true, status: true },
+    select: { id: true, promiseDate: true, promisedAmount: true, status: true, createdAt: true },
   },
   _count: { select: { activities: true, payments: true } },
 };
