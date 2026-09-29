@@ -590,7 +590,6 @@ function CasesPageInner() {
           "Banka": c.loan?.institution?.name ?? "",
           "Nr. Kredie": c.loan?.loanNumber ?? "",
           "Borxhi Aktual (€)": Number(c.loan?.currentOutstandingBalance ?? 0),
-          "Shuma Origjinale (€)": Number(c.loan?.originalLoanAmount ?? 0),
           "Zyrtari Kryesor": c.assignedOfficer?.fullName ?? "",
           "Zyrtari Dytësor": c.secondaryOfficer?.fullName ?? "",
           "Faza": c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "",

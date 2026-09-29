@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PAYMENT_SELECT = {
@@ -8,7 +7,6 @@ const PAYMENT_SELECT = {
   amount: true,
   currency: true,
   paymentDate: true,
-  paymentMethod: true,
   paymentChannel: true,
   notes: true,
   case: {
@@ -88,10 +86,8 @@ export class PaymentsService {
     amount: number;
     currency?: string;
     paymentDate: string;
-    paymentMethod: string;
     paymentChannel?: string;
     notes?: string;
-    externalReference?: string;
     nextPaymentDate?: string;
     nextPaymentAmount?: number;
   }) {
@@ -110,10 +106,8 @@ export class PaymentsService {
           amount: dto.amount,
           currency: dto.currency ?? 'EUR',
           paymentDate: new Date(dto.paymentDate),
-          paymentMethod: dto.paymentMethod as PaymentMethod,
           paymentChannel: dto.paymentChannel,
           notes: dto.notes,
-          externalReference: dto.externalReference,
         },
         select: PAYMENT_SELECT,
       });

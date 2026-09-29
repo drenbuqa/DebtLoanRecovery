@@ -46,7 +46,6 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
         caseId: selectedCase.id,
         officerId,
         amount: parseFloat(amount),
-        paymentMethod: "BANK_TRANSFER",
         paymentDate: date,
         notes: notes || undefined,
         nextPaymentDate: nextDate || undefined,
@@ -190,11 +189,6 @@ function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () =
   );
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  CASH: "Kesh", BANK_TRANSFER: "Transfertë Bankare", CHECK: "Çek",
-  ONLINE: "Online", OTHER: "Tjetër",
-};
-
 function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void; scopedToSelf: boolean }) {
   const borrower = p.case?.loan?.borrower;
   const name = borrower ? `${borrower.fullName}` : "—";
@@ -210,8 +204,6 @@ function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void
       </div>
       <div className="h-px bg-gray-100 mb-3" />
       <div className="flex items-center gap-3 text-[12px] text-gray-400">
-        <span>{METHOD_LABELS[p.paymentMethod] ?? formatEnum(p.paymentMethod)}</span>
-        <span className="w-1 h-1 rounded-full bg-gray-200" />
         <span>{date}</span>
         {!scopedToSelf && p.officer?.fullName && (
           <><span className="w-1 h-1 rounded-full bg-gray-200" /><span>{p.officer.fullName}</span></>

@@ -269,7 +269,6 @@ model Activity {
   nextActionDate  DateTime?        @map("next_action_date") @db.Timestamptz(6)
   updatedAddress  String?          @map("updated_address") @db.VarChar(500)
   updatedPhone    String?          @map("updated_phone") @db.VarChar(50)
-  caseCategory    String?          @map("case_category") @db.VarChar(100)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
 
   case    Case          @relation(fields: [caseId], references: [id])
@@ -322,9 +321,7 @@ model Payment {
   amount            Decimal       @db.Decimal(18, 2)
   currency          String        @default("EUR") @db.VarChar(3)
   paymentDate       DateTime      @map("payment_date") @db.Date
-  paymentMethod     PaymentMethod @map("payment_method")
   paymentChannel    String?       @map("payment_channel") @db.VarChar(30)
-  externalReference String?       @map("external_reference") @db.VarChar(100)
   notes             String?       @db.VarChar(500)
   // Void — payments are never deleted, only voided with a reason and who did it
   voidedAt          DateTime?     @map("voided_at") @db.Timestamptz(6)
@@ -614,14 +611,6 @@ enum PromiseStatus {
   CANCELLED
 }
 
-enum PaymentMethod {
-  BANK_TRANSFER
-  CASH
-  CHECK
-  CARD
-  MOBILE
-  OTHER
-}
 
 enum AgreementStatus {
   ACTIVE

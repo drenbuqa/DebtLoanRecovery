@@ -19,7 +19,6 @@ export class ActivitiesService {
     occurredAt?: string;
     updatedAddress?: string;
     updatedPhone?: string;
-    caseCategory?: string;
     collectionStatus?: string;
   }) {
     const activity = await this.prisma.activity.create({
@@ -38,12 +37,11 @@ export class ActivitiesService {
         }),
         ...(dto.updatedAddress && { updatedAddress: dto.updatedAddress }),
         ...(dto.updatedPhone && { updatedPhone: dto.updatedPhone }),
-        ...(dto.caseCategory && { caseCategory: dto.caseCategory }),
       },
       select: {
         id: true, activityType: true, channel: true, notes: true,
         outcome: true, occurredAt: true, nextActionDate: true,
-        promiseAmount: true, updatedAddress: true, updatedPhone: true, caseCategory: true,
+        promiseAmount: true, updatedAddress: true, updatedPhone: true,
         officer: { select: { id: true, fullName: true } },
       },
     });
@@ -132,7 +130,7 @@ export class ActivitiesService {
       select: {
         id: true, activityType: true, channel: true, notes: true,
         outcome: true, occurredAt: true, nextActionDate: true,
-        promiseAmount: true, updatedAddress: true, updatedPhone: true, caseCategory: true,
+        promiseAmount: true, updatedAddress: true, updatedPhone: true,
         officer: { select: { id: true, fullName: true } },
       },
     });
