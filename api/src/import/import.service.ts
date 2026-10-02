@@ -83,23 +83,34 @@ const COL_ALIASES: Record<string, string> = {
   'collection_officer': 'assigned_officer_name',
   'first_collection_officer': 'assigned_officer_name',
   'second_collection_officer': 'secondary_officer_name',
+  'zyrtari': 'assigned_officer_name',
+  'zyrtari_kryesor': 'assigned_officer_name',
+  'zyrtari_dytesor': 'secondary_officer_name',
+  'zyrtari_i_pare': 'assigned_officer_name',
+  'zyrtari_i_dyte': 'secondary_officer_name',
   // Guarantor 1
   'guarantor_personal_id': 'guarantor_personal_id',
   '1_guarantor_personal_id': 'guarantor_personal_id',
   'guarantor_id': 'guarantor_personal_id',
+  'garanti_1_nid': 'guarantor_personal_id', 'garanti_nid': 'guarantor_personal_id',
   'guarantor_first_name': 'guarantor_first_name', 'guarantor_firstname': 'guarantor_first_name',
   'guarantor_last_name': 'guarantor_last_name', 'guarantor_lastname': 'guarantor_last_name',
   'guarantor_first_last_name': 'guarantor_full_name',
   '1_guarantor_first_last_name': 'guarantor_full_name',
+  'garanti_1_emri_mbiemri': 'guarantor_full_name', 'garanti_emri_mbiemri': 'guarantor_full_name',
   'guarantor_phone': 'guarantor_phone', 'guarantor_tel': 'guarantor_phone',
   '1_guarantor_phone': 'guarantor_phone',
+  'garanti_1_telefoni': 'guarantor_phone', 'garanti_telefoni': 'guarantor_phone',
   // Guarantor 2
   '2_guarantor_personal_id': 'guarantor2_personal_id',
   'guarantor2_personal_id': 'guarantor2_personal_id',
+  'garanti_2_nid': 'guarantor2_personal_id',
   '2_guarantor_first_last_name': 'guarantor2_full_name',
   'guarantor2_first_last_name': 'guarantor2_full_name',
+  'garanti_2_emri_mbiemri': 'guarantor2_full_name',
   '2_guarantor_phone': 'guarantor2_phone',
   'guarantor2_phone': 'guarantor2_phone',
+  'garanti_2_telefoni': 'guarantor2_phone',
   // Co-borrower
   'co_borrower_personal_id': 'co_borrower_personal_id', 'coborrower_id': 'co_borrower_personal_id',
   'co_borrower_first_name': 'co_borrower_first_name', 'coborrower_firstname': 'co_borrower_first_name',
@@ -356,24 +367,24 @@ export class ImportService {
       'personal_id', 'full_name', 'date_of_birth',
       'phone1', 'phone2', 'email', 'address', 'city',
       'loan_number', 'institution_name',
-      'assigned_officer_id', 'secondary_officer_id',
-      'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
+      'collection_officer', 'second_collection_officer',
+      'original_loan_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
       'days_past_due', 'npl_classification', 'office_code',
-      '1 guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
-      '2 guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
-      'co_borrower_personal_id', 'co_borrower_first_Last_name', 'co_borrower_phone',
+      '1_guarantor_personal_id', '1_guarantor_first_last_name', '1_guarantor_phone',
+      '2_guarantor_personal_id', '2_guarantor_first_last_name', '2_guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
     ];
     const example = [
       '1234567890', 'Arben Gashi', '1985-03-15',
       '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 'Prishtinë',
       'PCB-2024-001', 'ProCredit Bank Kosovë',
-      'paste-officer-uuid-here', '',
-      15000, 15000, 12500,
+      'Emri Mbiemri Zyrtarit', '',
+      15000, 12500,
       'Consumer', '2024-01-15', '2027-01-15', '2024-11-01',
       45, 'WATCH', 'PRK',
       '9876543210', 'Vjosa Berisha', '+38344654321',
-      '9876543211', 'Agron Berisha', '+38344654322',
+      '', 'Agron Berisha', '+38344654322',
       '', '', '',
     ];
 
@@ -568,7 +579,14 @@ export class ImportService {
 
         // Resolve officers — prefer UUID column, fall back to name match
         const resolveOfficer = (id: string | undefined, name: string | undefined) => {
-          if (id?.trim()) return officerIdSet.has(id.trim()) ? id.trim() : undefined;
+          if (id?.trim()) {
+            // If it's a valid UUID already in our system, use it directly
+            if (officerIdSet.has(id.trim())) return id.trim();
+            // Otherwise treat the value as a name (user put name in the ID column)
+            const key = id.trim().toLowerCase();
+            const byName = officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]);
+            if (byName) return byName;
+          }
           if (!name?.trim()) return undefined;
           const key = name.trim().toLowerCase();
           return officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]) ?? undefined;
@@ -642,10 +660,10 @@ export class ImportService {
             rawLastName: string | undefined,
             rawPhone: string | undefined,
             role: LoanPartyRole,
+            syntheticIdSuffix?: string,
           ) => {
-            const pid = cleanId(rawId);
-            if (!pid) return;
-            // Resolve name — prefer individual fields, fall back to splitting full name
+            let pid = cleanId(rawId);
+            // Resolve name first — we need at least a name to proceed
             let fName = rawFirstName?.trim() || '';
             let lName = rawLastName?.trim() || '';
             if (!fName && rawFullName) {
@@ -653,7 +671,9 @@ export class ImportService {
               fName = split?.firstName ?? '';
               lName = split?.lastName ?? '';
             }
-            if (!fName) return; // no usable name
+            if (!fName) return; // no usable name — skip
+            // If no personal ID, generate a synthetic one so we can still upsert
+            if (!pid) pid = `NOID-${role}-${loanNum}-${syntheticIdSuffix ?? '1'}`;
             const safePid = pid.slice(0, 30);
             const safeFullName = (fName + (lName ? " " + lName : "")).trim().slice(0, 200);
             const person = await tx.person.upsert({
@@ -672,17 +692,17 @@ export class ImportService {
           await upsertParty(
             row.guarantor_personal_id, row.guarantor_full_name,
             row.guarantor_first_name, row.guarantor_last_name,
-            row.guarantor_phone, 'GUARANTOR',
+            row.guarantor_phone, 'GUARANTOR', '1',
           );
           await upsertParty(
             row.guarantor2_personal_id, row.guarantor2_full_name,
             undefined, undefined,
-            row.guarantor2_phone, 'GUARANTOR',
+            row.guarantor2_phone, 'GUARANTOR', '2',
           );
           await upsertParty(
             row.co_borrower_personal_id, row.co_borrower_full_name,
             row.co_borrower_first_name, row.co_borrower_last_name,
-            row.co_borrower_phone, 'CO_BORROWER',
+            row.co_borrower_phone, 'CO_BORROWER', '1',
           );
 
           const year = new Date().getFullYear();
