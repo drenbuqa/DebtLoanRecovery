@@ -1257,6 +1257,7 @@ export default function CaseDetailPage() {
                     { label: "Norma e Interesit", val: caseData?.loan?.interestRate != null ? `${caseData.loan.interestRate}%` : "—" },
                     { label: "Data e Disbursimit", val: caseData?.loan?.disbursementDate ? new Date(caseData.loan.disbursementDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Data e Maturimit", val: caseData?.loan?.maturityDate ? new Date(caseData.loan.maturityDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                    { label: "Data e Pagesës së Fundit", val: caseData?.loan?.lastPaymentDate ? new Date(caseData.loan.lastPaymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Ditë Vonesë", val: `${dpd} ditë` },
                     { label: "Faza", val: caseData?.collectionStatus ? (FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus) : "—" },
                     { label: "Kategoria", val: caseData?.loan?.nplClassification ? (NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification) : "—" },

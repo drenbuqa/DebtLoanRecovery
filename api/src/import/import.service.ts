@@ -377,12 +377,12 @@ export class ImportService {
     ];
     const example = [
       '1234567890', 'Arben Gashi', '1985-03-15',
-      '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 'Prishtinë',
-      'PCB-2024-001', 'ProCredit Bank Kosovë',
-      'Emri Mbiemri Zyrtarit', '',
+      '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 19,
+      'PCB-2024-001', 9,
+      1, '',
       15000, 12500,
       'Consumer', '2024-01-15', '2027-01-15', '2024-11-01',
-      45, 'WATCH', 'PRK',
+      45, 2, 'PRK',
       '9876543210', 'Vjosa Berisha', '+38344654321',
       '', 'Agron Berisha', '+38344654322',
       '', '', '',
@@ -545,10 +545,11 @@ export class ImportService {
     const instMap = new Map(institutions.map(i => [i.name.toLowerCase().trim(), i]));
     const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
     const officeMap = new Map(offices.map(o => [o.code.toLowerCase(), o]));
-    const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true } });
+    const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true, userCode: true } });
     const officerMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim(), o.id]));
     const officerFirstNameMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim().split(/\s+/)[0], o.id]));
     const officerIdSet = new Set(officers.map(o => o.id));
+    const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -561,7 +562,12 @@ export class ImportService {
         const existing = await this.prisma.loan.findUnique({ where: { loanNumber: loanNum } });
         if (existing) { skipped++; continue; }
 
-        // Resolve institution — create if not found
+        // Resolve institution — support numeric code (e.g. "9") or full name
+        const instRaw = row.institution_name?.trim() ?? '';
+        const instCode = parseInt(instRaw);
+        if (!isNaN(instCode) && String(instCode) === instRaw && ImportService.INSTITUTION_CODES[instCode]) {
+          row.institution_name = ImportService.INSTITUTION_CODES[instCode];
+        }
         const instKey = row.institution_name.trim().toLowerCase();
         let institution = instMap.get(instKey);
         if (!institution) {
@@ -577,18 +583,20 @@ export class ImportService {
         const officeCode = row.office_code?.trim().toLowerCase();
         const office = officeCode ? officeMap.get(officeCode) : undefined;
 
-        // Resolve officers — prefer UUID column, fall back to name match
+        // Resolve officers — support numeric userCode, UUID, or full name
         const resolveOfficer = (id: string | undefined, name: string | undefined) => {
-          if (id?.trim()) {
-            // If it's a valid UUID already in our system, use it directly
-            if (officerIdSet.has(id.trim())) return id.trim();
-            // Otherwise treat the value as a name (user put name in the ID column)
-            const key = id.trim().toLowerCase();
-            const byName = officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]);
-            if (byName) return byName;
+          const val = (id ?? name ?? '').trim();
+          if (!val) return undefined;
+          // Numeric code (userCode) — most reliable, use first
+          const codeNum = parseInt(val);
+          if (!isNaN(codeNum) && String(codeNum) === val) {
+            const byCode = officerByCode.get(codeNum);
+            if (byCode) return byCode;
           }
-          if (!name?.trim()) return undefined;
-          const key = name.trim().toLowerCase();
+          // UUID direct match
+          if (officerIdSet.has(val)) return val;
+          // Full name or first-name fuzzy match
+          const key = val.toLowerCase();
           return officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]) ?? undefined;
         };
         const assignedOfficerId  = resolveOfficer(row.assigned_officer_id,   row.assigned_officer_name);
@@ -598,6 +606,15 @@ export class ImportService {
           const personalId = (cleanId(row.personal_id) || `NOID-${loanNum}`).slice(0, 30);
           const fullName = (row.full_name?.trim() || '').slice(0, 200);
 
+          // Resolve city — support numeric code (e.g. "19" → "Prishtinë")
+          let cityVal = row.city?.trim() || undefined;
+          if (cityVal) {
+            const cityCode = parseInt(cityVal);
+            if (!isNaN(cityCode) && String(cityCode) === cityVal && ImportService.CITY_CODES[cityCode]) {
+              cityVal = ImportService.CITY_CODES[cityCode];
+            }
+          }
+
           const borrower = await tx.person.upsert({
             where: { personalId },
             create: {
@@ -606,13 +623,13 @@ export class ImportService {
               dateOfBirth: parseDate(row.date_of_birth),
               email: row.email?.trim() || undefined,
               address: row.address?.trim() || undefined,
-              city: row.city?.trim() || undefined,
+              city: cityVal,
             },
             update: {
               fullName,
               ...(row.email?.trim() && { email: row.email.trim() }),
               ...(row.address?.trim() && { address: row.address.trim() }),
-              ...(row.city?.trim() && { city: row.city.trim() }),
+              ...(cityVal && { city: cityVal }),
             },
           });
 
@@ -645,7 +662,15 @@ export class ImportService {
               maturityDate: parseDate(row.maturity_date),
               lastPaymentDate: parseDate(row.last_payment_date),
               daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
-              nplClassification: parseNplClass(row.npl_classification) as any,
+              nplClassification: (() => {
+                const v = row.npl_classification?.trim();
+                if (!v) return undefined;
+                const code = parseInt(v);
+                if (!isNaN(code) && String(code) === v && ImportService.NPL_CODES[code]) {
+                  return ImportService.NPL_CODES[code];
+                }
+                return parseNplClass(v);
+              })() as any,
               dpdLastCalculatedAt: new Date(),
             },
           });

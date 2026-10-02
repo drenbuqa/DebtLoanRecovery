@@ -478,7 +478,7 @@ function ReferencePanel() {
             {tab === "officers" && (
               <div className="space-y-1">
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Shkruani emrin e plotë të zyratarit në kolonën <span className="font-mono bg-gray-100 px-1 rounded">collection_officer</span> ose <span className="font-mono bg-gray-100 px-1 rounded">second_collection_officer</span> të dokumentit Excel.
+                  Vendosni <span className="font-semibold text-gray-600">kodin numerik</span> të zyratarit në kolonën <span className="font-mono bg-gray-100 px-1 rounded">collection_officer</span> ose <span className="font-mono bg-gray-100 px-1 rounded">second_collection_officer</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
                   {data.officers.map((o, idx) => {
@@ -541,14 +541,23 @@ function ReferencePanel() {
             {tab === "npl" && (
               <div>
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kopjoni vlerën dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span>.
+                  Vendosni <span className="font-semibold text-gray-600">kodin numerik</span> në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {Object.entries(NPL_DESC).map(([cat, desc]) => (
+                  {([
+                    [1, "PERFORMING", "Performues"],
+                    [2, "WATCH", "Nën Vëzhgim"],
+                    [3, "SUBSTANDARD", "Nënstandard"],
+                    [4, "DOUBTFUL", "I Dyshimtë"],
+                    [5, "LOSS", "Humbje"],
+                  ] as [number, string, string][]).map(([code, cat, label]) => (
                     <div key={cat} className="flex items-center px-3 py-2.5 hover:bg-gray-50 gap-3">
-                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-32">{cat}</span>
-                      <span className="text-[12px] text-gray-400 flex-1">{desc}</span>
-                      <CopyBtn text={cat} />
+                      <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                      </div>
+                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{cat}</span>
+                      <span className="text-[12px] text-gray-400 flex-1">{label}</span>
+                      <CopyBtn text={String(code)} />
                     </div>
                   ))}
                 </div>
