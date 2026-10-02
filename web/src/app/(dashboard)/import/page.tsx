@@ -478,7 +478,7 @@ function ReferencePanel() {
             {tab === "officers" && (
               <div className="space-y-1">
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kopjoni kodin numerik dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">assigned_officer_id</span> ose <span className="font-mono bg-gray-100 px-1 rounded">secondary_officer_id</span> kur përdorni ndryshime me Excel.
+                  Shkruani emrin e plotë të zyratarit në kolonën <span className="font-mono bg-gray-100 px-1 rounded">collection_officer</span> ose <span className="font-mono bg-gray-100 px-1 rounded">second_collection_officer</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
                   {data.officers.map((o, idx) => {

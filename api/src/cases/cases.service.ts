@@ -534,7 +534,7 @@ export class CasesService {
           currency: dto.currency ?? 'EUR',
           interestRate: dto.interestRate,
           productType: dto.productType,
-          disbursementDate: dto.disbursementDate ? new Date(dto.disbursementDate) : new Date(),
+          disbursementDate: dto.disbursementDate ? new Date(dto.disbursementDate) : undefined,
           maturityDate: dto.maturityDate ? new Date(dto.maturityDate) : undefined,
           daysPastDue: dto.daysPastDue ?? 0,
           nplClassification: dto.nplClassification as any,

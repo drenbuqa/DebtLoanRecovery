@@ -133,7 +133,7 @@ model Loan {
   currency                  String    @default("EUR") @db.VarChar(3)
   interestRate              Decimal?  @map("interest_rate") @db.Decimal(5, 4)
   productType               String?   @map("product_type") @db.VarChar(50)
-  disbursementDate          DateTime  @map("disbursement_date") @db.Date
+  disbursementDate          DateTime? @map("disbursement_date") @db.Date
   maturityDate              DateTime? @map("maturity_date") @db.Date
   lastPaymentDate           DateTime? @map("last_payment_date") @db.Date
   daysPastDue               Int       @default(0) @map("days_past_due")

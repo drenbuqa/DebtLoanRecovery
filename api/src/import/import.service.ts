@@ -641,7 +641,7 @@ export class ImportService {
               currency: row.currency?.trim().toUpperCase() || 'EUR',
               interestRate: row.interest_rate ? parseDecimal(row.interest_rate) : undefined,
               productType: row.product_type?.trim() || undefined,
-              disbursementDate: parseDate(row.disbursement_date) ?? new Date(0),
+              disbursementDate: parseDate(row.disbursement_date) ?? undefined,
               maturityDate: parseDate(row.maturity_date),
               lastPaymentDate: parseDate(row.last_payment_date),
               daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
