@@ -128,6 +128,8 @@ export class ImportController {
     if (mappingRaw) {
       try { mapping = JSON.parse(mappingRaw); } catch { throw new BadRequestException('Mapping i pavlefshëm'); }
     }
-    return this.svc.importFile(file.buffer, file.originalname, req.user.id, req.user.username, mapping, institution);
+    // Start processing in background and return job ID immediately to avoid proxy timeouts
+    const jobId = await this.svc.startImportJob(file.buffer, file.originalname, req.user.id, req.user.username, mapping, institution);
+    return { jobId, status: 'PROCESSING' };
   }
 }

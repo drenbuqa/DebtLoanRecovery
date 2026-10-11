@@ -482,51 +482,25 @@ export class ImportService {
     };
   }
 
-  async importFile(
+  async startImportJob(
     buffer: Buffer,
     fileName: string,
     importedById: string,
     importedByUsername: string,
-    columnOverrides?: Record<string, string>,  // original col → canonical key
-    institutionOverride?: string,              // fixed institution name when not in file
-  ): Promise<ImportResult> {
+    columnOverrides?: Record<string, string>,
+    institutionOverride?: string,
+  ): Promise<string> {
+    // Parse and validate synchronously so we can reject bad files immediately
     let rows: ImportRow[];
     try {
       rows = this.parseFile(buffer, columnOverrides);
     } catch (e: any) {
       throw new BadRequestException(`Dokumenti nuk mund të lexohet: ${e.message}`);
     }
-
     if (rows.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
     if (rows.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta për import');
 
-    // Apply institution override to rows that lack it
-    if (institutionOverride?.trim()) {
-      for (const row of rows) {
-        if (!row.institution_name?.trim()) row.institution_name = institutionOverride.trim();
-      }
-    }
-
-    // Combine first_name + last_name → full_name for banks that send them separately
-    for (const row of rows) {
-      if (!row.full_name?.trim() && ((row as any).first_name || (row as any).last_name)) {
-        const fn = ((row as any).first_name ?? '').trim();
-        const ln = ((row as any).last_name ?? '').trim();
-        row.full_name = (fn + (ln ? ' ' + ln : '')).trim();
-      }
-    }
-
-    // Validate required columns are present
-    const firstRowKeys = Object.keys(rows[0]);
-    const missing = REQUIRED_COLS.filter(k => !firstRowKeys.includes(k));
-    if (missing.length) {
-      const labels = missing.map(k => ALL_FIELDS.find(f => f.key === k)?.label ?? k);
-      throw new BadRequestException(
-        `Kolona të detyrueshme mungojnë: ${labels.join(', ')}.`
-      );
-    }
-
-    // Create import job record
+    // Create job record upfront
     const job = await this.prisma.importJob.create({
       data: {
         uploadedById: importedById,
@@ -538,257 +512,61 @@ export class ImportService {
       },
     });
 
-    const errors: { row: number; loan_number: string; error: string }[] = [];
-    let succeeded = 0, failed = 0, skipped = 0;
+    // Process in background — do not await
+    setImmediate(() => {
+      this.processImport(rows, fileName, importedById, importedByUsername, job.id, columnOverrides, institutionOverride)
+        .catch(() => {});
+    });
 
-    const institutions = await this.prisma.institution.findMany({ select: { id: true, name: true, shortName: true, code: true } });
-    const instByCode = new Map(institutions.map(i => [i.code, i]));
-    const instByName = new Map(institutions.map(i => [i.name.toLowerCase().trim(), i]));
-    const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
-    const officeMap = new Map(offices.map(o => [o.code.toLowerCase(), o]));
-    const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true, userCode: true } });
-    const officerMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim(), o.id]));
-    const officerFirstNameMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim().split(/\s+/)[0], o.id]));
-    const officerIdSet = new Set(officers.map(o => o.id));
-    const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
-    const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
-    const cityByCode = new Map(cities.map(c => [c.code, c.name]));
-    const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
-    const nplByCode = new Map(nplCats.map(n => [n.code, n.value]));
+    return job.id;
+  }
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const rowNum = i + 2;
-      const loanNum = cleanId(row.loan_number) || `row-${rowNum}`;
-
-      try {
-        this.validateRow(row, rowNum);
-
-        const existing = await this.prisma.loan.findUnique({ where: { loanNumber: loanNum } });
-        if (existing) { skipped++; continue; }
-
-        // Resolve institution — by numeric code (from DB) or by name fallback
-        const instRaw = row.institution_name?.trim() ?? '';
-        const instCode = parseInt(instRaw);
-        let institution: { id: string; name: string; shortName: string } | undefined;
-        if (!isNaN(instCode) && String(instCode) === instRaw) {
-          institution = instByCode.get(instCode);
-        }
-        if (!institution) {
-          institution = instByName.get(instRaw.toLowerCase());
-        }
-        if (!institution) {
-          const name = instRaw || 'Unknown';
-          const created = await this.prisma.institution.create({
-            data: { name, shortName: name.slice(0, 20) },
-            select: { id: true, name: true, shortName: true, code: true },
-          });
-          institution = created;
-          instByCode.set(created.code, created);
-          instByName.set(created.name.toLowerCase().trim(), created);
-        }
-
-        const officeCode = row.office_code?.trim().toLowerCase();
-        const office = officeCode ? officeMap.get(officeCode) : undefined;
-
-        // Resolve officers — support numeric userCode, UUID, or full name
-        const resolveOfficer = (id: string | undefined, name: string | undefined) => {
-          const val = (id ?? name ?? '').trim();
-          if (!val) return undefined;
-          // Numeric code (userCode) — most reliable, use first
-          const codeNum = parseInt(val);
-          if (!isNaN(codeNum) && String(codeNum) === val) {
-            const byCode = officerByCode.get(codeNum);
-            if (byCode) return byCode;
-          }
-          // UUID direct match
-          if (officerIdSet.has(val)) return val;
-          // Full name or first-name fuzzy match
-          const key = val.toLowerCase();
-          return officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]) ?? undefined;
-        };
-        const assignedOfficerId  = resolveOfficer(row.assigned_officer_id,   row.assigned_officer_name);
-        const secondaryOfficerId = resolveOfficer(row.secondary_officer_id,  row.secondary_officer_name);
-
-        await this.prisma.$transaction(async (tx) => {
-          const personalId = (cleanId(row.personal_id) || `NOID-${loanNum}`).slice(0, 30);
-          const fullName = (row.full_name?.trim() || '').slice(0, 200);
-
-          // Resolve city — by numeric code (from DB) or plain text
-          let cityVal = row.city?.trim() || undefined;
-          if (cityVal) {
-            const cityCode = parseInt(cityVal);
-            if (!isNaN(cityCode) && String(cityCode) === cityVal) {
-              cityVal = cityByCode.get(cityCode) ?? cityVal;
-            }
-          }
-
-          const borrower = await tx.person.upsert({
-            where: { personalId },
-            create: {
-              personalId,
-              fullName,
-              dateOfBirth: parseDate(row.date_of_birth),
-              email: row.email?.trim() || undefined,
-              address: row.address?.trim() || undefined,
-              city: cityVal,
-            },
-            update: {
-              fullName,
-              ...(row.email?.trim() && { email: row.email.trim() }),
-              ...(row.address?.trim() && { address: row.address.trim() }),
-              ...(cityVal && { city: cityVal }),
-            },
-          });
-
-          for (const [phone, isPrimary] of [
-            [row.phone1?.trim(), true],
-            [row.phone2?.trim(), false],
-          ] as [string | undefined, boolean][]) {
-            if (phone) {
-              const phoneNum = phone.slice(0, 30);
-              const exists = await tx.personPhone.findFirst({ where: { personId: borrower.id, phoneNumber: phoneNum } });
-              if (!exists) await tx.personPhone.create({ data: { personId: borrower.id, phoneNumber: phoneNum, phoneType: 'MOBILE', isPrimary } });
-            }
-          }
-
-          const principalAmt = parseDecimal(row.principal_amount || row.original_loan_amount);
-          const originalAmt = parseDecimal(row.original_loan_amount || row.principal_amount);
-
-          const loan = await tx.loan.create({
-            data: {
-              loanNumber: loanNum,
-              institutionId: institution!.id,
-              borrowerId: borrower.id,
-              originalLoanAmount: originalAmt,
-              disbursedAmount: principalAmt || originalAmt,
-              currentOutstandingBalance: parseDecimal(row.current_outstanding_balance),
-              currency: row.currency?.trim().toUpperCase() || 'EUR',
-              interestRate: row.interest_rate ? parseDecimal(row.interest_rate) : undefined,
-              productType: row.product_type?.trim() || undefined,
-              disbursementDate: parseDate(row.disbursement_date) ?? undefined,
-              maturityDate: parseDate(row.maturity_date),
-              lastPaymentDate: parseDate(row.last_payment_date),
-              daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
-              nplClassification: (() => {
-                const v = row.npl_classification?.trim();
-                if (!v) return undefined;
-                const code = parseInt(v);
-                if (!isNaN(code) && String(code) === v) {
-                  const fromDb = nplByCode.get(code);
-                  if (fromDb) return fromDb;
-                }
-                return parseNplClass(v);
-              })() as any,
-              dpdLastCalculatedAt: new Date(),
-            },
-          });
-
-          await tx.loanParty.create({ data: { loanId: loan.id, personId: borrower.id, role: 'BORROWER' } });
-
-          // Helper: upsert a party (guarantor / co-borrower) from id + name + phone
-          const upsertParty = async (
-            rawId: string | undefined,
-            rawFullName: string | undefined,
-            rawFirstName: string | undefined,
-            rawLastName: string | undefined,
-            rawPhone: string | undefined,
-            role: LoanPartyRole,
-            syntheticIdSuffix?: string,
-          ) => {
-            let pid = cleanId(rawId);
-            // Resolve name first — we need at least a name to proceed
-            let fName = rawFirstName?.trim() || '';
-            let lName = rawLastName?.trim() || '';
-            if (!fName && rawFullName) {
-              const split = splitName(rawFullName);
-              fName = split?.firstName ?? '';
-              lName = split?.lastName ?? '';
-            }
-            if (!fName) return; // no usable name — skip
-            // If no personal ID, generate a synthetic one so we can still upsert
-            if (!pid) pid = `NOID-${role}-${loanNum}-${syntheticIdSuffix ?? '1'}`;
-            const safePid = pid.slice(0, 30);
-            const safeFullName = (fName + (lName ? " " + lName : "")).trim().slice(0, 200);
-            const person = await tx.person.upsert({
-              where: { personalId: safePid },
-              create: { personalId: safePid, fullName: safeFullName },
-              update: { fullName: safeFullName },
-            });
-            if (rawPhone?.trim()) {
-              const ph = rawPhone.trim().slice(0, 30);
-              const exists = await tx.personPhone.findFirst({ where: { personId: person.id, phoneNumber: ph } });
-              if (!exists) await tx.personPhone.create({ data: { personId: person.id, phoneNumber: ph, phoneType: 'MOBILE', isPrimary: true } });
-            }
-            await tx.loanParty.createMany({ data: [{ loanId: loan.id, personId: person.id, role }], skipDuplicates: true });
-          };
-
-          await upsertParty(
-            row.guarantor_personal_id, row.guarantor_full_name,
-            row.guarantor_first_name, row.guarantor_last_name,
-            row.guarantor_phone, 'GUARANTOR', '1',
-          );
-          await upsertParty(
-            row.guarantor2_personal_id, row.guarantor2_full_name,
-            undefined, undefined,
-            row.guarantor2_phone, 'GUARANTOR', '2',
-          );
-          await upsertParty(
-            row.co_borrower_personal_id, row.co_borrower_full_name,
-            row.co_borrower_first_name, row.co_borrower_last_name,
-            row.co_borrower_phone, 'CO_BORROWER', '1',
-          );
-
-          const year = new Date().getFullYear();
-          const caseRef = `DLR-${year}-${loan.id.slice(0, 6).toUpperCase()}`;
-          await tx.case.create({
-            data: {
-              caseReference: caseRef,
-              loanId: loan.id,
-              officeId: office?.id,
-              assignedOfficerId: assignedOfficerId ?? undefined,
-              secondaryOfficerId: secondaryOfficerId ?? undefined,
-              importJobId: job.id,
-              status: 'ACTIVE',
-              collectionStage: 'D1',
-            },
-          });
-        });
-
-        succeeded++;
-      } catch (e: any) {
-        failed++;
-        const raw = e.message ?? String(e);
-        const msg = this.friendlyImportError(raw);
-        errors.push({ row: rowNum, loan_number: loanNum, error: msg });
-        // Persist error to DB
-        await this.prisma.importError.create({
-          data: { importJobId: job.id, rowNumber: rowNum, errorMessage: msg, rawData: JSON.stringify(rows[i]) },
-        }).catch(() => {});
-      }
+  async importFile(
+    buffer: Buffer,
+    fileName: string,
+    importedById: string,
+    importedByUsername: string,
+    columnOverrides?: Record<string, string>,
+    institutionOverride?: string,
+  ): Promise<ImportResult> {
+    let rows: ImportRow[];
+    try {
+      rows = this.parseFile(buffer, columnOverrides);
+    } catch (e: any) {
+      throw new BadRequestException(`Dokumenti nuk mund të lexohet: ${e.message}`);
     }
 
-    // Finalise the job record
-    await this.prisma.importJob.update({
-      where: { id: job.id },
+    if (rows.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
+    if (rows.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta për import');
+
+    this.prepareRows(rows, institutionOverride);
+    this.validateRequiredCols(rows);
+
+    const job = await this.prisma.importJob.create({
       data: {
-        status: failed === rows.length ? 'FAILED' : 'COMPLETED',
-        successfulRows: succeeded,
-        failedRows: failed,
+        uploadedById: importedById,
+        importType: 'PORTFOLIO',
+        fileName,
+        status: 'PROCESSING',
         totalRows: rows.length,
-        completedAt: new Date(),
+        startedAt: new Date(),
       },
     });
 
-    await this.audit.log({
-      userId: importedById,
-      username: importedByUsername,
-      action: 'LOAN_IMPORT',
-      entity: 'Loan',
-      details: `Import "${fileName}": ${succeeded} sukses, ${failed} gabime, ${skipped} anashkaluar nga ${rows.length} gjithsej`,
-    });
+    await this.processImport(rows, fileName, importedById, importedByUsername, job.id, columnOverrides, institutionOverride);
 
-    return { jobId: job.id, fileName, total: rows.length, succeeded, failed, skipped, errors };
+    const finished = await this.prisma.importJob.findUniqueOrThrow({ where: { id: job.id } });
+    const skipped = finished.totalRows - finished.successfulRows - finished.failedRows;
+    const errorRows = await this.prisma.importError.findMany({ where: { importJobId: job.id }, select: { rowNumber: true, errorMessage: true }, take: 100 });
+    return {
+      jobId: job.id,
+      fileName,
+      total: finished.totalRows,
+      succeeded: finished.successfulRows,
+      failed: finished.failedRows,
+      skipped,
+      errors: errorRows.map(e => ({ row: e.rowNumber, loan_number: '', error: e.errorMessage })),
+    };
   }
 
   private parseFile(buffer: Buffer, overrides?: Record<string, string>): ImportRow[] {
@@ -998,6 +776,218 @@ export class ImportService {
     }
 
     return { updated, skipped, errors, total: dataRows.length };
+  }
+
+  private prepareRows(rows: ImportRow[], institutionOverride?: string) {
+    if (institutionOverride?.trim()) {
+      for (const row of rows) {
+        if (!row.institution_name?.trim()) row.institution_name = institutionOverride.trim();
+      }
+    }
+    for (const row of rows) {
+      if (!row.full_name?.trim() && ((row as any).first_name || (row as any).last_name)) {
+        const fn = ((row as any).first_name ?? '').trim();
+        const ln = ((row as any).last_name ?? '').trim();
+        row.full_name = (fn + (ln ? ' ' + ln : '')).trim();
+      }
+    }
+  }
+
+  private validateRequiredCols(rows: ImportRow[]) {
+    const firstRowKeys = Object.keys(rows[0]);
+    const missing = REQUIRED_COLS.filter(k => !firstRowKeys.includes(k));
+    if (missing.length) {
+      const labels = missing.map(k => ALL_FIELDS.find(f => f.key === k)?.label ?? k);
+      throw new BadRequestException(`Kolona të detyrueshme mungojnë: ${labels.join(', ')}.`);
+    }
+  }
+
+  private async processImport(
+    rows: ImportRow[],
+    fileName: string,
+    importedById: string,
+    importedByUsername: string,
+    jobId: string,
+    _columnOverrides?: Record<string, string>,
+    institutionOverride?: string,
+  ): Promise<void> {
+    this.prepareRows(rows, institutionOverride);
+
+    const errors: { row: number; loan_number: string; error: string }[] = [];
+    let succeeded = 0, failed = 0, skipped = 0;
+
+    const institutions = await this.prisma.institution.findMany({ select: { id: true, name: true, shortName: true, code: true } });
+    const instByCode = new Map(institutions.map(i => [i.code, i]));
+    const instByName = new Map(institutions.map(i => [i.name.toLowerCase().trim(), i]));
+    const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
+    const officeMap = new Map(offices.map(o => [o.code.toLowerCase(), o]));
+    const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true, userCode: true } });
+    const officerMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim(), o.id]));
+    const officerFirstNameMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim().split(/\s+/)[0], o.id]));
+    const officerIdSet = new Set(officers.map(o => o.id));
+    const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
+    const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
+    const cityByCode = new Map(cities.map(c => [c.code, c.name]));
+    const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
+    const nplByCode = new Map(nplCats.map(n => [n.code, n.value]));
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      const loanNum = cleanId(row.loan_number) || `row-${rowNum}`;
+
+      try {
+        this.validateRow(row, rowNum);
+
+        const existing = await this.prisma.loan.findUnique({ where: { loanNumber: loanNum } });
+        if (existing) { skipped++; continue; }
+
+        const instRaw = row.institution_name?.trim() ?? '';
+        const instCode = parseInt(instRaw);
+        let institution: { id: string; name: string; shortName: string } | undefined;
+        if (!isNaN(instCode) && String(instCode) === instRaw) {
+          institution = instByCode.get(instCode);
+        }
+        if (!institution) institution = instByName.get(instRaw.toLowerCase());
+        if (!institution) {
+          const name = instRaw || 'Unknown';
+          const created = await this.prisma.institution.create({
+            data: { name, shortName: name.slice(0, 20) },
+            select: { id: true, name: true, shortName: true, code: true },
+          });
+          institution = created;
+          instByCode.set(created.code, created);
+          instByName.set(created.name.toLowerCase().trim(), created);
+        }
+
+        const officeCode = row.office_code?.trim().toLowerCase();
+        const office = officeCode ? officeMap.get(officeCode) : undefined;
+
+        const resolveOfficer = (id: string | undefined, name: string | undefined) => {
+          const val = (id ?? name ?? '').trim();
+          if (!val) return undefined;
+          const codeNum = parseInt(val);
+          if (!isNaN(codeNum) && String(codeNum) === val) {
+            const byCode = officerByCode.get(codeNum);
+            if (byCode) return byCode;
+          }
+          if (officerIdSet.has(val)) return val;
+          const key = val.toLowerCase();
+          return officerMap.get(key) ?? officerFirstNameMap.get(key.split(/\s+/)[0]) ?? undefined;
+        };
+        const assignedOfficerId  = resolveOfficer(row.assigned_officer_id, row.assigned_officer_name);
+        const secondaryOfficerId = resolveOfficer(row.secondary_officer_id, row.secondary_officer_name);
+
+        await this.prisma.$transaction(async (tx) => {
+          const personalId = (cleanId(row.personal_id) || `NOID-${loanNum}`).slice(0, 30);
+          const fullName = (row.full_name?.trim() || '').slice(0, 200);
+
+          let cityVal = row.city?.trim() || undefined;
+          if (cityVal) {
+            const cityCode = parseInt(cityVal);
+            if (!isNaN(cityCode) && String(cityCode) === cityVal) {
+              cityVal = cityByCode.get(cityCode) ?? cityVal;
+            }
+          }
+
+          const borrower = await tx.person.upsert({
+            where: { personalId },
+            create: { personalId, fullName, dateOfBirth: parseDate(row.date_of_birth), email: row.email?.trim() || undefined, address: row.address?.trim() || undefined, city: cityVal },
+            update: { fullName, ...(row.email?.trim() && { email: row.email.trim() }), ...(row.address?.trim() && { address: row.address.trim() }), ...(cityVal && { city: cityVal }) },
+          });
+
+          for (const [phone, isPrimary] of [[row.phone1?.trim(), true], [row.phone2?.trim(), false]] as [string | undefined, boolean][]) {
+            if (phone) {
+              const phoneNum = phone.slice(0, 30);
+              const exists = await tx.personPhone.findFirst({ where: { personId: borrower.id, phoneNumber: phoneNum } });
+              if (!exists) await tx.personPhone.create({ data: { personId: borrower.id, phoneNumber: phoneNum, phoneType: 'MOBILE', isPrimary } });
+            }
+          }
+
+          const principalAmt = parseDecimal(row.principal_amount || row.original_loan_amount);
+          const originalAmt  = parseDecimal(row.original_loan_amount || row.principal_amount);
+
+          const loan = await tx.loan.create({
+            data: {
+              loanNumber: loanNum,
+              institutionId: institution!.id,
+              borrowerId: borrower.id,
+              originalLoanAmount: originalAmt,
+              disbursedAmount: principalAmt || originalAmt,
+              currentOutstandingBalance: parseDecimal(row.current_outstanding_balance),
+              currency: row.currency?.trim().toUpperCase() || 'EUR',
+              interestRate: row.interest_rate ? parseDecimal(row.interest_rate) : undefined,
+              productType: row.product_type?.trim() || undefined,
+              disbursementDate: parseDate(row.disbursement_date) ?? undefined,
+              maturityDate: parseDate(row.maturity_date),
+              lastPaymentDate: parseDate(row.last_payment_date),
+              daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
+              nplClassification: (() => {
+                const v = row.npl_classification?.trim();
+                if (!v) return undefined;
+                const code = parseInt(v);
+                if (!isNaN(code) && String(code) === v) { const fromDb = nplByCode.get(code); if (fromDb) return fromDb; }
+                return parseNplClass(v);
+              })() as any,
+              dpdLastCalculatedAt: new Date(),
+            },
+          });
+
+          await tx.loanParty.create({ data: { loanId: loan.id, personId: borrower.id, role: 'BORROWER' } });
+
+          const upsertParty = async (rawId: string | undefined, rawFullName: string | undefined, rawFirstName: string | undefined, rawLastName: string | undefined, rawPhone: string | undefined, role: LoanPartyRole, syntheticIdSuffix?: string) => {
+            let pid = cleanId(rawId);
+            let fName = rawFirstName?.trim() || '';
+            let lName = rawLastName?.trim() || '';
+            if (!fName && rawFullName) { const split = splitName(rawFullName); fName = split?.firstName ?? ''; lName = split?.lastName ?? ''; }
+            if (!fName) return;
+            if (!pid) pid = `NOID-${role}-${loanNum}-${syntheticIdSuffix ?? '1'}`;
+            const safePid = pid.slice(0, 30);
+            const safeFullName = (fName + (lName ? ' ' + lName : '')).trim().slice(0, 200);
+            const person = await tx.person.upsert({ where: { personalId: safePid }, create: { personalId: safePid, fullName: safeFullName }, update: { fullName: safeFullName } });
+            if (rawPhone?.trim()) {
+              const ph = rawPhone.trim().slice(0, 30);
+              const exists = await tx.personPhone.findFirst({ where: { personId: person.id, phoneNumber: ph } });
+              if (!exists) await tx.personPhone.create({ data: { personId: person.id, phoneNumber: ph, phoneType: 'MOBILE', isPrimary: true } });
+            }
+            await tx.loanParty.createMany({ data: [{ loanId: loan.id, personId: person.id, role }], skipDuplicates: true });
+          };
+
+          await upsertParty(row.guarantor_personal_id, row.guarantor_full_name, row.guarantor_first_name, row.guarantor_last_name, row.guarantor_phone, 'GUARANTOR', '1');
+          await upsertParty(row.guarantor2_personal_id, row.guarantor2_full_name, undefined, undefined, row.guarantor2_phone, 'GUARANTOR', '2');
+          await upsertParty(row.co_borrower_personal_id, row.co_borrower_full_name, row.co_borrower_first_name, row.co_borrower_last_name, row.co_borrower_phone, 'CO_BORROWER', '1');
+
+          const year = new Date().getFullYear();
+          const caseRef = `DLR-${year}-${loan.id.slice(0, 6).toUpperCase()}`;
+          await tx.case.create({
+            data: { caseReference: caseRef, loanId: loan.id, officeId: office?.id, assignedOfficerId: assignedOfficerId ?? undefined, secondaryOfficerId: secondaryOfficerId ?? undefined, importJobId: jobId, status: 'ACTIVE', collectionStage: 'D1' },
+          });
+        });
+
+        succeeded++;
+      } catch (e: any) {
+        failed++;
+        const raw = e.message ?? String(e);
+        const msg = this.friendlyImportError(raw);
+        errors.push({ row: rowNum, loan_number: loanNum, error: msg });
+        await this.prisma.importError.create({
+          data: { importJobId: jobId, rowNumber: rowNum, errorMessage: msg, rawData: JSON.stringify(rows[i]) },
+        }).catch(() => {});
+      }
+    }
+
+    await this.prisma.importJob.update({
+      where: { id: jobId },
+      data: { status: failed === rows.length ? 'FAILED' : 'COMPLETED', successfulRows: succeeded, failedRows: failed, totalRows: rows.length, completedAt: new Date() },
+    });
+
+    await this.audit.log({
+      userId: importedById,
+      username: importedByUsername,
+      action: 'LOAN_IMPORT',
+      entity: 'Loan',
+      details: `Import "${fileName}": ${succeeded} sukses, ${failed} gabime, ${skipped} anashkaluar nga ${rows.length} gjithsej`,
+    });
   }
 
   private validateRow(row: ImportRow, rowNum: number) {

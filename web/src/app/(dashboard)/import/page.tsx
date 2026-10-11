@@ -836,14 +836,32 @@ export default function ImportPage() {
     setUploading(true); setError("");
     try {
       const res = await importApi.upload(file);
-      setResult(res);
-      importApi.jobs().then(setJobs).catch(() => {});
+      // Backend returns { jobId, status: 'PROCESSING' } — poll until complete
+      if (res?.status === 'PROCESSING' && res?.jobId) {
+        const poll = async () => {
+          const jobs = await importApi.jobs();
+          setJobs(jobs);
+          const job = jobs.find((j: any) => j.id === res.jobId);
+          if (!job || job.status === 'PROCESSING') {
+            setTimeout(poll, 2000);
+          } else {
+            setResult({ jobId: job.id, fileName: job.fileName, total: job.totalRows, succeeded: job.successfulRows, failed: job.failedRows, skipped: job.totalRows - job.successfulRows - job.failedRows, errors: job.errors?.map((e: any) => ({ row: e.rowNumber, loan_number: '', error: e.errorMessage })) ?? [] });
+            setUploading(false);
+          }
+        };
+        poll();
+      } else {
+        setResult(res);
+        importApi.jobs().then(setJobs).catch(() => {});
+        setUploading(false);
+      }
     } catch (e: any) {
       setError(e.message ?? "Ndodhi një gabim gjatë importit.");
-    } finally { setUploading(false); }
+      setUploading(false);
+    }
   }
 
-  function reset() { setFile(null); setResult(null); setError(""); }
+  function reset() { setFile(null); setResult(null); setError(""); setUploading(false); }
 
   return (
     <div>
