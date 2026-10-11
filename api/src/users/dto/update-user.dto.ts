@@ -1,8 +1,15 @@
-import { IsString, MinLength, MaxLength, IsIn, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsIn, IsOptional, IsBoolean, Matches } from 'class-validator';
 
 const ROLES = ['ADMIN', 'MANAGER', 'OFFICER', 'VIEWER'] as const;
 
 export class UpdateUserDto {
+  @IsOptional()
+  @IsString({ message: 'Emri i përdoruesit duhet të jetë tekst' })
+  @MinLength(3, { message: 'Emri i përdoruesit duhet të ketë të paktën 3 karaktere' })
+  @MaxLength(50, { message: 'Emri i përdoruesit nuk mund të kalojë 50 karaktere' })
+  @Matches(/^[a-zA-Z0-9çÇëËäÄöÖüÜ._-]+$/, { message: 'Emri i përdoruesit mund të përmbajë vetëm shkronja, numra, pika, viza dhe nënviza' })
+  username?: string;
+
   @IsOptional()
   @IsString({ message: 'Emri i plotë duhet të jetë tekst' })
   @MinLength(2, { message: 'Emri i plotë duhet të ketë të paktën 2 karaktere' })

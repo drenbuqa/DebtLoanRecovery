@@ -49,8 +49,13 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: { fullName?: string; role?: string; officeId?: string; isActive?: boolean; password?: string }) {
+  async update(id: string, dto: { username?: string; fullName?: string; role?: string; officeId?: string; isActive?: boolean; password?: string }) {
     const data: any = {};
+    if (dto.username !== undefined) {
+      const exists = await this.prisma.user.findFirst({ where: { username: dto.username, NOT: { id } } });
+      if (exists) throw new Error('Ky emër përdoruesi është tashmë i zënë');
+      data.username = dto.username;
+    }
     if (dto.fullName !== undefined) data.fullName = dto.fullName;
     if (dto.role !== undefined) data.role = dto.role;
     if (dto.officeId !== undefined) data.officeId = dto.officeId || null;

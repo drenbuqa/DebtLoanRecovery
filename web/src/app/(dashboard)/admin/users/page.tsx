@@ -82,7 +82,7 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
 
   async function submit() {
     const fields = isEdit
-      ? ["fullName"]
+      ? ["username", "fullName"]
       : ["username", "fullName", "password"];
     touchAll(fields);
     const hasError = fields.some((f) => (E as any)[f] !== null);
@@ -93,8 +93,8 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
 
     setLoading(true); setSubmitError("");
     try {
-      const dto: any = { fullName: form.fullName, role: form.role, officeId: form.officeId || undefined };
-      if (!isEdit) { dto.username = form.username; dto.password = form.password; }
+      const dto: any = { username: form.username, fullName: form.fullName, role: form.role, officeId: form.officeId || undefined };
+      if (!isEdit) { dto.password = form.password; }
       isEdit ? await usersApi.update(user.id, dto) : await usersApi.create(dto);
       onSaved(); onClose();
     } catch (e: any) { setSubmitError(e.message); } finally { setLoading(false); }
@@ -104,14 +104,12 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
     <ModalShell title={isEdit ? "Ndrysho Përdoruesin" : "Përdorues i Ri"} onClose={onClose}>
       <div className="p-6 space-y-4">
         {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
-        {!isEdit && (
-          <Field label="Emri i Përdoruesit" required error={E.username}>
-            <TextInput hasError={!!E.username} value={form.username}
-              onChange={(e) => set("username", e.target.value)}
-              onBlur={() => touch("username")}
-              placeholder="p.sh. jon.gjokaj" autoFocus />
-          </Field>
-        )}
+        <Field label="Emri i Përdoruesit" required error={E.username}>
+          <TextInput hasError={!!E.username} value={form.username}
+            onChange={(e) => set("username", e.target.value)}
+            onBlur={() => touch("username")}
+            placeholder="p.sh. Jon.Gjokaj" autoFocus={!isEdit} />
+        </Field>
         <Field label="Emri i Plotë" required error={E.fullName}>
           <TextInput hasError={!!E.fullName} value={form.fullName}
             onChange={(e) => set("fullName", e.target.value)}
