@@ -2,7 +2,7 @@
 DELETE FROM "institutions"
 WHERE "name" ILIKE ANY (ARRAY[
   'BKS',
-  'NZMF',
+  'BZMF',
   'Cia Berto',
   'Crimson Finance Fund',
   'Crimson Finance found',
