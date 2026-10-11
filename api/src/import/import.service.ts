@@ -415,7 +415,7 @@ export class ImportService {
       return 'Institucioni ose zyrtari i specifikuar nuk ekziston në sistem.';
     }
     if (raw.includes('prisma.') || raw.includes('Invalid `prisma')) {
-      return 'DB_ERR: ' + raw.slice(0, 300);
+      return 'Gabim gjatë ruajtjes së të dhënave. Kontrolloni formatin e rreshtit.';
     }
     return raw;
   }
