@@ -4,13 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as path from 'path';
 import { exec } from 'child_process';
 
-function dpdToNplClass(dpd: number): string {
-  if (dpd <= 0)   return 'PERFORMING';
-  if (dpd <= 30)  return 'WATCH';
-  if (dpd <= 90)  return 'SUBSTANDARD';
-  if (dpd <= 180) return 'DOUBTFUL';
-  return 'LOSS';
-}
 
 @Injectable()
 export class SchedulerService {
@@ -40,7 +33,6 @@ export class SchedulerService {
           where: { id: loan.id },
           data: {
             daysPastDue: dpd,
-            nplClassification: dpdToNplClass(dpd) as any,
             dpdLastCalculatedAt: new Date(),
           },
         });

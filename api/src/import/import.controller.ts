@@ -33,7 +33,7 @@ export class ImportController {
 
   @Get('reference-data')
   async referenceData() {
-    const [officers, institutions, cities, nplCategories] = await Promise.all([
+    const [officers, institutions, cities] = await Promise.all([
       this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
         select: { id: true, userCode: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
@@ -48,12 +48,8 @@ export class ImportController {
         select: { id: true, code: true, name: true },
         orderBy: { code: 'asc' },
       }),
-      this.prisma.nplCategory.findMany({
-        select: { id: true, code: true, value: true, label: true },
-        orderBy: { code: 'asc' },
-      }),
     ]);
-    return { officers, institutions, cities, nplCategories };
+    return { officers, institutions, cities };
   }
 
   @Get('template')
@@ -89,7 +85,7 @@ export class ImportController {
     @Body('type') type: string,
   ) {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
-    const validTypes = ['officer', 'npl', 'institution', 'city'];
+    const validTypes = ['officer', 'institution', 'city'];
     if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
     return this.svc.bulkUpdate(file.buffer, type as any, req.user.id);
   }

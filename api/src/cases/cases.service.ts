@@ -21,7 +21,6 @@ const CASE_LIST_SELECT = {
       currency: true,
       lastPaymentDate: true,
       daysPastDue: true,
-      nplClassification: true,
       institution: { select: { id: true, shortName: true, name: true } },
       borrower: {
         select: {
@@ -73,7 +72,6 @@ const CASE_DETAIL_EXTRA = {
       maturityDate: true,
       lastPaymentDate: true,
       daysPastDue: true,
-      nplClassification: true,
       institution: { select: { id: true, shortName: true, name: true } },
       borrower: {
         select: {
@@ -272,7 +270,6 @@ export class CasesService {
     maturityDate?: string;
     interestRate?: number;
     productType?: string;
-    nplClassification?: string;
     // Borrower contact info
     phone1?: string;
     phone2?: string;
@@ -291,7 +288,6 @@ export class CasesService {
     if (dto.maturityDate !== undefined) loanData.maturityDate = dto.maturityDate ? new Date(dto.maturityDate) : null;
     if (dto.interestRate !== undefined) loanData.interestRate = dto.interestRate;
     if (dto.productType !== undefined) loanData.productType = dto.productType;
-    if (dto.nplClassification !== undefined) loanData.nplClassification = dto.nplClassification;
 
     const caseData: any = {};
     if (dto.assignedOfficerId !== undefined) caseData.assignedOfficerId = dto.assignedOfficerId || null;
@@ -469,7 +465,6 @@ export class CasesService {
     disbursementDate?: string;
     maturityDate?: string;
     daysPastDue?: number;
-    nplClassification?: string;
     // Case
     officeId?: string;
     assignedOfficerId?: string;
@@ -537,7 +532,6 @@ export class CasesService {
           disbursementDate: dto.disbursementDate ? new Date(dto.disbursementDate) : undefined,
           maturityDate: dto.maturityDate ? new Date(dto.maturityDate) : undefined,
           daysPastDue: dto.daysPastDue ?? 0,
-          nplClassification: dto.nplClassification as any,
         },
       });
 

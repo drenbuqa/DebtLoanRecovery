@@ -54,8 +54,6 @@ const ENUM_SQ: Record<string, string> = {
   MOBILE: "Celular", WORK: "Pune", HOME: "Shtëpie",
   // Rolet e përdoruesit
   ADMIN: "Administrator", MANAGER: "Menaxher", OFFICER: "Oficer", VIEWER: "Vëzhgues",
-  // Klasifikimi NPL
-  SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje",
   // Lloji i produktit
   PERSONAL: "Personal", MORTGAGE: "Hipotekë", BUSINESS: "Biznesi", AUTO: "Auto", CONSUMER: "Konsumator",
   // Rolet e palëve të lidhura

@@ -83,7 +83,6 @@ export class ReportsService {
       ['Original Amount', euro(c.loan.originalLoanAmount)],
       ['Outstanding Balance', euro(c.loan.currentOutstandingBalance)],
       ['Days Past Due', String(c.loan.daysPastDue)],
-      ['NPL Class', c.loan.nplClassification ?? '—'],
       ['Maturity Date', date(c.loan.maturityDate)],
     ]);
 
@@ -181,15 +180,6 @@ export class ReportsService {
       ['Average DPD', stats._avg.daysPastDue != null ? `${Math.round(Number(stats._avg.daysPastDue))} days` : '—'],
       ['Report Date', date(new Date())],
     ]);
-
-    // DPD breakdown
-    const bands = { PERFORMING: 0, WATCH: 0, SUBSTANDARD: 0, DOUBTFUL: 0, LOSS: 0 };
-    for (const c of cases) {
-      const cls = (c.loan.nplClassification as string) ?? 'PERFORMING';
-      if (cls in bands) (bands as any)[cls]++;
-    }
-    this.sectionTitle(doc, 'NPL Classification Breakdown');
-    this.twoCol(doc, Object.entries(bands).map(([k, v]) => [k, String(v)]));
 
     // Case list
     if (cases.length) {
@@ -349,7 +339,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -390,7 +380,6 @@ export class ReportsService {
         d(c.loan.maturityDate),
         d(c.loan.lastPaymentDate),
         c.loan.daysPastDue ?? 0,
-        c.loan.nplClassification ?? '',
         (c.office as any)?.code ?? '',
         g1?.personalId ?? '',
         g1?.fullName ?? '',
@@ -478,7 +467,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -526,7 +515,6 @@ export class ReportsService {
         d(c.loan.maturityDate),
         d(c.loan.lastPaymentDate),
         c.loan.daysPastDue ?? 0,
-        c.loan.nplClassification ?? '',
         (c.office as any)?.code ?? '',
         g1?.personalId ?? '',
         g1?.fullName ?? '',
@@ -609,7 +597,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -666,7 +654,6 @@ export class ReportsService {
         d(c.loan.maturityDate),
         d(c.loan.lastPaymentDate),
         c.loan.daysPastDue ?? 0,
-        c.loan.nplClassification ?? '',
         (c.office as any)?.code ?? '',
         g1?.personalId ?? '',
         g1?.fullName ?? '',
@@ -746,7 +733,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -799,7 +786,6 @@ export class ReportsService {
           d(c.loan.maturityDate),
           d(c.loan.lastPaymentDate),
           c.loan.daysPastDue ?? 0,
-          c.loan.nplClassification ?? '',
           (c.office as any)?.code ?? '',
           g1?.personalId ?? '',
           g1?.fullName ?? '',
@@ -885,7 +871,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -936,7 +922,6 @@ export class ReportsService {
         d(c.loan.maturityDate),
         d(c.loan.lastPaymentDate),
         c.loan.daysPastDue ?? 0,
-        c.loan.nplClassification ?? '',
         (c.office as any)?.code ?? '',
         g1?.personalId ?? '',
         g1?.fullName ?? '',
@@ -1023,7 +1008,7 @@ export class ReportsService {
       'assigned_officer_id', 'secondary_officer_id',
       'original_loan_amount', 'principal_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -1072,7 +1057,6 @@ export class ReportsService {
         d(c.loan.maturityDate),
         d(c.loan.lastPaymentDate),
         c.loan.daysPastDue ?? 0,
-        c.loan.nplClassification ?? '',
         (c.office as any)?.code ?? '',
         g1?.personalId ?? '',
         g1?.fullName ?? '',

@@ -185,7 +185,6 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [officerId, setOfficerId] = useState("");
   const [secondaryOfficerId, setSecondaryOfficerId] = useState("");
   const [institutionId, setInstitutionId] = useState("");
-  const [nplClass, setNplClass] = useState("");
   const [createFaza, setCreateFaza] = useState("");
   const [registrationDate, setRegistrationDate] = useState(today);
 
@@ -253,7 +252,6 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
         secondaryOfficerId: secondaryOfficerId || undefined,
         institutionId,
         collectionStatus: createFaza || undefined,
-        nplClassification: nplClass || undefined,
         registrationDate: registrationDate || undefined,
       });
       toast("Klienti u regjistrua me sukses", "success");
@@ -397,16 +395,6 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                         { value: "KONTESTIM",      label: "Kontestim i Borgjit" },
                         { value: "NUK_PRANON",     label: "Nuk Pranon Marrëveshje" },
                         { value: "TJERA",          label: "Të Tjera" },
-                      ]} />
-                  </FL>
-                  <FL label="Kategoria" error={null}>
-                    <Select value={nplClass} onChange={setNplClass} placeholder="Pa kategori" dropUp clearable
-                      options={[
-                        { value: "PERFORMING",  label: "Performues" },
-                        { value: "WATCH",       label: "Nën Vëzhgim" },
-                        { value: "SUBSTANDARD", label: "Nënstandard" },
-                        { value: "DOUBTFUL",    label: "I Dyshimtë" },
-                        { value: "LOSS",        label: "Humbje" },
                       ]} />
                   </FL>
                   <FL label="Data e Regjistrimit" error={null}>
@@ -573,7 +561,6 @@ function CasesPageInner() {
       }
       const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
       const statusLabel: Record<string, string> = { ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
-      const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
       const rows = allCases.map((c: any) => {
         const b = c.loan?.borrower;
         const parties = c.loan?.relatedParties ?? [];
@@ -593,7 +580,6 @@ function CasesPageInner() {
           "Zyrtari Kryesor": c.assignedOfficer?.fullName ?? "",
           "Zyrtari Dytësor": c.secondaryOfficer?.fullName ?? "",
           "Faza": c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "",
-          "Kategoria": c.loan?.nplClassification ? (nplLabel[c.loan.nplClassification] ?? c.loan.nplClassification) : "",
           "Garant 1": guarantors[0]?.person?.fullName ?? "",
           "Garant 2": guarantors[1]?.person?.fullName ?? "",
           "Bashkëkreditues": coborrower?.person?.fullName ?? "",
@@ -843,7 +829,7 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Kategoria", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi"].map((h, i) => (
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi"].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
                   ))}
                   {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
@@ -857,7 +843,6 @@ function CasesPageInner() {
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
-                  const nplLabel: Record<string, string> = { PERFORMING: "Performues", WATCH: "Nën Vëzhgim", SUBSTANDARD: "Nënstandard", DOUBTFUL: "I Dyshimtë", LOSS: "Humbje" };
                   const latestPromise = (c.promises ?? c.promisesToPay)?.[0];
                   const promiseDaysOverdue = latestPromise
                     ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
@@ -906,9 +891,6 @@ function CasesPageInner() {
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[10px] text-gray-600">{c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "—"}</span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[10px] text-amber-700">{c.loan?.nplClassification ? (nplLabel[c.loan.nplClassification] ?? c.loan.nplClassification) : "—"}</span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-600">{guarantors[0]?.person?.fullName ?? "—"}</span>

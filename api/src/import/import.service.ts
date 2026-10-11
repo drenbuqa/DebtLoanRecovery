@@ -68,8 +68,6 @@ const COL_ALIASES: Record<string, string> = {
   // DPD / NPL
   'days_past_due': 'days_past_due', 'dpd': 'days_past_due', 'overdue_days': 'days_past_due',
   'dite_vonese': 'days_past_due', 'days_overdue': 'days_past_due',
-  'npl_classification': 'npl_classification', 'npl_class': 'npl_classification',
-  'npl': 'npl_classification', 'classification': 'npl_classification', 'category': 'npl_classification',
   // Office (DLR internal — only map explicit DLR office codes, never bank branch codes)
   'office_code': 'office_code', 'office': 'office_code',
   // DLR Officers — by UUID (preferred, exact)
@@ -152,7 +150,6 @@ interface ImportRow {
   maturity_date?: string;
   last_payment_date?: string;
   days_past_due?: string;
-  npl_classification?: string;
   office_code?: string;
   assigned_officer_id?: string;
   secondary_officer_id?: string;
@@ -236,13 +233,6 @@ function parseDate(v: string | number | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-const NPL_MAP: Record<string, string> = {
-  performing: 'PERFORMING', watch: 'WATCH', watchlist: 'WATCH',
-  substandard: 'SUBSTANDARD', sub_standard: 'SUBSTANDARD',
-  doubtful: 'DOUBTFUL', loss: 'LOSS', write_off: 'LOSS', written_off: 'LOSS',
-  i_dyshimte: 'DOUBTFUL', humbje: 'LOSS', nënstandarde: 'SUBSTANDARD',
-};
-
 // Split "Agim Berisha" → { firstName: "Agim", lastName: "Berisha" }
 // Handles "Ana Maria Berisha" → { firstName: "Ana Maria", lastName: "Berisha" }
 function splitName(full: string | undefined): { firstName: string; lastName: string } | null {
@@ -258,11 +248,6 @@ function cleanId(v: string | undefined): string {
   return String(v).trim().replace(/\.0+$/, '');
 }
 
-function parseNplClass(v: string | undefined): string | undefined {
-  if (!v) return undefined;
-  const key = v.trim().toLowerCase().replace(/[\s\-]+/g, '_');
-  return NPL_MAP[key] ?? undefined;
-}
 
 // ── Field metadata ─────────────────────────────────────────────────────────────
 
@@ -293,7 +278,6 @@ export const ALL_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'last_payment_date',           label: 'Data e Pagesës së Fundit',          required: false },
   // NPL / DPD
   { key: 'days_past_due',               label: 'Ditë Vonesë',                       required: false },
-  { key: 'npl_classification',          label: 'Klasifikimi NPL',                   required: false },
   // Assignment
   { key: 'office_code',                 label: 'Kodi i Zyrës',                      required: false },
   { key: 'assigned_officer_name',       label: 'Oficeri i Parë i Mbledhjes (DLR)',  required: false },
@@ -370,7 +354,7 @@ export class ImportService {
       'collection_officer', 'second_collection_officer',
       'original_loan_amount', 'current_outstanding_balance',
       'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'npl_classification', 'office_code',
+      'days_past_due', 'office_code',
       '1_guarantor_personal_id', '1_guarantor_first_last_name', '1_guarantor_phone',
       '2_guarantor_personal_id', '2_guarantor_first_last_name', '2_guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
@@ -382,7 +366,7 @@ export class ImportService {
       1, '',
       15000, 12500,
       'Consumer', '2024-01-15', '2027-01-15', '2024-11-01',
-      45, 2, 'PRK',
+      45, 'PRK',
       '9876543210', 'Vjosa Berisha', '+38344654321',
       '', 'Agron Berisha', '+38344654322',
       '', '', '',
@@ -723,12 +707,6 @@ export class ImportService {
       cityByCode = new Map(cities.map((c) => [c.code, c.name]));
     }
 
-    let nplByCode: Map<number, string> | null = null;
-    if (type === 'npl') {
-      const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
-      nplByCode = new Map(nplCats.map((n) => [n.code, n.value]));
-    }
-
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i];
       const caseRef = String(row[0] ?? '').trim();
@@ -749,12 +727,6 @@ export class ImportService {
           const officerId = officerByCode!.get(code);
           if (!officerId) { errors.push(`${rowLabel}: kodi i zyrtatit ${code} nuk ekziston`); skipped++; continue; }
           await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
-          updated++;
-        } else if (type === 'npl') {
-          const code = parseInt(codeRaw);
-          const nplVal = nplByCode!.get(code);
-          if (!nplVal) { errors.push(`${rowLabel}: kodi NPL ${code} nuk ekziston (1-5)`); skipped++; continue; }
-          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { nplClassification: nplVal as any } });
           updated++;
         } else if (type === 'institution') {
           const code = parseInt(codeRaw);
@@ -828,9 +800,6 @@ export class ImportService {
     const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
     const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
     const cityByCode = new Map(cities.map(c => [c.code, c.name]));
-    const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
-    const nplByCode = new Map(nplCats.map(n => [n.code, n.value]));
-
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2;
@@ -922,13 +891,6 @@ export class ImportService {
               maturityDate: parseDate(row.maturity_date),
               lastPaymentDate: parseDate(row.last_payment_date),
               daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
-              nplClassification: (() => {
-                const v = row.npl_classification?.trim();
-                if (!v) return undefined;
-                const code = parseInt(v);
-                if (!isNaN(code) && String(code) === v) { const fromDb = nplByCode.get(code); if (fromDb) return fromDb; }
-                return parseNplClass(v);
-              })() as any,
               dpdLastCalculatedAt: new Date(),
             },
           });

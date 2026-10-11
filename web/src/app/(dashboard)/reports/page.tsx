@@ -15,7 +15,7 @@ const REPORTS = [
     name: "Gjendja e Klientëve",
     desc: "Të gjitha klientët aktuale me balancën, statusin dhe fazën e arkëtimit",
     icon: BarChart3,
-    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Klasifikimi NPL", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
+    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
     info: "Eksporton klientët me format identik me importin — të gjitha fushat e borrowerit, kredisë, garantorëve dhe ko-huamarrësit. Oficeri shikon vetëm klientët e tij/saj; admini shikon të gjitha.",
   },
   {

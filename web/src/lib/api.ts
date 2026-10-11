@@ -265,7 +265,7 @@ async function importFetch(path: string, form: FormData) {
 
 export const importApi = {
   templateUrl: () => `${API_BASE}/import/template`,
-  referenceData: () => req<{ officers: any[]; institutions: any[]; cities: string[]; nplCategories: string[] }>('/import/reference-data'),
+  referenceData: () => req<{ officers: any[]; institutions: any[]; cities: any[] }>('/import/reference-data'),
   fields: () => req<any[]>('/import/fields'),
   jobs: () => req<any[]>('/import/jobs'),
   preview: async (file: File) => {

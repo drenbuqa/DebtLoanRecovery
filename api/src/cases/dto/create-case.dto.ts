@@ -1,6 +1,5 @@
 import { IsString, IsNumber, IsOptional, IsDateString, IsUUID, IsNotEmpty, MaxLength, Min, Max, IsIn } from 'class-validator';
 
-const NPL_CLASSES = ['PERFORMING', 'WATCH', 'SUBSTANDARD', 'DOUBTFUL', 'LOSS'] as const;
 const STAGES = ['D1', 'D2', 'D3', 'D4', 'LEGAL', 'WRITTEN_OFF'] as const;
 const COLLECTION_STATUSES = ['KLIENT_I_RI', 'PAKONTAKTUAR', 'ZOTIM_PAGESE', 'ME_MARREVESHJE', 'KONTESTIM', 'NUK_PRANON', 'JURIDIKE', 'TJERA'] as const;
 
@@ -27,8 +26,6 @@ export class CreateCaseDto {
   @IsOptional() @IsDateString({}, { message: 'Data e disbursimit nuk është e vlefshme' }) disbursementDate?: string;
   @IsOptional() @IsDateString({}, { message: 'Data e maturimit nuk është e vlefshme' }) maturityDate?: string;
   @IsOptional() @IsNumber({}, { message: 'Ditët me vonesë duhet të jenë numër' }) @Min(0) daysPastDue?: number;
-  @IsOptional() @IsIn(NPL_CLASSES, { message: 'Kategoria sipas performancës nuk është e vlefshme' }) nplClassification?: string;
-
   // Case
   @IsOptional() @IsString() officeId?: string;
   @IsOptional() @IsString() assignedOfficerId?: string;

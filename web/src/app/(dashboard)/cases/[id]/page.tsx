@@ -102,22 +102,6 @@ const FAZA_DOT: Record<string, string> = {
   TJERA:          "bg-gray-300",
 };
 
-// ── Kategoria (NPL) ──────────────────────────────────────────
-const NPL_OPTIONS = [
-  { value: "PERFORMING",  label: "Performues" },
-  { value: "WATCH",       label: "Nën Vëzhgim" },
-  { value: "SUBSTANDARD", label: "Nënstandard" },
-  { value: "DOUBTFUL",    label: "I Dyshimtë" },
-  { value: "LOSS",        label: "Humbje" },
-];
-const NPL_LABEL: Record<string, string> = {
-  PERFORMING:  "Performues",
-  WATCH:       "Nën Vëzhgim",
-  SUBSTANDARD: "Nënstandard",
-  DOUBTFUL:    "I Dyshimtë",
-  LOSS:        "Humbje",
-};
-
 // ── Tabs ────────────────────────────────────────────────────
 const TABS = ["Pasqyrë", "Financiar", "Pagesa", "Marrëveshjet", "Juridike", "Dokumenta"];
 
@@ -684,7 +668,6 @@ export default function CaseDetailPage() {
       interestRate: caseData?.loan?.interestRate ?? "",
       productType: caseData?.loan?.productType ?? "",
       collectionStatus: caseData?.collectionStatus ?? "",
-      nplClassification: caseData?.loan?.nplClassification ?? "",
     });
     setEditError("");
     setShowEditCase(true);
@@ -702,7 +685,6 @@ export default function CaseDetailPage() {
         interestRate: editForm.interestRate !== "" ? parseFloat(editForm.interestRate) : undefined,
         productType: editForm.productType || undefined,
         collectionStatus: editForm.collectionStatus || undefined,
-        nplClassification: editForm.nplClassification || undefined,
       });
       await loadCase();
       setShowEditCase(false);
@@ -967,12 +949,6 @@ export default function CaseDetailPage() {
                     dropUp placeholder="Asnjë" clearable
                     options={FAZA_OPTIONS} />
                 </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Kategoria</label>
-                  <Select value={editForm.nplClassification ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, nplClassification: v }))}
-                    dropUp placeholder="Asnjë" clearable
-                    options={NPL_OPTIONS} />
-                </div>
               </div>
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Produktit</label>
@@ -1035,12 +1011,6 @@ export default function CaseDetailPage() {
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-gray-50 text-gray-700 border border-gray-200">
                   <span className={`w-1.5 h-1.5 rounded-full ${FAZA_DOT[caseData.collectionStatus] ?? "bg-gray-300"}`} />
                   {FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus}
-                </span>
-              )}
-              {/* Kategoria (NPL) badge */}
-              {caseData?.loan?.nplClassification && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-                  {NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification}
                 </span>
               )}
               {/* Case status badge (only when not ACTIVE) */}
@@ -1260,7 +1230,6 @@ export default function CaseDetailPage() {
                     { label: "Data e Pagesës së Fundit", val: caseData?.loan?.lastPaymentDate ? new Date(caseData.loan.lastPaymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Ditë Vonesë", val: `${dpd} ditë` },
                     { label: "Faza", val: caseData?.collectionStatus ? (FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus) : "—" },
-                    { label: "Kategoria", val: caseData?.loan?.nplClassification ? (NPL_LABEL[caseData.loan.nplClassification] ?? caseData.loan.nplClassification) : "—" },
                   ].map((r) => (
                     <div key={r.label} className="flex justify-between items-baseline">
                       <span className="text-[12px] text-gray-400">{r.label}</span>

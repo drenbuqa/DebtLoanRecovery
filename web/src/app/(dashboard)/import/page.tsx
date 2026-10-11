@@ -406,21 +406,13 @@ function CopyBtn({ text }: { text: string }) {
 // ── Reference panel ────────────────────────────────────────────────────────────
 
 function ReferencePanel() {
-  const [data, setData] = useState<{ officers: any[]; institutions: any[]; cities: any[]; nplCategories: any[] } | null>(null);
+  const [data, setData] = useState<{ officers: any[]; institutions: any[]; cities: any[] } | null>(null);
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"officers" | "institutions" | "cities" | "npl">("officers");
+  const [tab, setTab] = useState<"officers" | "institutions" | "cities">("officers");
 
   useEffect(() => {
     importApi.referenceData().then(setData).catch(() => {});
   }, []);
-
-  const NPL_DESC: Record<string, string> = {
-    PERFORMING: "Kredi aktive, pa vonesë",
-    WATCH: "Vonesë 1–90 ditë",
-    SUBSTANDARD: "Vonesë 91–180 ditë",
-    DOUBTFUL: "Vonesë 181–360 ditë",
-    LOSS: "Vonesë mbi 360 ditë",
-  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -428,7 +420,7 @@ function ReferencePanel() {
         className="w-full flex items-center justify-between px-5 py-4 text-left">
         <div>
           <div className="text-[14px] font-semibold text-gray-900">Vlerat e referencës</div>
-          <div className="text-[12px] text-gray-400 mt-0.5">ID-të e zyrtarëve, emrat e institucioneve, qytetet dhe kategoritë NPL</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">ID-të e zyrtarëve, emrat e institucioneve dhe qytetet</div>
         </div>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
@@ -441,7 +433,6 @@ function ReferencePanel() {
               { key: "officers", label: `Zyrtarët (${data.officers.length})` },
               { key: "institutions", label: `Bankat (${data.institutions.length})` },
               { key: "cities", label: `Qytetet (${data.cities.length})` },
-              { key: "npl", label: "Kategoria NPL" },
             ] as const).map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-3 py-2.5 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
@@ -517,25 +508,6 @@ function ReferencePanel() {
               </div>
             )}
 
-            {tab === "npl" && (
-              <div>
-                <p className="text-[11px] text-gray-400 mb-3">
-                  Vendosni <span className="font-semibold text-gray-600">kodin numerik</span> në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span> të dokumentit Excel.
-                </p>
-                <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {data.nplCategories.map((n: any) => (
-                    <div key={n.id} className="flex items-center px-3 py-2.5 hover:bg-gray-50 gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{n.code}</span>
-                      </div>
-                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{n.value}</span>
-                      <span className="text-[12px] text-gray-400 flex-1">{n.label}</span>
-                      <CopyBtn text={String(n.code)} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -545,16 +517,15 @@ function ReferencePanel() {
 
 // ── Bulk update panel ──────────────────────────────────────────────────────────
 
-type BulkType = "officer" | "npl" | "institution" | "city";
+type BulkType = "officer" | "institution" | "city";
 
 const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "officer",     label: "Zyrtar",        desc: "Ndrysho oficerina e klientit" },
-  { key: "npl",         label: "Kategoria NPL",  desc: "Ndrysho klasifikimin NPL të kredisë" },
   { key: "institution", label: "Institucioni",   desc: "Ndrysho bankën/institucionin e kredisë" },
   { key: "city",        label: "Qyteti",         desc: "Ndrysho qytetin e huamarrësit" },
 ];
 
-function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { officers: any[]; institutions: any[]; cities: any[]; nplCategories: any[] }) {
+function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; institutions: any[]; cities: any[] }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<BulkType>("officer");
   const [file, setFile] = useState<File | null>(null);
@@ -593,20 +564,6 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
         </div>
       );
     }
-    if (type === "npl") {
-      return (
-        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-          {nplCategories.map((n: any) => (
-            <div key={n.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="w-7 font-mono font-bold text-brand-700 text-center">{n.code}</span>
-              <span className="font-mono font-semibold text-gray-800 w-28">{n.value}</span>
-              <span className="text-gray-400 flex-1">{n.label}</span>
-              <CopyBtn text={String(n.code)} />
-            </div>
-          ))}
-        </div>
-      );
-    }
     if (type === "institution") {
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
@@ -640,7 +597,7 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
         className="w-full flex items-center justify-between px-5 py-4 text-left">
         <div>
           <div className="text-[14px] font-semibold text-gray-900">Ndryshime të Pjesshme</div>
-          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, kategori NPL, institucion ose qytet me ngarkesë Excel</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, institucion ose qytet me ngarkesë Excel</div>
         </div>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
@@ -673,7 +630,7 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
                     <th className="border border-gray-300 bg-gray-200 text-gray-500 font-semibold px-3 py-1 text-center text-[10px] w-10">nr</th>
                     <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">A &nbsp;—&nbsp; Numri i klientit</th>
                     <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">
-                      B &nbsp;—&nbsp; {type === "officer" ? "Kodi i zyrtatit" : type === "npl" ? "Vlera NPL" : type === "institution" ? "Kodi i institucionit" : "Kodi i qytetit"}
+                      B &nbsp;—&nbsp; {type === "officer" ? "Kodi i zyrtatit" : type === "institution" ? "Kodi i institucionit" : "Kodi i qytetit"}
                     </th>
                   </tr>
                 </thead>
@@ -682,14 +639,14 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
                     <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">1</td>
                     <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">Q71234567R</td>
                     <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
-                      {type === "officer" ? "3" : type === "npl" ? "WATCH" : type === "institution" ? "4" : "19"}
+                      {type === "officer" ? "3" : type === "institution" ? "4" : "19"}
                     </td>
                   </tr>
                   <tr className="bg-gray-50/60">
                     <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">2</td>
                     <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">M31234567N</td>
                     <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
-                      {type === "officer" ? "7" : type === "npl" ? "LOSS" : type === "institution" ? "9" : "5"}
+                      {type === "officer" ? "7" : type === "institution" ? "9" : "5"}
                     </td>
                   </tr>
                   <tr className="bg-white">
@@ -702,7 +659,7 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
             </div>
             <div className="space-y-1 text-[11px] text-gray-500">
               <p><span className="font-semibold text-gray-700">Kolona A</span> — numri i klientit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">Q71234567R</span>), ashtu siç shfaqet në tabelën e klientëve</p>
-              <p><span className="font-semibold text-gray-700">Kolona B</span> — {type === "npl" ? "vlera NPL me shkronja të mëdha (p.sh. WATCH, LOSS)" : "kodi numerik nga tabela e referencës majtas"}</p>
+              <p><span className="font-semibold text-gray-700">Kolona B</span> — kodi numerik nga tabela e referencës majtas</p>
             </div>
             <p className="text-[11px] text-gray-400">Titujt e kolonave janë opsionalë — sistemi i njeh dhe i kapërcen automatikisht.</p>
           </div>
@@ -767,7 +724,7 @@ function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { of
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                       <Upload size={18} className="text-gray-300" />
                       <p className="text-[12px] text-gray-500">Tërhiq ose kliko për të zgjedhur</p>
-                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: {type === "npl" ? "vlera NPL" : "kodi"}</p>
+                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: kodi</p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 border border-brand-200 bg-brand-50 rounded-xl">
@@ -817,7 +774,6 @@ export default function ImportPage() {
   const [officers, setOfficers]         = useState<any[]>([]);
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [cities, setCities]             = useState<any[]>([]);
-  const [nplCategories, setNplCategories] = useState<any[]>([]);
 
   useEffect(() => {
     importApi.jobs().then(setJobs).catch(() => {}).finally(() => setLoadingJobs(false));
@@ -825,7 +781,6 @@ export default function ImportPage() {
       setOfficers(d.officers);
       setInstitutions(d.institutions);
       setCities(d.cities);
-      setNplCategories(d.nplCategories);
     }).catch(() => {});
   }, []);
 
@@ -990,7 +945,7 @@ export default function ImportPage() {
         <ReferencePanel />
 
         {/* ── Bulk partial updates ─────────────────── */}
-        <BulkUpdatePanel officers={officers} institutions={institutions} cities={cities} nplCategories={nplCategories} />
+        <BulkUpdatePanel officers={officers} institutions={institutions} cities={cities} />
 
         {/* ── History ───────────────────────────────── */}
         <div>
