@@ -33,30 +33,27 @@ export class ImportController {
 
   @Get('reference-data')
   async referenceData() {
-    const [officers, institutions, cities] = await Promise.all([
+    const [officers, institutions, cities, nplCategories] = await Promise.all([
       this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
-        select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
-        orderBy: { fullName: 'asc' },
+        select: { id: true, userCode: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
+        orderBy: { userCode: 'asc' },
       }),
       this.prisma.institution.findMany({
         where: { isActive: true },
-        select: { id: true, name: true, shortName: true },
-        orderBy: { name: 'asc' },
+        select: { id: true, code: true, name: true, shortName: true },
+        orderBy: { code: 'asc' },
       }),
-      this.prisma.person.findMany({
-        where: { city: { not: null } },
-        select: { city: true },
-        distinct: ['city'],
-        orderBy: { city: 'asc' },
+      this.prisma.city.findMany({
+        select: { id: true, code: true, name: true },
+        orderBy: { code: 'asc' },
+      }),
+      this.prisma.nplCategory.findMany({
+        select: { id: true, code: true, value: true, label: true },
+        orderBy: { code: 'asc' },
       }),
     ]);
-    return {
-      officers,
-      institutions,
-      cities: cities.map((p) => p.city).filter(Boolean).sort(),
-      nplCategories: ['PERFORMING', 'WATCH', 'SUBSTANDARD', 'DOUBTFUL', 'LOSS'],
-    };
+    return { officers, institutions, cities, nplCategories };
   }
 
   @Get('template')

@@ -68,6 +68,7 @@ model Office {
 
 model Institution {
   id        String   @id @default(uuid()) @db.Uuid
+  code      Int      @unique @default(autoincrement())
   name      String   @db.VarChar(150)
   shortName String   @map("short_name") @db.VarChar(20)
   isActive  Boolean  @default(true) @map("is_active")
@@ -78,6 +79,24 @@ model Institution {
   importJobs ImportJob[]
 
   @@map("institutions")
+}
+
+model City {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      Int      @unique @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("cities")
+}
+
+model NplCategory {
+  id    String   @id @default(uuid()) @db.Uuid
+  code  Int      @unique
+  value NplClass @unique
+  label String   @db.VarChar(50)
+
+  @@map("npl_categories")
 }
 
 // ─────────────────────────────────────────────

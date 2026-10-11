@@ -401,34 +401,12 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-// ── Static reference maps ──────────────────────────────────────────────────────
-
-const CITY_CODES: Record<number, string> = {
-  1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
-  7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
-  13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
-  19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
-  25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
-  31:'Gjakovë',32:'Dragash',33:'Rahovec',
-};
-
-const INSTITUTION_CODES: Record<number, string> = {
-  1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
-  6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
-  10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
-  14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
-  20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
-  25:'Ziraat Bankasi',26:'TIMI INVEST',
-};
-
-const NPL_CODES: Record<number, string> = {
-  1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
-};
+// Static maps removed — all reference data now loaded from DB via referenceData API
 
 // ── Reference panel ────────────────────────────────────────────────────────────
 
 function ReferencePanel() {
-  const [data, setData] = useState<{ officers: any[]; institutions: any[]; cities: string[]; nplCategories: string[] } | null>(null);
+  const [data, setData] = useState<{ officers: any[]; institutions: any[]; cities: any[]; nplCategories: any[] } | null>(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"officers" | "institutions" | "cities" | "npl">("officers");
 
@@ -461,8 +439,8 @@ function ReferencePanel() {
           <div className="flex border-b border-gray-100 px-5">
             {([
               { key: "officers", label: `Zyrtarët (${data.officers.length})` },
-              { key: "institutions", label: `Bankat (${Object.keys(INSTITUTION_CODES).length})` },
-              { key: "cities", label: `Qytetet (${Object.keys(CITY_CODES).length})` },
+              { key: "institutions", label: `Bankat (${data.institutions.length})` },
+              { key: "cities", label: `Qytetet (${data.cities.length})` },
               { key: "npl", label: "Kategoria NPL" },
             ] as const).map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
@@ -503,16 +481,17 @@ function ReferencePanel() {
             {tab === "institutions" && (
               <div>
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">institution_name</span> kur përdorni ndryshime me Excel.
+                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">institution_name</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {Object.entries(INSTITUTION_CODES).map(([code, name]) => (
-                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                  {data.institutions.map((inst: any) => (
+                    <div key={inst.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
                       <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{inst.code}</span>
                       </div>
-                      <span className="flex-1 text-[13px] text-gray-800">{name}</span>
-                      <CopyBtn text={String(code)} />
+                      <span className="flex-1 text-[13px] text-gray-800">{inst.name}</span>
+                      <span className="text-[11px] text-gray-400 font-mono">{inst.shortName}</span>
+                      <CopyBtn text={String(inst.code)} />
                     </div>
                   ))}
                 </div>
@@ -522,16 +501,16 @@ function ReferencePanel() {
             {tab === "cities" && (
               <div>
                 <p className="text-[11px] text-gray-400 mb-3">
-                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">city</span> kur përdorni ndryshime me Excel.
+                  Kopjoni <span className="font-semibold text-gray-600">kodin numerik</span> dhe vendoseni në kolonën <span className="font-mono bg-gray-100 px-1 rounded">city</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {Object.entries(CITY_CODES).map(([code, name]) => (
-                    <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                  {data.cities.map((city: any) => (
+                    <div key={city.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
                       <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{city.code}</span>
                       </div>
-                      <span className="flex-1 text-[13px] text-gray-800">{name}</span>
-                      <CopyBtn text={String(code)} />
+                      <span className="flex-1 text-[13px] text-gray-800">{city.name}</span>
+                      <CopyBtn text={String(city.code)} />
                     </div>
                   ))}
                 </div>
@@ -544,20 +523,14 @@ function ReferencePanel() {
                   Vendosni <span className="font-semibold text-gray-600">kodin numerik</span> në kolonën <span className="font-mono bg-gray-100 px-1 rounded">npl_classification</span> të dokumentit Excel.
                 </p>
                 <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-                  {([
-                    [1, "PERFORMING", "Performues"],
-                    [2, "WATCH", "Nën Vëzhgim"],
-                    [3, "SUBSTANDARD", "Nënstandard"],
-                    [4, "DOUBTFUL", "I Dyshimtë"],
-                    [5, "LOSS", "Humbje"],
-                  ] as [number, string, string][]).map(([code, cat, label]) => (
-                    <div key={cat} className="flex items-center px-3 py-2.5 hover:bg-gray-50 gap-3">
+                  {data.nplCategories.map((n: any) => (
+                    <div key={n.id} className="flex items-center px-3 py-2.5 hover:bg-gray-50 gap-3">
                       <div className="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-                        <span className="text-brand-700 text-[11px] font-bold tabular">{code}</span>
+                        <span className="text-brand-700 text-[11px] font-bold tabular">{n.code}</span>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{cat}</span>
-                      <span className="text-[12px] text-gray-400 flex-1">{label}</span>
-                      <CopyBtn text={String(code)} />
+                      <span className="font-mono text-[13px] font-semibold text-gray-800 w-28">{n.value}</span>
+                      <span className="text-[12px] text-gray-400 flex-1">{n.label}</span>
+                      <CopyBtn text={String(n.code)} />
                     </div>
                   ))}
                 </div>
@@ -581,7 +554,7 @@ const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "city",        label: "Qyteti",         desc: "Ndrysho qytetin e huamarrësit" },
 ];
 
-function BulkUpdatePanel({ officers }: { officers: any[] }) {
+function BulkUpdatePanel({ officers, institutions, cities, nplCategories }: { officers: any[]; institutions: any[]; cities: any[]; nplCategories: any[] }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<BulkType>("officer");
   const [file, setFile] = useState<File | null>(null);
@@ -621,14 +594,14 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
       );
     }
     if (type === "npl") {
-      const descs: Record<string,string> = { PERFORMING:"Pa vonesë",WATCH:"1–90 ditë",SUBSTANDARD:"91–180 ditë",DOUBTFUL:"181–360 ditë",LOSS:"mbi 360 ditë" };
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
-          {Object.entries(descs).map(([val, desc]) => (
-            <div key={val} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="font-mono font-semibold text-gray-800 w-28">{val}</span>
-              <span className="text-gray-400 flex-1">{desc}</span>
-              <CopyBtn text={val} />
+          {nplCategories.map((n: any) => (
+            <div key={n.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{n.code}</span>
+              <span className="font-mono font-semibold text-gray-800 w-28">{n.value}</span>
+              <span className="text-gray-400 flex-1">{n.label}</span>
+              <CopyBtn text={String(n.code)} />
             </div>
           ))}
         </div>
@@ -637,10 +610,11 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
     if (type === "institution") {
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-          {Object.entries(INSTITUTION_CODES).map(([code, val]) => (
-            <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-              <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
-              <span className="text-gray-800">{val}</span>
+          {institutions.map((inst: any) => (
+            <div key={inst.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-7 font-mono font-bold text-brand-700 text-center">{inst.code}</span>
+              <span className="text-gray-800 flex-1">{inst.name}</span>
+              <CopyBtn text={String(inst.code)} />
             </div>
           ))}
         </div>
@@ -649,10 +623,11 @@ function BulkUpdatePanel({ officers }: { officers: any[] }) {
     // city
     return (
       <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-        {Object.entries(CITY_CODES).map(([code, val]) => (
-          <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
-            <span className="w-7 font-mono font-bold text-brand-700 text-center">{code}</span>
-            <span className="text-gray-800">{val}</span>
+        {cities.map((city: any) => (
+          <div key={city.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+            <span className="w-7 font-mono font-bold text-brand-700 text-center">{city.code}</span>
+            <span className="text-gray-800 flex-1">{city.name}</span>
+            <CopyBtn text={String(city.code)} />
           </div>
         ))}
       </div>
@@ -839,11 +814,19 @@ export default function ImportPage() {
   const [error, setError]         = useState("");
   const [jobs, setJobs]           = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
-  const [officers, setOfficers]   = useState<any[]>([]);
+  const [officers, setOfficers]         = useState<any[]>([]);
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [cities, setCities]             = useState<any[]>([]);
+  const [nplCategories, setNplCategories] = useState<any[]>([]);
 
   useEffect(() => {
     importApi.jobs().then(setJobs).catch(() => {}).finally(() => setLoadingJobs(false));
-    importApi.referenceData().then((d) => setOfficers(d.officers)).catch(() => {});
+    importApi.referenceData().then((d) => {
+      setOfficers(d.officers);
+      setInstitutions(d.institutions);
+      setCities(d.cities);
+      setNplCategories(d.nplCategories);
+    }).catch(() => {});
   }, []);
 
   function handleFile(f: File) { setFile(f); setResult(null); setError(""); }
@@ -989,7 +972,7 @@ export default function ImportPage() {
         <ReferencePanel />
 
         {/* ── Bulk partial updates ─────────────────── */}
-        <BulkUpdatePanel officers={officers} />
+        <BulkUpdatePanel officers={officers} institutions={institutions} cities={cities} nplCategories={nplCategories} />
 
         {/* ── History ───────────────────────────────── */}
         <div>

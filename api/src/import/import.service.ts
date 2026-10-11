@@ -541,8 +541,9 @@ export class ImportService {
     const errors: { row: number; loan_number: string; error: string }[] = [];
     let succeeded = 0, failed = 0, skipped = 0;
 
-    const institutions = await this.prisma.institution.findMany({ select: { id: true, name: true, shortName: true } });
-    const instMap = new Map(institutions.map(i => [i.name.toLowerCase().trim(), i]));
+    const institutions = await this.prisma.institution.findMany({ select: { id: true, name: true, shortName: true, code: true } });
+    const instByCode = new Map(institutions.map(i => [i.code, i]));
+    const instByName = new Map(institutions.map(i => [i.name.toLowerCase().trim(), i]));
     const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
     const officeMap = new Map(offices.map(o => [o.code.toLowerCase(), o]));
     const officers = await this.prisma.user.findMany({ select: { id: true, fullName: true, userCode: true } });
@@ -550,6 +551,10 @@ export class ImportService {
     const officerFirstNameMap = new Map(officers.map(o => [o.fullName.toLowerCase().trim().split(/\s+/)[0], o.id]));
     const officerIdSet = new Set(officers.map(o => o.id));
     const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
+    const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
+    const cityByCode = new Map(cities.map(c => [c.code, c.name]));
+    const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
+    const nplByCode = new Map(nplCats.map(n => [n.code, n.value]));
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -562,22 +567,25 @@ export class ImportService {
         const existing = await this.prisma.loan.findUnique({ where: { loanNumber: loanNum } });
         if (existing) { skipped++; continue; }
 
-        // Resolve institution — support numeric code (e.g. "9") or full name
+        // Resolve institution — by numeric code (from DB) or by name fallback
         const instRaw = row.institution_name?.trim() ?? '';
         const instCode = parseInt(instRaw);
-        if (!isNaN(instCode) && String(instCode) === instRaw && ImportService.INSTITUTION_CODES[instCode]) {
-          row.institution_name = ImportService.INSTITUTION_CODES[instCode];
+        let institution: { id: string; name: string; shortName: string } | undefined;
+        if (!isNaN(instCode) && String(instCode) === instRaw) {
+          institution = instByCode.get(instCode);
         }
-        const instKey = row.institution_name.trim().toLowerCase();
-        let institution = instMap.get(instKey);
         if (!institution) {
-          const name = row.institution_name.trim();
+          institution = instByName.get(instRaw.toLowerCase());
+        }
+        if (!institution) {
+          const name = instRaw || 'Unknown';
           const created = await this.prisma.institution.create({
             data: { name, shortName: name.slice(0, 20) },
-            select: { id: true, name: true, shortName: true },
+            select: { id: true, name: true, shortName: true, code: true },
           });
           institution = created;
-          instMap.set(instKey, created);
+          instByCode.set(created.code, created);
+          instByName.set(created.name.toLowerCase().trim(), created);
         }
 
         const officeCode = row.office_code?.trim().toLowerCase();
@@ -606,12 +614,12 @@ export class ImportService {
           const personalId = (cleanId(row.personal_id) || `NOID-${loanNum}`).slice(0, 30);
           const fullName = (row.full_name?.trim() || '').slice(0, 200);
 
-          // Resolve city — support numeric code (e.g. "19" → "Prishtinë")
+          // Resolve city — by numeric code (from DB) or plain text
           let cityVal = row.city?.trim() || undefined;
           if (cityVal) {
             const cityCode = parseInt(cityVal);
-            if (!isNaN(cityCode) && String(cityCode) === cityVal && ImportService.CITY_CODES[cityCode]) {
-              cityVal = ImportService.CITY_CODES[cityCode];
+            if (!isNaN(cityCode) && String(cityCode) === cityVal) {
+              cityVal = cityByCode.get(cityCode) ?? cityVal;
             }
           }
 
@@ -666,8 +674,9 @@ export class ImportService {
                 const v = row.npl_classification?.trim();
                 if (!v) return undefined;
                 const code = parseInt(v);
-                if (!isNaN(code) && String(code) === v && ImportService.NPL_CODES[code]) {
-                  return ImportService.NPL_CODES[code];
+                if (!isNaN(code) && String(code) === v) {
+                  const fromDb = nplByCode.get(code);
+                  if (fromDb) return fromDb;
                 }
                 return parseNplClass(v);
               })() as any,
@@ -808,28 +817,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  // Static reference code maps (shared with front-end reference panel)
-  static readonly CITY_CODES: Record<number, string> = {
-    1:'Decan',2:'Drenas',3:'Ferizaj',4:'Fushë Kosovë',5:'Gjilan',6:'Gllogovc/Drenas',
-    7:'Gracanica',8:'Istog',9:'Kamenicë',10:'Klina',11:'Klinë',12:'Leposavic',
-    13:'Lipjan',14:'Malishevë',15:'Mitrovicë',16:'Obilic',17:'Pejë',18:'Podujevë',
-    19:'Prishtinë',20:'Prizren',21:'Shtime',22:'Skënderaj',23:'Suharekë',24:'Unknown',
-    25:'Viti',26:'Vushtrri',27:'Zubin Potok',28:'Zvecan',29:'Novo Berdo',30:'Kacanik',
-    31:'Gjakovë',32:'Dragash',33:'Rahovec',
-  };
-
-  static readonly INSTITUTION_CODES: Record<number, string> = {
-    1:'BZMF',2:'Banka Ekonomike',3:'TEB',4:'KosInvest',5:'Atlantic Capital Partners',
-    6:'Banka Kombëtare Tregtare',7:'Banka Private e Biznesit',8:'NLB',9:'ProCredit Bank',
-    10:'Crimson Finance Found',11:'KGMAMF',12:'Klientet migruar gabim',13:'IuteCredit',
-    14:'Kujtesa',15:'PADEFIUNUAR',16:'TIMI INVEST',17:'MCA',18:'BKS',19:'IPKO',
-    20:'RBKO',21:'Finca',22:'Cia Berto',23:'Biznese private',24:'NOA',
-    25:'Ziraat Bankasi',26:'TIMI INVEST',
-  };
-
-  static readonly NPL_CODES: Record<number, string> = {
-    1:'PERFORMING',2:'WATCH',3:'SUBSTANDARD',4:'DOUBTFUL',5:'LOSS',
-  };
+  // Reference data loaded from DB — no hardcoded maps
 
   // ── Import rollback ────────────────────────────────────────────────────────────
 
@@ -935,22 +923,32 @@ export class ImportService {
     let updated = 0, skipped = 0;
     const errors: string[] = [];
 
-    // Pre-load institution lookup for 'institution' type
-    let institutionByName: Map<string, string> | null = null;
+    // Pre-load lookups from DB (by numeric code)
+    let institutionByCode: Map<number, string> | null = null;
     if (type === 'institution') {
-      const insts = await this.prisma.institution.findMany({ select: { id: true, name: true } });
-      institutionByName = new Map(insts.map((i) => [i.name.toLowerCase().trim(), i.id]));
+      const insts = await this.prisma.institution.findMany({ select: { id: true, code: true } });
+      institutionByCode = new Map(insts.map((i) => [i.code, i.id]));
     }
 
-    // Pre-load officer codes (by userCode when available, else creation order)
     let officerByCode: Map<number, string> | null = null;
     if (type === 'officer') {
       const officers = await this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] as any[] } },
-        select: { id: true },
-        orderBy: { createdAt: 'asc' },
+        select: { id: true, userCode: true },
       });
-      officerByCode = new Map(officers.map((o, idx) => [idx + 1, o.id]));
+      officerByCode = new Map(officers.map((o) => [o.userCode, o.id]));
+    }
+
+    let cityByCode: Map<number, string> | null = null;
+    if (type === 'city') {
+      const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
+      cityByCode = new Map(cities.map((c) => [c.code, c.name]));
+    }
+
+    let nplByCode: Map<number, string> | null = null;
+    if (type === 'npl') {
+      const nplCats = await this.prisma.nplCategory.findMany({ select: { code: true, value: true } });
+      nplByCode = new Map(nplCats.map((n) => [n.code, n.value]));
     }
 
     for (let i = 0; i < dataRows.length; i++) {
@@ -975,24 +973,22 @@ export class ImportService {
           await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
           updated++;
         } else if (type === 'npl') {
-          const npl = codeRaw.toUpperCase();
-          const valid = ['PERFORMING','WATCH','SUBSTANDARD','DOUBTFUL','LOSS'];
-          if (!valid.includes(npl)) { errors.push(`${rowLabel}: vlera NPL "${codeRaw}" nuk është e vlefshme (${valid.join(', ')})`); skipped++; continue; }
-          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { nplClassification: npl as any } });
+          const code = parseInt(codeRaw);
+          const nplVal = nplByCode!.get(code);
+          if (!nplVal) { errors.push(`${rowLabel}: kodi NPL ${code} nuk ekziston (1-5)`); skipped++; continue; }
+          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { nplClassification: nplVal as any } });
           updated++;
         } else if (type === 'institution') {
           const code = parseInt(codeRaw);
-          const instName = ImportService.INSTITUTION_CODES[code];
-          if (!instName) { errors.push(`${rowLabel}: kodi i institucionit ${code} nuk ekziston (1-26)`); skipped++; continue; }
-          const instId = institutionByName!.get(instName.toLowerCase().trim());
-          if (!instId) { errors.push(`${rowLabel}: institucioni "${instName}" nuk u gjet në bazë të të dhënave`); skipped++; continue; }
+          const instId = institutionByCode!.get(code);
+          if (!instId) { errors.push(`${rowLabel}: kodi i institucionit ${code} nuk ekziston`); skipped++; continue; }
           await this.prisma.loan.update({ where: { id: cas.loanId }, data: { institutionId: instId } });
           updated++;
         } else if (type === 'city') {
           const code = parseInt(codeRaw);
-          const city = ImportService.CITY_CODES[code];
-          if (!city) { errors.push(`${rowLabel}: kodi i qytetit ${code} nuk ekziston (1-33)`); skipped++; continue; }
-          await this.prisma.person.update({ where: { id: cas.loan.borrowerId }, data: { city } });
+          const cityName = cityByCode!.get(code);
+          if (!cityName) { errors.push(`${rowLabel}: kodi i qytetit ${code} nuk ekziston`); skipped++; continue; }
+          await this.prisma.person.update({ where: { id: cas.loan.borrowerId }, data: { city: cityName } });
           updated++;
         }
       } catch (e: any) {
