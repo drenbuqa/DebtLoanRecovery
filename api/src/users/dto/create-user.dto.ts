@@ -6,7 +6,7 @@ export class CreateUserDto {
   @IsString({ message: 'Emri i përdoruesit duhet të jetë tekst' })
   @MinLength(3, { message: 'Emri i përdoruesit duhet të ketë të paktën 3 karaktere' })
   @MaxLength(50, { message: 'Emri i përdoruesit nuk mund të kalojë 50 karaktere' })
-  @Matches(/^[a-z0-9._-]+$/, { message: 'Emri i përdoruesit mund të përmbajë vetëm shkronja të vogla, numra, pika, viza dhe nënviza' })
+  @Matches(/^[a-zA-Z0-9._-]+$/, { message: 'Emri i përdoruesit mund të përmbajë vetëm shkronja, numra, pika, viza dhe nënviza' })
   username: string;
 
   @IsString({ message: 'Fjalëkalimi duhet të jetë tekst' })
