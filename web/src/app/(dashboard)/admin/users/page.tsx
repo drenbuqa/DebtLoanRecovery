@@ -279,13 +279,17 @@ function UsersAdminPageInner() {
   const activeCount   = data.filter((u) => u.isActive).length;
   const inactiveCount = data.filter((u) => !u.isActive).length;
 
+  const ROLE_ORDER: Record<string, number> = { ADMIN: 0, MANAGER: 1, OFFICER: 2, VIEWER: 3 };
   const uq = searchQuery.trim().toLowerCase();
-  const filtered = data.filter((u) => {
-    const matchesTab = filter === "all" ? true : filter === "active" ? u.isActive : !u.isActive;
-    const matchesSearch = !uq || (u.fullName ?? "").toLowerCase().includes(uq) || (u.username ?? "").toLowerCase().includes(uq);
-    const matchesRole = !roleFilter || u.role === roleFilter;
-    return matchesTab && matchesSearch && matchesRole;
-  });
+  const filtered = data
+    .filter((u) => {
+      if (u.username === "admin") return false;
+      const matchesTab = filter === "all" ? true : filter === "active" ? u.isActive : !u.isActive;
+      const matchesSearch = !uq || (u.fullName ?? "").toLowerCase().includes(uq) || (u.username ?? "").toLowerCase().includes(uq);
+      const matchesRole = !roleFilter || u.role === roleFilter;
+      return matchesTab && matchesSearch && matchesRole;
+    })
+    .sort((a, b) => (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9));
 
   return (
     <div className="flex flex-col">
@@ -366,9 +370,11 @@ function UsersAdminPageInner() {
                 <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
               </button>
             </div>
-            {filtered.map((u) => (
+            {filtered.map((u, idx) => (
               <div key={u.id}
                 className={`bg-white rounded-xl border px-5 py-4 flex items-center gap-4 transition-opacity ${u.isActive ? "border-gray-200" : "border-gray-100 opacity-55"}`}>
+                {/* Number */}
+                <span className="text-[12px] text-gray-300 font-mono w-5 text-right shrink-0">{idx + 1}</span>
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
                   <span className="text-brand-700 text-[13px] font-bold">
