@@ -1,16 +1,14 @@
 import { IsString, IsNumber, IsOptional, IsDateString, IsUUID, IsNotEmpty, MaxLength, Min, Max, IsIn } from 'class-validator';
 
-const STAGES = ['D1', 'D2', 'D3', 'D4', 'LEGAL', 'WRITTEN_OFF'] as const;
-const COLLECTION_STATUSES = ['KLIENT_I_RI', 'PAKONTAKTUAR', 'ZOTIM_PAGESE', 'ME_MARREVESHJE', 'KONTESTIM', 'NUK_PRANON', 'JURIDIKE', 'TJERA'] as const;
+const STAGES = ['D1', 'D2', 'D3', 'D4', 'LEGAL'] as const;
+const COLLECTION_STATUSES = ['KLIENT_I_RI', 'PAKONTAKTUAR', 'ZOTIM_PAGESE', 'ME_MARREVESHJE', 'KONTESTIM_BORGJI', 'NUK_PRANON_MARREVESHJE', 'JURIDIKE', 'TJERA'] as const;
 
 export class CreateCaseDto {
   // Borrower
   @IsString({ message: 'Numri personal duhet të jetë tekst' }) @MaxLength(30, { message: 'Numri personal nuk mund të kalojë 30 karaktere' }) personalId: string;
   @IsString({ message: 'Emri i plotë duhet të jetë tekst' }) @MaxLength(200, { message: 'Emri i plotë nuk mund të kalojë 200 karaktere' }) fullName: string;
-  @IsOptional() @IsDateString({}, { message: 'Data e lindjes nuk është e vlefshme' }) dateOfBirth?: string;
   @IsOptional() @IsString({ message: 'Telefoni duhet të jetë tekst' }) @MaxLength(30, { message: 'Telefoni nuk mund të kalojë 30 karaktere' }) phone1?: string;
   @IsOptional() @IsString({ message: 'Telefoni 2 duhet të jetë tekst' }) @MaxLength(30, { message: 'Telefoni 2 nuk mund të kalojë 30 karaktere' }) phone2?: string;
-  @IsOptional() @IsString({ message: 'Emaili duhet të jetë tekst' }) @MaxLength(150, { message: 'Emaili nuk mund të kalojë 150 karaktere' }) email?: string;
   @IsOptional() @IsString({ message: 'Adresa duhet të jetë tekst' }) @MaxLength(255, { message: 'Adresa nuk mund të kalojë 255 karaktere' }) address?: string;
   @IsOptional() @IsString({ message: 'Qyteti duhet të jetë tekst' }) @MaxLength(100, { message: 'Qyteti nuk mund të kalojë 100 karaktere' }) city?: string;
 
@@ -24,8 +22,6 @@ export class CreateCaseDto {
   @IsOptional() @IsNumber({}, { message: 'Norma e interesit duhet të jetë numër' }) @Min(0) @Max(100) interestRate?: number;
   @IsOptional() @IsString() @MaxLength(50) productType?: string;
   @IsOptional() @IsDateString({}, { message: 'Data e disbursimit nuk është e vlefshme' }) disbursementDate?: string;
-  @IsOptional() @IsDateString({}, { message: 'Data e maturimit nuk është e vlefshme' }) maturityDate?: string;
-  @IsOptional() @IsNumber({}, { message: 'Ditët me vonesë duhet të jenë numër' }) @Min(0) daysPastDue?: number;
   // Case
   @IsOptional() @IsString() officeId?: string;
   @IsOptional() @IsString() assignedOfficerId?: string;

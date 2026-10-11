@@ -11,38 +11,6 @@ export class SchedulerService {
 
   constructor(private prisma: PrismaService) {}
 
-  // Runs every night at 01:00 server time
-  @Cron('0 1 * * *')
-  async recalculateDpd() {
-    this.log.log('DPD recalculation started');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const loans = await this.prisma.loan.findMany({
-      select: { id: true, maturityDate: true, daysPastDue: true },
-    });
-
-    let updated = 0;
-    for (const loan of loans) {
-      const dpd = loan.maturityDate && loan.maturityDate < today
-        ? Math.floor((today.getTime() - loan.maturityDate.getTime()) / 86_400_000)
-        : 0;
-
-      if (dpd !== loan.daysPastDue) {
-        await this.prisma.loan.update({
-          where: { id: loan.id },
-          data: {
-            daysPastDue: dpd,
-            dpdLastCalculatedAt: new Date(),
-          },
-        });
-        updated++;
-      }
-    }
-
-    this.log.log(`DPD recalculation complete — ${updated}/${loans.length} loans updated`);
-  }
-
   // Runs every night at 01:30 — mark unpaid installments whose due date has passed as OVERDUE
   @Cron('30 1 * * *')
   async markOverdueInstallments() {

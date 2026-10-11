@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 
 const USER_PUBLIC = {
-  id: true, username: true, fullName: true, email: true,
+  id: true, username: true, fullName: true,
   role: true, isActive: true, officeId: true, createdAt: true,
   office: { select: { id: true, name: true } },
 };
@@ -33,7 +33,7 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
-  async create(dto: { username: string; password: string; fullName: string; email: string; role: string; officeId?: string }) {
+  async create(dto: { username: string; password: string; fullName: string; role: string; officeId?: string }) {
     const exists = await this.prisma.user.findUnique({ where: { username: dto.username } });
     if (exists) throw new ConflictException('Ky emër përdoruesi është i zënë');
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -42,7 +42,6 @@ export class UsersService {
         username: dto.username,
         passwordHash,
         fullName: dto.fullName,
-        email: dto.email,
         role: dto.role as any,
         ...(dto.officeId && { officeId: dto.officeId }),
       },
@@ -50,10 +49,9 @@ export class UsersService {
     });
   }
 
-  async update(id: string, dto: { fullName?: string; email?: string; role?: string; officeId?: string; isActive?: boolean; password?: string }) {
+  async update(id: string, dto: { fullName?: string; role?: string; officeId?: string; isActive?: boolean; password?: string }) {
     const data: any = {};
     if (dto.fullName !== undefined) data.fullName = dto.fullName;
-    if (dto.email !== undefined) data.email = dto.email;
     if (dto.role !== undefined) data.role = dto.role;
     if (dto.officeId !== undefined) data.officeId = dto.officeId || null;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;

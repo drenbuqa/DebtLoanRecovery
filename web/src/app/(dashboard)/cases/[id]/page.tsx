@@ -63,43 +63,43 @@ const ACT_LABEL: Record<string, string> = {
 // ── Status dot ──────────────────────────────────────────────
 const STATUS_DOT: Record<string, string> = {
   ACTIVE: "bg-emerald-400", SUSPENDED: "bg-amber-400",
-  LEGAL: "bg-red-400", CLOSED: "bg-gray-300", WRITTEN_OFF: "bg-gray-400",
+  LEGAL: "bg-red-400", CLOSED: "bg-gray-300", ANKES: "bg-purple-400", AKTGJYKIM: "bg-blue-400",
 };
 const STAGE_DOT: Record<string, string> = {
   D1: "bg-amber-300", D2: "bg-amber-400", D3: "bg-red-400",
-  D4: "bg-red-500", LEGAL: "bg-brand-500", WRITTEN_OFF: "bg-gray-400",
+  D4: "bg-red-500", LEGAL: "bg-brand-500",
 };
 
 // ── Faza (CollectionStatus) ──────────────────────────────────
 const FAZA_OPTIONS = [
-  { value: "KLIENT_I_RI",   label: "Klienti i Ri" },
-  { value: "PAKONTAKTUAR",  label: "I Pakontaktuar / I Pagjetur" },
-  { value: "ZOTIM_PAGESE",  label: "Me Zotim për Pagesë" },
-  { value: "ME_MARREVESHJE",label: "Klient me Marrëveshje" },
-  { value: "KONTESTIM",     label: "Kontestim i Borgjit" },
-  { value: "NUK_PRANON",    label: "Nuk Pranon Marrëveshje" },
-  { value: "JURIDIKE",      label: "Juridike" },
-  { value: "TJERA",         label: "Të Tjera" },
+  { value: "KLIENT_I_RI",              label: "Klienti i Ri" },
+  { value: "PAKONTAKTUAR",             label: "I Pakontaktuar / I Pagjetur" },
+  { value: "ZOTIM_PAGESE",             label: "Me Zotim për Pagesë" },
+  { value: "ME_MARREVESHJE",           label: "Klient me Marrëveshje" },
+  { value: "KONTESTIM_BORGJI",         label: "Kontestim Borgji" },
+  { value: "NUK_PRANON_MARREVESHJE",   label: "Nuk Pranon Marrëveshje" },
+  { value: "JURIDIKE",                 label: "Juridike" },
+  { value: "TJERA",                    label: "Të Tjera" },
 ];
 const FAZA_LABEL: Record<string, string> = {
-  KLIENT_I_RI:    "Klienti i Ri",
-  PAKONTAKTUAR:   "I Pakontaktuar",
-  ZOTIM_PAGESE:   "Zotim Pagese",
-  ME_MARREVESHJE: "Me Marrëveshje",
-  KONTESTIM:      "Kontestim",
-  NUK_PRANON:     "Nuk Pranon",
-  JURIDIKE:       "Juridike",
-  TJERA:          "Të Tjera",
+  KLIENT_I_RI:              "Klienti i Ri",
+  PAKONTAKTUAR:             "I Pakontaktuar",
+  ZOTIM_PAGESE:             "Zotim Pagese",
+  ME_MARREVESHJE:           "Me Marrëveshje",
+  KONTESTIM_BORGJI:         "Kontestim Borgji",
+  NUK_PRANON_MARREVESHJE:   "Nuk Pranon Marrëveshje",
+  JURIDIKE:                 "Juridike",
+  TJERA:                    "Të Tjera",
 };
 const FAZA_DOT: Record<string, string> = {
-  KLIENT_I_RI:    "bg-blue-300",
-  PAKONTAKTUAR:   "bg-gray-400",
-  ZOTIM_PAGESE:   "bg-amber-400",
-  ME_MARREVESHJE: "bg-emerald-400",
-  KONTESTIM:      "bg-orange-500",
-  NUK_PRANON:     "bg-red-500",
-  JURIDIKE:       "bg-red-700",
-  TJERA:          "bg-gray-300",
+  KLIENT_I_RI:              "bg-blue-300",
+  PAKONTAKTUAR:             "bg-gray-400",
+  ZOTIM_PAGESE:             "bg-amber-400",
+  ME_MARREVESHJE:           "bg-emerald-400",
+  KONTESTIM_BORGJI:         "bg-orange-500",
+  NUK_PRANON_MARREVESHJE:   "bg-red-500",
+  JURIDIKE:                 "bg-red-700",
+  TJERA:                    "bg-gray-300",
 };
 
 // ── Tabs ────────────────────────────────────────────────────
@@ -664,7 +664,6 @@ export default function CaseDetailPage() {
       secondaryOfficerId: caseData?.secondaryOfficer?.id ?? "",
       officeId: caseData?.officeId ?? "",
       currentOutstandingBalance: caseData?.loan?.currentOutstandingBalance ?? "",
-      maturityDate: caseData?.loan?.maturityDate ? caseData.loan.maturityDate.slice(0, 10) : "",
       interestRate: caseData?.loan?.interestRate ?? "",
       productType: caseData?.loan?.productType ?? "",
       collectionStatus: caseData?.collectionStatus ?? "",
@@ -681,7 +680,6 @@ export default function CaseDetailPage() {
         secondaryOfficerId: editForm.secondaryOfficerId || null,
         officeId: editForm.officeId || null,
         currentOutstandingBalance: editForm.currentOutstandingBalance !== "" ? parseFloat(editForm.currentOutstandingBalance) : undefined,
-        maturityDate: editForm.maturityDate || null,
         interestRate: editForm.interestRate !== "" ? parseFloat(editForm.interestRate) : undefined,
         productType: editForm.productType || undefined,
         collectionStatus: editForm.collectionStatus || undefined,
@@ -797,7 +795,6 @@ export default function CaseDetailPage() {
     ? caseData.loan?.borrower?.fullName ?? ""
     : "Duke ngarkuar…";
   const outstanding = Number(caseData?.loan?.currentOutstandingBalance ?? 0);
-  const dpd = caseData?.loan?.daysPastDue ?? 0;
   const status = caseData?.status ?? "—";
   const stage = caseData?.collectionStage ?? "—";
   const institution = caseData?.loan?.institution?.name ?? "—";
@@ -872,7 +869,7 @@ export default function CaseDetailPage() {
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Klientit</label>
                 <Select value={statusForm.status} onChange={(v) => setStatusForm(f => ({ ...f, status: v }))}
                   placeholder="Pa ndryshim" clearable
-                  options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","WRITTEN_OFF"].map((s) => ({ value: s, label: formatEnum(s) }))} />
+                  options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","ANKES","AKTGJYKIM"].map((s) => ({ value: s, label: formatEnum(s) }))} />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
@@ -932,10 +929,6 @@ export default function CaseDetailPage() {
                   <input type="number" min="0" step="0.01" value={editForm.currentOutstandingBalance}
                     onChange={(e) => setEditForm((f: any) => ({ ...f, currentOutstandingBalance: e.target.value }))}
                     className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Maturimit</label>
-                  <DatePicker value={editForm.maturityDate} onChange={(v) => setEditForm((f: any) => ({ ...f, maturityDate: v }))} placeholder="Zgjidhni datën" />
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Norma e Interesit (%)</label>
@@ -1019,7 +1012,8 @@ export default function CaseDetailPage() {
                   LEGAL:       { label: "Juridike",  color: "bg-red-100 text-red-700 border border-red-200" },
                   SUSPENDED:   { label: "Pezulluar", color: "bg-amber-100 text-amber-700 border border-amber-200" },
                   CLOSED:      { label: "Mbyllur",   color: "bg-gray-100 text-gray-500 border border-gray-200" },
-                  WRITTEN_OFF: { label: "I Shlyer",  color: "bg-gray-100 text-gray-500 border border-gray-200" },
+                  ANKES:       { label: "Ankesë",    color: "bg-purple-100 text-purple-700 border border-purple-200" },
+                  AKTGJYKIM:   { label: "Aktgjykim", color: "bg-blue-100 text-blue-700 border border-blue-200" },
                 };
                 const s = statusCfg[status];
                 return s ? (
@@ -1052,11 +1046,6 @@ export default function CaseDetailPage() {
             <div className="text-right">
               <div className="text-[11px] text-gray-400 mb-0.5">Borxhi Aktual</div>
               <div className="text-[22px] font-bold text-gray-900 tabular leading-none">{formatCurrency(outstanding)}</div>
-            </div>
-            <div className="w-px h-9 bg-gray-200" />
-            <div className="text-right">
-              <div className="text-[11px] text-gray-400 mb-0.5">Ditë Vonesë</div>
-              <div className={`text-[18px] font-bold tabular leading-none ${dpd > 180 ? "text-red-600" : dpd > 90 ? "text-amber-600" : "text-gray-800"}`}>{dpd}d</div>
             </div>
           </div>
         </div>
@@ -1158,8 +1147,6 @@ export default function CaseDetailPage() {
                     })),
                     { label: "Adresa", val: caseData?.loan?.borrower?.address ?? "—" },
                     { label: "Qyteti", val: caseData?.loan?.borrower?.city ?? "—" },
-                    { label: "Data e lindjes", val: caseData?.loan?.borrower?.dateOfBirth ? new Date(caseData.loan.borrower.dateOfBirth).toLocaleDateString("sq-AL") : "—" },
-                    { label: "Email", val: caseData?.loan?.borrower?.email ?? "—" },
                   ].map((r) => (
                     <div key={r.label} className="flex justify-between items-baseline gap-2">
                       <span className="text-[11px] text-gray-400 shrink-0">{r.label}</span>
@@ -1226,9 +1213,7 @@ export default function CaseDetailPage() {
                     { label: "Lloji i Produktit", val: caseData?.loan?.productType ?? "—" },
                     { label: "Norma e Interesit", val: caseData?.loan?.interestRate != null ? `${caseData.loan.interestRate}%` : "—" },
                     { label: "Data e Disbursimit", val: caseData?.loan?.disbursementDate ? new Date(caseData.loan.disbursementDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
-                    { label: "Data e Maturimit", val: caseData?.loan?.maturityDate ? new Date(caseData.loan.maturityDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                     { label: "Data e Pagesës së Fundit", val: caseData?.loan?.lastPaymentDate ? new Date(caseData.loan.lastPaymentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
-                    { label: "Ditë Vonesë", val: `${dpd} ditë` },
                     { label: "Faza", val: caseData?.collectionStatus ? (FAZA_LABEL[caseData.collectionStatus] ?? caseData.collectionStatus) : "—" },
                   ].map((r) => (
                     <div key={r.label} className="flex justify-between items-baseline">

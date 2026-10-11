@@ -334,11 +334,12 @@ function MobileSearchOverlay({ onClose }: { onClose: () => void }) {
     SUSPENDED: "bg-amber-100 text-amber-700",
     LEGAL: "bg-brand-100 text-brand-700",
     CLOSED: "bg-gray-100 text-gray-500",
-    WRITTEN_OFF: "bg-red-100 text-red-600",
+    ANKES: "bg-purple-100 text-purple-700",
+    AKTGJYKIM: "bg-blue-100 text-blue-700",
   };
   const statusLabel: Record<string, string> = {
     ACTIVE: "Aktiv", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur",
-    LEGAL: "Juridike", WRITTEN_OFF: "I Shlyer",
+    LEGAL: "Juridike", ANKES: "Ankesë", AKTGJYKIM: "Aktgjykim",
   };
 
   return (

@@ -392,8 +392,8 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
                         { value: "PAKONTAKTUAR",   label: "I Pakontaktuar / I Pagjetur" },
                         { value: "ZOTIM_PAGESE",   label: "Me Zotim për Pagesë" },
                         { value: "ME_MARREVESHJE", label: "Klient me Marrëveshje" },
-                        { value: "KONTESTIM",      label: "Kontestim i Borgjit" },
-                        { value: "NUK_PRANON",     label: "Nuk Pranon Marrëveshje" },
+                        { value: "KONTESTIM_BORGJI",          label: "Kontestim Borgji" },
+                        { value: "NUK_PRANON_MARREVESHJE",    label: "Nuk Pranon Marrëveshje" },
                         { value: "TJERA",          label: "Të Tjera" },
                       ]} />
                   </FL>
@@ -421,7 +421,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
 const STAGE_BADGE: Record<string, any> = {
   D1: "active", D2: "warning", D3: "warning", D4: "danger",
-  LEGAL: "legal", WRITTEN_OFF: "closed",
+  LEGAL: "legal",
 };
 
 const VIEWS = [
@@ -434,8 +434,6 @@ const VIEWS = [
 
 // ── Mobile case card ─────────────────────────────────────────
 function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
-  const dpd = c.loan?.daysPastDue ?? 0;
-  const dpdColor = dpd > 180 ? "text-red-600" : dpd > 90 ? "text-amber-600" : "text-gray-700";
   const debtor = c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—";
   const nextAction = c.nextActionDate
     ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" })
@@ -453,7 +451,7 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
           </div>
         </div>
         {c.collectionStatus ? (
-          <Badge variant="default" className="shrink-0 text-[11px]">{(({ KLIENT_I_RI: "I Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim", ME_MARREVESHJE: "Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" } as Record<string,string>)[c.collectionStatus]) ?? c.collectionStatus}</Badge>
+          <Badge variant="default" className="shrink-0 text-[11px]">{(({ KLIENT_I_RI: "I Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim", ME_MARREVESHJE: "Marrëveshje", KONTESTIM_BORGJI: "Kontestim", NUK_PRANON_MARREVESHJE: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" } as Record<string,string>)[c.collectionStatus]) ?? c.collectionStatus}</Badge>
         ) : (
           <Badge variant="default" className="shrink-0 text-[11px]">I Ri</Badge>
         )}
@@ -465,10 +463,6 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
           <div className="text-[13px] font-bold text-gray-900 tabular">
             {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
           </div>
-        </div>
-        <div>
-          <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Vonesë</div>
-          <div className={`text-[13px] font-bold tabular ${dpdColor}`}>{dpd} ditë</div>
         </div>
         <div>
           <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Veprim</div>
@@ -559,8 +553,8 @@ function CasesPageInner() {
         if (exportPage >= r.meta.pages) break;
         exportPage++;
       }
-      const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
-      const statusLabel: Record<string, string> = { ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "I Shlyer" };
+      const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
+      const statusLabel: Record<string, string> = { ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", ANKES: "Ankesë", AKTGJYKIM: "Aktgjykim" };
       const rows = allCases.map((c: any) => {
         const b = c.loan?.borrower;
         const parties = c.loan?.relatedParties ?? [];
@@ -641,9 +635,9 @@ function CasesPageInner() {
                     { value: "PAKONTAKTUAR",   label: "I Pakontaktuar" },
                     { value: "ZOTIM_PAGESE",   label: "Zotim Pagese" },
                     { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
-                    { value: "KONTESTIM",      label: "Kontestim" },
-                    { value: "NUK_PRANON",     label: "Nuk Pranon" },
-                    { value: "TJERA",          label: "Të Tjera" },
+                    { value: "KONTESTIM_BORGJI",       label: "Kontestim Borgji" },
+                    { value: "NUK_PRANON_MARREVESHJE", label: "Nuk Pranon Marrëveshje" },
+                    { value: "TJERA",                  label: "Të Tjera" },
                   ],
                 },
                 {
@@ -652,11 +646,12 @@ function CasesPageInner() {
                   value: stageStatus,
                   onChange: applyStageStatus,
                   options: [
-                    { value: "status:ACTIVE",      label: "Aktive" },
-                    { value: "status:LEGAL",       label: "Juridike" },
-                    { value: "status:SUSPENDED",   label: "Pezulluar" },
-                    { value: "status:CLOSED",      label: "Mbyllur" },
-                    { value: "status:WRITTEN_OFF", label: "I Shlyer" },
+                    { value: "status:ACTIVE",     label: "Aktive" },
+                    { value: "status:LEGAL",      label: "Juridike" },
+                    { value: "status:SUSPENDED",  label: "Pezulluar" },
+                    { value: "status:CLOSED",     label: "Mbyllur" },
+                    { value: "status:ANKES",      label: "Ankesë" },
+                    { value: "status:AKTGJYKIM",  label: "Aktgjykim" },
                   ],
                 },
                 {
@@ -756,18 +751,19 @@ function CasesPageInner() {
               { value: "PAKONTAKTUAR",   label: "I Pakontaktuar" },
               { value: "ZOTIM_PAGESE",   label: "Zotim Pagese" },
               { value: "ME_MARREVESHJE", label: "Me Marrëveshje" },
-              { value: "KONTESTIM",      label: "Kontestim" },
-              { value: "NUK_PRANON",     label: "Nuk Pranon" },
-              { value: "TJERA",          label: "Të Tjera" },
+              { value: "KONTESTIM_BORGJI",       label: "Kontestim Borgji" },
+              { value: "NUK_PRANON_MARREVESHJE", label: "Nuk Pranon Marrëveshje" },
+              { value: "TJERA",                  label: "Të Tjera" },
             ]} />
           <Select value={stageStatus} onChange={applyStageStatus} label="Statusi" placeholder="Të gjitha" clearable
             className="w-40"
             options={[
-              { value: "status:ACTIVE",      label: "Aktive" },
-              { value: "status:LEGAL",       label: "Juridike" },
-              { value: "status:SUSPENDED",   label: "Pezulluar" },
-              { value: "status:CLOSED",      label: "Mbyllur" },
-              { value: "status:WRITTEN_OFF", label: "I Shlyer" },
+              { value: "status:ACTIVE",     label: "Aktive" },
+              { value: "status:LEGAL",      label: "Juridike" },
+              { value: "status:SUSPENDED",  label: "Pezulluar" },
+              { value: "status:CLOSED",     label: "Mbyllur" },
+              { value: "status:ANKES",      label: "Ankesë" },
+              { value: "status:AKTGJYKIM",  label: "Aktgjykim" },
             ]} />
 
           <button onClick={exportToExcel} disabled={exporting || loading}
@@ -842,7 +838,7 @@ function CasesPageInner() {
                   const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
-                  const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM: "Kontestim", NUK_PRANON: "Nuk Pranon", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
+                  const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
                   const latestPromise = (c.promises ?? c.promisesToPay)?.[0];
                   const promiseDaysOverdue = latestPromise
                     ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
@@ -858,7 +854,8 @@ function CasesPageInner() {
                               LEGAL:      { label: "Juridike",  color: "bg-red-100 text-red-700" },
                               SUSPENDED:  { label: "Pezulluar", color: "bg-amber-100 text-amber-700" },
                               CLOSED:     { label: "Mbyllur",   color: "bg-gray-100 text-gray-500" },
-                              WRITTEN_OFF:{ label: "I Shlyer",  color: "bg-gray-100 text-gray-500" },
+                              ANKES:      { label: "Ankesë",    color: "bg-purple-100 text-purple-700" },
+                              AKTGJYKIM:  { label: "Aktgjykim", color: "bg-blue-100 text-blue-700" },
                             };
                             const s = cfg[c.status];
                             return s ? (

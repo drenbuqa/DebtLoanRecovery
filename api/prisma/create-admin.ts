@@ -12,7 +12,6 @@ async function main() {
       username: 'admin',
       passwordHash,
       fullName: 'Administrator',
-      email: 'admin@dlr.com',
       role: 'ADMIN',
       isActive: true,
     },

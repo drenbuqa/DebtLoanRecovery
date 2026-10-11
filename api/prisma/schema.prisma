@@ -19,7 +19,6 @@ model User {
   username            String              @unique @db.VarChar(50)
   passwordHash        String              @map("password_hash") @db.VarChar(255)
   fullName            String              @map("full_name") @db.VarChar(150)
-  email               String              @unique @db.VarChar(150)
   role                UserRole            @default(OFFICER)
   isActive            Boolean             @default(true) @map("is_active")
   officeId            String?             @map("office_id") @db.Uuid
@@ -100,8 +99,6 @@ model Person {
   id          String    @id @default(uuid()) @db.Uuid
   personalId  String    @unique @map("personal_id") @db.VarChar(30)
   fullName    String    @map("full_name") @db.VarChar(200)
-  dateOfBirth DateTime? @map("date_of_birth") @db.Date
-  email       String?   @db.VarChar(150)
   address     String?   @db.VarChar(255)
   city        String?   @db.VarChar(100)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -146,10 +143,7 @@ model Loan {
   interestRate              Decimal?  @map("interest_rate") @db.Decimal(5, 4)
   productType               String?   @map("product_type") @db.VarChar(50)
   disbursementDate          DateTime? @map("disbursement_date") @db.Date
-  maturityDate              DateTime? @map("maturity_date") @db.Date
   lastPaymentDate           DateTime? @map("last_payment_date") @db.Date
-  daysPastDue               Int       @default(0) @map("days_past_due")
-  dpdLastCalculatedAt       DateTime? @map("dpd_last_calculated_at") @db.Timestamptz(6)
   createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -161,7 +155,6 @@ model Loan {
 
   @@index([institutionId])
   @@index([borrowerId])
-  @@index([daysPastDue(sort: Desc)])
   @@map("loans")
 }
 
@@ -569,8 +562,9 @@ enum CaseStatus {
   ACTIVE
   CLOSED
   SUSPENDED
-  WRITTEN_OFF
   LEGAL
+  ANKES
+  AKTGJYKIM
 }
 
 enum CollectionStage {
@@ -579,7 +573,6 @@ enum CollectionStage {
   D3
   D4
   LEGAL
-  WRITTEN_OFF
 }
 
 enum ActivityType {
@@ -682,8 +675,8 @@ enum CollectionStatus {
   PAKONTAKTUAR
   ZOTIM_PAGESE
   ME_MARREVESHJE
-  KONTESTIM
-  NUK_PRANON
+  KONTESTIM_BORGJI
+  NUK_PRANON_MARREVESHJE
   JURIDIKE
   TJERA
 }

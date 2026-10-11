@@ -20,16 +20,12 @@ const COL_ALIASES: Record<string, string> = {
   'first_name': 'first_name', 'firstname': 'first_name', 'emri': 'first_name',
   'last_name': 'last_name', 'lastname': 'last_name', 'mbiemri': 'last_name', 'surname': 'last_name',
   'family_name': 'last_name',
-  // DOB
-  'date_of_birth': 'date_of_birth', 'dob': 'date_of_birth', 'birth_date': 'date_of_birth',
-  'birthdate': 'date_of_birth', 'data_lindjes': 'date_of_birth',
   // Phones
   'phone1': 'phone1', 'phone_1': 'phone1', 'phone': 'phone1', 'mobile': 'phone1',
   'tel': 'phone1', 'telefon': 'phone1', 'tel1': 'phone1', 'celular': 'phone1',
   'phone_nr': 'phone1', 'phone_number': 'phone1',
   'phone2': 'phone2', 'phone_2': 'phone2', 'tel2': 'phone2', 'alternative_phone': 'phone2',
   // Contact
-  'email': 'email', 'email_address': 'email', 'e_mail': 'email',
   'address': 'address', 'adresa': 'address', 'addr': 'address', 'home_address': 'address',
   'city': 'city', 'qyteti': 'city', 'town': 'city', 'municipality': 'city',
   // Loan
@@ -61,13 +57,8 @@ const COL_ALIASES: Record<string, string> = {
   // Dates
   'disbursement_date': 'disbursement_date', 'issue_date': 'disbursement_date',
   'loan_date': 'disbursement_date', 'start_date': 'disbursement_date', 'data_disbursimit': 'disbursement_date',
-  'maturity_date': 'maturity_date', 'due_date': 'maturity_date', 'end_date': 'maturity_date',
-  'data_maturimit': 'maturity_date', 'expiry_date': 'maturity_date',
   'last_payment_date': 'last_payment_date', 'last_payment': 'last_payment_date',
   'data_pageses_se_fundit': 'last_payment_date',
-  // DPD / NPL
-  'days_past_due': 'days_past_due', 'dpd': 'days_past_due', 'overdue_days': 'days_past_due',
-  'dite_vonese': 'days_past_due', 'days_overdue': 'days_past_due',
   // Office (DLR internal — only map explicit DLR office codes, never bank branch codes)
   'office_code': 'office_code', 'office': 'office_code',
   // DLR Officers — by UUID (preferred, exact)
@@ -132,10 +123,8 @@ const REQUIRED_COLS = [
 interface ImportRow {
   personal_id: string;
   full_name: string;
-  date_of_birth?: string;
   phone1?: string;
   phone2?: string;
-  email?: string;
   address?: string;
   city?: string;
   loan_number: string;
@@ -147,9 +136,7 @@ interface ImportRow {
   interest_rate?: string;
   product_type?: string;
   disbursement_date?: string;
-  maturity_date?: string;
   last_payment_date?: string;
-  days_past_due?: string;
   office_code?: string;
   assigned_officer_id?: string;
   secondary_officer_id?: string;
@@ -259,10 +246,8 @@ export const ALL_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'institution_name',            label: 'Institucioni',                      required: true },
   { key: 'current_outstanding_balance', label: 'Balanca e Mbetur',                  required: true },
   // Personal info (optional)
-  { key: 'date_of_birth',               label: 'Data e Lindjes',                    required: false },
   { key: 'phone1',                      label: 'Telefoni 1',                        required: false },
   { key: 'phone2',                      label: 'Telefoni 2',                        required: false },
-  { key: 'email',                       label: 'Email',                             required: false },
   { key: 'address',                     label: 'Adresa',                            required: false },
   { key: 'city',                        label: 'Qyteti',                            required: false },
   // Loan amounts
@@ -274,10 +259,7 @@ export const ALL_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'currency',                    label: 'Valuta',                            required: false },
   // Dates
   { key: 'disbursement_date',           label: 'Data e Disbursimit',                required: false },
-  { key: 'maturity_date',               label: 'Data e Maturimit',                  required: false },
   { key: 'last_payment_date',           label: 'Data e Pagesës së Fundit',          required: false },
-  // NPL / DPD
-  { key: 'days_past_due',               label: 'Ditë Vonesë',                       required: false },
   // Assignment
   { key: 'office_code',                 label: 'Kodi i Zyrës',                      required: false },
   { key: 'assigned_officer_name',       label: 'Oficeri i Parë i Mbledhjes (DLR)',  required: false },
@@ -348,25 +330,25 @@ export class ImportService {
 
   templateXlsx(): Buffer {
     const headers = [
-      'personal_id', 'full_name', 'date_of_birth',
-      'phone1', 'phone2', 'email', 'address', 'city',
+      'personal_id', 'full_name',
+      'phone1', 'phone2', 'address', 'city',
       'loan_number', 'institution_name',
       'collection_officer', 'second_collection_officer',
       'original_loan_amount', 'current_outstanding_balance',
-      'product_type', 'disbursement_date', 'maturity_date', 'last_payment_date',
-      'days_past_due', 'office_code',
+      'product_type', 'disbursement_date', 'last_payment_date',
+      'office_code',
       '1_guarantor_personal_id', '1_guarantor_first_last_name', '1_guarantor_phone',
       '2_guarantor_personal_id', '2_guarantor_first_last_name', '2_guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
     ];
     const example = [
-      '1234567890', 'Arben Gashi', '1985-03-15',
-      '+38344123456', '', 'a.gashi@email.com', 'Rruga Nene Tereza 12', 19,
+      '1234567890', 'Arben Gashi',
+      '+38344123456', '', 'Rruga Nene Tereza 12', 19,
       'PCB-2024-001', 9,
       1, '',
       15000, 12500,
-      'Consumer', '2024-01-15', '2027-01-15', '2024-11-01',
-      45, 'PRK',
+      'Consumer', '2024-01-15', '2024-11-01',
+      'PRK',
       '9876543210', 'Vjosa Berisha', '+38344654321',
       '', 'Agron Berisha', '+38344654322',
       '', '', '',
@@ -570,7 +552,7 @@ export class ImportService {
         seenKeys.add(resolved);
         const str = String(v ?? '').trim();
         // Treat "0" as empty for non-numeric fields (bank exports zeros for missing data)
-        const isNumericField = ['current_outstanding_balance','original_loan_amount','principal_amount','days_past_due','interest_rate'].includes(resolved);
+        const isNumericField = ['current_outstanding_balance','original_loan_amount','principal_amount','interest_rate'].includes(resolved);
         out[resolved] = (!isNumericField && str === '0') ? '' : str;
       }
       return out;
@@ -861,8 +843,8 @@ export class ImportService {
 
           const borrower = await tx.person.upsert({
             where: { personalId },
-            create: { personalId, fullName, dateOfBirth: parseDate(row.date_of_birth), email: row.email?.trim() || undefined, address: row.address?.trim() || undefined, city: cityVal },
-            update: { fullName, ...(row.email?.trim() && { email: row.email.trim() }), ...(row.address?.trim() && { address: row.address.trim() }), ...(cityVal && { city: cityVal }) },
+            create: { personalId, fullName, address: row.address?.trim() || undefined, city: cityVal },
+            update: { fullName, ...(row.address?.trim() && { address: row.address.trim() }), ...(cityVal && { city: cityVal }) },
           });
 
           for (const [phone, isPrimary] of [[row.phone1?.trim(), true], [row.phone2?.trim(), false]] as [string | undefined, boolean][]) {
@@ -888,10 +870,7 @@ export class ImportService {
               interestRate: row.interest_rate ? parseDecimal(row.interest_rate) : undefined,
               productType: row.product_type?.trim() || undefined,
               disbursementDate: parseDate(row.disbursement_date) ?? undefined,
-              maturityDate: parseDate(row.maturity_date),
               lastPaymentDate: parseDate(row.last_payment_date),
-              daysPastDue: parseInt(row.days_past_due ?? '0') || 0,
-              dpdLastCalculatedAt: new Date(),
             },
           });
 

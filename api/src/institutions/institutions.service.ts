@@ -28,7 +28,7 @@ export class InstitutionsService {
         _count: { select: { loans: true } },
         loans: {
           select: {
-            id: true, loanNumber: true, currentOutstandingBalance: true, daysPastDue: true,
+            id: true, loanNumber: true, currentOutstandingBalance: true,
             case: { select: { id: true, status: true, collectionStage: true } },
           },
           orderBy: { currentOutstandingBalance: 'desc' },

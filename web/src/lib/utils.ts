@@ -29,9 +29,13 @@ export function formatDateShort(date: string | Date) {
 
 const ENUM_SQ: Record<string, string> = {
   // Statuset e klientit
-  ACTIVE: "Aktive", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", WRITTEN_OFF: "E Çregjistruar", INACTIVE: "Joaktive",
+  ACTIVE: "Aktive", SUSPENDED: "Pezulluar", CLOSED: "Mbyllur", ANKES: "Ankesë", AKTGJYKIM: "Aktgjykim", INACTIVE: "Joaktive",
   // Fazat e arkëtimit
   D1: "D1", D2: "D2", D3: "D3", D4: "D4", LEGAL: "Juridike",
+  // Statuset e koleksionit
+  KLIENT_I_RI: "Klient i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim për Pagesë",
+  ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji",
+  NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera",
   // Llojet e aktivitetit
   CALL: "Telefonatë", SMS: "SMS", EMAIL: "Email",
   FIELD_VISIT: "Vizitë në Terren", PROMISE_TO_PAY: "Premtim Pagese",

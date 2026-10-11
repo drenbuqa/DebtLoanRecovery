@@ -20,7 +20,6 @@ const CASE_LIST_SELECT = {
       originalLoanAmount: true,
       currency: true,
       lastPaymentDate: true,
-      daysPastDue: true,
       institution: { select: { id: true, shortName: true, name: true } },
       borrower: {
         select: {
@@ -69,14 +68,12 @@ const CASE_DETAIL_EXTRA = {
       productType: true,
       interestRate: true,
       disbursementDate: true,
-      maturityDate: true,
       lastPaymentDate: true,
-      daysPastDue: true,
       institution: { select: { id: true, shortName: true, name: true } },
       borrower: {
         select: {
           id: true, fullName: true, personalId: true,
-          dateOfBirth: true, email: true, address: true, city: true,
+          address: true, city: true,
           phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         },
       },
@@ -197,7 +194,7 @@ export class CasesService {
         },
       };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
-      where.status = { in: ['CLOSED', 'SUSPENDED', 'WRITTEN_OFF'] };
+      where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
       where.legalProceedings = { some: {} };
     }
@@ -267,13 +264,11 @@ export class CasesService {
     secondaryOfficerId?: string;
     officeId?: string;
     currentOutstandingBalance?: number;
-    maturityDate?: string;
     interestRate?: number;
     productType?: string;
     // Borrower contact info
     phone1?: string;
     phone2?: string;
-    email?: string;
     address?: string;
     city?: string;
   }) {
@@ -285,7 +280,6 @@ export class CasesService {
 
     const loanData: any = {};
     if (dto.currentOutstandingBalance !== undefined) loanData.currentOutstandingBalance = dto.currentOutstandingBalance;
-    if (dto.maturityDate !== undefined) loanData.maturityDate = dto.maturityDate ? new Date(dto.maturityDate) : null;
     if (dto.interestRate !== undefined) loanData.interestRate = dto.interestRate;
     if (dto.productType !== undefined) loanData.productType = dto.productType;
 
@@ -295,7 +289,6 @@ export class CasesService {
     if (dto.officeId !== undefined) caseData.officeId = dto.officeId || null;
 
     const borrowerData: any = {};
-    if (dto.email !== undefined) borrowerData.email = dto.email || null;
     if (dto.address !== undefined) borrowerData.address = dto.address || null;
     if (dto.city !== undefined) borrowerData.city = dto.city || null;
 
@@ -430,7 +423,7 @@ export class CasesService {
       where: { personalId },
       select: {
         id: true, personalId: true, fullName: true,
-        email: true, address: true, city: true,
+        address: true, city: true,
         phones: { where: { isActive: true }, orderBy: { isPrimary: 'desc' as const }, select: { phoneNumber: true, phoneType: true, isPrimary: true } },
         loans: {
           select: {
@@ -447,10 +440,8 @@ export class CasesService {
     // Person (borrower)
     personalId: string;
     fullName: string;
-    dateOfBirth?: string;
     phone1?: string;
     phone2?: string;
-    email?: string;
     address?: string;
     city?: string;
     // Loan
@@ -463,8 +454,6 @@ export class CasesService {
     interestRate?: number;
     productType?: string;
     disbursementDate?: string;
-    maturityDate?: string;
-    daysPastDue?: number;
     // Case
     officeId?: string;
     assignedOfficerId?: string;
@@ -486,15 +475,12 @@ export class CasesService {
       where: { personalId: dto.personalId },
       update: {
         fullName: dto.fullName,
-        ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.city !== undefined && { city: dto.city }),
       },
       create: {
         personalId: dto.personalId,
         fullName: dto.fullName,
-        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
-        email: dto.email,
         address: dto.address,
         city: dto.city,
       },
@@ -530,8 +516,6 @@ export class CasesService {
           interestRate: dto.interestRate,
           productType: dto.productType,
           disbursementDate: dto.disbursementDate ? new Date(dto.disbursementDate) : undefined,
-          maturityDate: dto.maturityDate ? new Date(dto.maturityDate) : undefined,
-          daysPastDue: dto.daysPastDue ?? 0,
         },
       });
 
@@ -545,7 +529,7 @@ export class CasesService {
           registrationDate: dto.registrationDate ? new Date(dto.registrationDate) : undefined,
           collectionStage: (dto.collectionStage as CollectionStage) ?? CollectionStage.D1,
           collectionStatus: dto.collectionStatus ? (dto.collectionStatus as CollectionStatus) : CollectionStatus.KLIENT_I_RI,
-          priorityScore: Math.min(dto.daysPastDue ?? 0, 999),
+          priorityScore: 0,
         },
         select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
       });

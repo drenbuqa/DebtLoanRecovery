@@ -21,21 +21,21 @@ async function main() {
   // ── Users ─────────────────────────────────────────────────────────────────
   const hash = await bcrypt.hash('admin123', 12);
 
-  await prisma.user.upsert({ where: { username: 'admin' }, update: {}, create: { username: 'admin', passwordHash: hash, fullName: 'Arben Krasniqi', email: 'admin@dlr.com', role: UserRole.ADMIN, officeId: prn.id } });
+  await prisma.user.upsert({ where: { username: 'admin' }, update: {}, create: { username: 'admin', passwordHash: hash, fullName: 'Arben Krasniqi', role: UserRole.ADMIN, officeId: prn.id } });
 
-  await prisma.user.upsert({ where: { username: 'b.vitia' }, update: {}, create: { username: 'b.vitia', passwordHash: hash, fullName: 'Besnik Vitia', email: 'b.vitia@dlr.com', role: UserRole.MANAGER, officeId: prn.id } });
-  await prisma.user.upsert({ where: { username: 'f.osmani' }, update: {}, create: { username: 'f.osmani', passwordHash: hash, fullName: 'Flutura Osmani', email: 'f.osmani@dlr.com', role: UserRole.MANAGER, officeId: prz.id } });
+  await prisma.user.upsert({ where: { username: 'b.vitia' }, update: {}, create: { username: 'b.vitia', passwordHash: hash, fullName: 'Besnik Vitia', role: UserRole.MANAGER, officeId: prn.id } });
+  await prisma.user.upsert({ where: { username: 'f.osmani' }, update: {}, create: { username: 'f.osmani', passwordHash: hash, fullName: 'Flutura Osmani', role: UserRole.MANAGER, officeId: prz.id } });
 
-  const rgashi    = await prisma.user.upsert({ where: { username: 'r.gashi' },    update: {}, create: { username: 'r.gashi',    passwordHash: hash, fullName: 'Rinor Gashi',     email: 'r.gashi@dlr.com',    role: UserRole.OFFICER, officeId: prn.id } });
-  const ahoxha    = await prisma.user.upsert({ where: { username: 'a.hoxha' },    update: {}, create: { username: 'a.hoxha',    passwordHash: hash, fullName: 'Arlinda Hoxha',   email: 'a.hoxha@dlr.com',    role: UserRole.OFFICER, officeId: prn.id } });
-  const lkelmendi = await prisma.user.upsert({ where: { username: 'l.kelmendi' }, update: {}, create: { username: 'l.kelmendi', passwordHash: hash, fullName: 'Liridon Kelmendi',email: 'l.kelmendi@dlr.com', role: UserRole.OFFICER, officeId: prz.id } });
-  const vberisha  = await prisma.user.upsert({ where: { username: 'v.berisha' },  update: {}, create: { username: 'v.berisha',  passwordHash: hash, fullName: 'Valon Berisha',   email: 'v.berisha@dlr.com',  role: UserRole.OFFICER, officeId: pej.id } });
-  const smorina   = await prisma.user.upsert({ where: { username: 's.morina' },   update: {}, create: { username: 's.morina',   passwordHash: hash, fullName: 'Sara Morina',     email: 's.morina@dlr.com',   role: UserRole.OFFICER, officeId: gjk.id } });
-  const ehalili   = await prisma.user.upsert({ where: { username: 'e.halili' },   update: {}, create: { username: 'e.halili',   passwordHash: hash, fullName: 'Egzon Halili',    email: 'e.halili@dlr.com',   role: UserRole.OFFICER, officeId: frz.id } });
-  const dbajrami  = await prisma.user.upsert({ where: { username: 'd.bajrami' },  update: {}, create: { username: 'd.bajrami',  passwordHash: hash, fullName: 'Drita Bajrami',   email: 'd.bajrami@dlr.com',  role: UserRole.OFFICER, officeId: mit.id } });
-  const nrugova   = await prisma.user.upsert({ where: { username: 'n.rugova' },   update: {}, create: { username: 'n.rugova',   passwordHash: hash, fullName: 'Naim Rugova',     email: 'n.rugova@dlr.com',   role: UserRole.OFFICER, officeId: prn.id } });
+  const rgashi    = await prisma.user.upsert({ where: { username: 'r.gashi' },    update: {}, create: { username: 'r.gashi',    passwordHash: hash, fullName: 'Rinor Gashi',      role: UserRole.OFFICER, officeId: prn.id } });
+  const ahoxha    = await prisma.user.upsert({ where: { username: 'a.hoxha' },    update: {}, create: { username: 'a.hoxha',    passwordHash: hash, fullName: 'Arlinda Hoxha',    role: UserRole.OFFICER, officeId: prn.id } });
+  const lkelmendi = await prisma.user.upsert({ where: { username: 'l.kelmendi' }, update: {}, create: { username: 'l.kelmendi', passwordHash: hash, fullName: 'Liridon Kelmendi', role: UserRole.OFFICER, officeId: prz.id } });
+  const vberisha  = await prisma.user.upsert({ where: { username: 'v.berisha' },  update: {}, create: { username: 'v.berisha',  passwordHash: hash, fullName: 'Valon Berisha',    role: UserRole.OFFICER, officeId: pej.id } });
+  const smorina   = await prisma.user.upsert({ where: { username: 's.morina' },   update: {}, create: { username: 's.morina',   passwordHash: hash, fullName: 'Sara Morina',      role: UserRole.OFFICER, officeId: gjk.id } });
+  const ehalili   = await prisma.user.upsert({ where: { username: 'e.halili' },   update: {}, create: { username: 'e.halili',   passwordHash: hash, fullName: 'Egzon Halili',     role: UserRole.OFFICER, officeId: frz.id } });
+  const dbajrami  = await prisma.user.upsert({ where: { username: 'd.bajrami' },  update: {}, create: { username: 'd.bajrami',  passwordHash: hash, fullName: 'Drita Bajrami',    role: UserRole.OFFICER, officeId: mit.id } });
+  const nrugova   = await prisma.user.upsert({ where: { username: 'n.rugova' },   update: {}, create: { username: 'n.rugova',   passwordHash: hash, fullName: 'Naim Rugova',      role: UserRole.OFFICER, officeId: prn.id } });
 
-  await prisma.user.upsert({ where: { username: 'viewer' }, update: {}, create: { username: 'viewer', passwordHash: hash, fullName: 'Mentor Aliu', email: 'm.aliu@dlr.com', role: UserRole.VIEWER, officeId: prn.id } });
+  await prisma.user.upsert({ where: { username: 'viewer' }, update: {}, create: { username: 'viewer', passwordHash: hash, fullName: 'Mentor Aliu', role: UserRole.VIEWER, officeId: prn.id } });
 
   // ── Institutions ──────────────────────────────────────────────────────────
   const pcb = await prisma.institution.upsert({ where: { id: '00000000-0000-0000-0000-000000000001' }, update: {}, create: { id: '00000000-0000-0000-0000-000000000001', name: 'ProCredit Bank Kosovë', shortName: 'PCB' } });
@@ -114,9 +114,9 @@ async function main() {
     { ln: 'PCB-2023-0391', inst: pcb, bIdx: 8,  amt: 5500,  out: 0,     dpd: 0,   stage: CollectionStage.D1,    office: pej, officer: vberisha,  status: CaseStatus.CLOSED,      disbDaysAgo: 780 },
     { ln: 'RBK-2022-0511', inst: rbk, bIdx: 9,  amt: 3800,  out: 0,     dpd: 0,   stage: CollectionStage.D2,    office: prn, officer: rgashi,    status: CaseStatus.CLOSED,      disbDaysAgo: 960 },
     { ln: 'MEB-2023-0099', inst: meb, bIdx: 20, amt: 2200,  out: 0,     dpd: 0,   stage: CollectionStage.D1,    office: prz, officer: lkelmendi, status: CaseStatus.CLOSED,      disbDaysAgo: 420 },
-    // WRITTEN_OFF
-    { ln: 'BPB-2019-0024', inst: bpb, bIdx: 21, amt: 32000, out: 32000, dpd: 680, stage: CollectionStage.D4,    office: gjk, officer: smorina,   status: CaseStatus.WRITTEN_OFF, disbDaysAgo: 2400 },
-    { ln: 'PCB-2020-0177', inst: pcb, bIdx: 22, amt: 18000, out: 18000, dpd: 540, stage: CollectionStage.D4,    office: mit, officer: dbajrami,  status: CaseStatus.WRITTEN_OFF, disbDaysAgo: 2160 },
+    // ANKES
+    { ln: 'BPB-2019-0024', inst: bpb, bIdx: 21, amt: 32000, out: 32000, dpd: 680, stage: CollectionStage.D4,    office: gjk, officer: smorina,   status: CaseStatus.ANKES,  disbDaysAgo: 2400 },
+    { ln: 'PCB-2020-0177', inst: pcb, bIdx: 22, amt: 18000, out: 18000, dpd: 540, stage: CollectionStage.D4,    office: mit, officer: dbajrami,  status: CaseStatus.ANKES,  disbDaysAgo: 2160 },
     // SUSPENDED
     { ln: 'KEP-2022-0044', inst: kep, bIdx: 23, amt: 7800,  out: 6200,  dpd: 88,  stage: CollectionStage.D2,    office: prn, officer: nrugova,   status: CaseStatus.SUSPENDED,   disbDaysAgo: 600 },
     { ln: 'NLB-2023-0155', inst: nlb, bIdx: 24, amt: 13500, out: 11000, dpd: 155, stage: CollectionStage.D3,    office: pej, officer: vberisha,  status: CaseStatus.SUSPENDED,   disbDaysAgo: 1020 },
@@ -139,8 +139,6 @@ async function main() {
         disbursedAmount: d.amt,
         currentOutstandingBalance: d.out,
         disbursementDate: disbDate,
-        maturityDate: new Date(disbDate.getTime() + 5 * 365 * 24 * 60 * 60 * 1000),
-        daysPastDue: d.dpd,
         nplClassification: nplFor(d.dpd),
         productType: products[i],
         interestRate: rates[i],
@@ -163,7 +161,7 @@ async function main() {
         assignedOfficerId: d.officer.id,
         status: d.status,
         collectionStage: d.stage,
-        priorityScore: d.dpd,
+        priorityScore: 0,
         nextActionDate: d.status === CaseStatus.ACTIVE ? daysFromNow(3 + (i % 7)) : null,
       },
     });
@@ -199,7 +197,7 @@ async function main() {
 
   for (let ci = 0; ci < allCases.length; ci++) {
     const { c, d } = allCases[ci];
-    if (d.status === CaseStatus.WRITTEN_OFF) continue;
+    if (d.status === CaseStatus.CLOSED) continue;
 
     const actCount = 2 + (ci % 6);
     for (let ai = 0; ai < actCount; ai++) {

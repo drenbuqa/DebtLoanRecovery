@@ -64,7 +64,6 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
   const [form, setForm] = useState({
     username: user?.username ?? "",
     fullName: user?.fullName ?? "",
-    email:    user?.email ?? "",
     role:     user?.role ?? "OFFICER",
     officeId: user?.officeId ?? "",
     password: "",
@@ -78,14 +77,13 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
   const E = {
     username: !isEdit ? fieldError("username", form.username, { required: true, minLength: 3 }) : null,
     fullName: fieldError("fullName", form.fullName, { required: true }),
-    email:    fieldError("email",    form.email,    { required: true, email: true }),
     password: !isEdit ? fieldError("password", form.password, { required: true, minLength: 8 }) : null,
   };
 
   async function submit() {
     const fields = isEdit
-      ? ["fullName", "email"]
-      : ["username", "fullName", "email", "password"];
+      ? ["fullName"]
+      : ["username", "fullName", "password"];
     touchAll(fields);
     const hasError = fields.some((f) => (E as any)[f] !== null);
     if (hasError) return;
@@ -95,7 +93,7 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
 
     setLoading(true); setSubmitError("");
     try {
-      const dto: any = { fullName: form.fullName, email: form.email, role: form.role, officeId: form.officeId || undefined };
+      const dto: any = { fullName: form.fullName, role: form.role, officeId: form.officeId || undefined };
       if (!isEdit) { dto.username = form.username; dto.password = form.password; }
       isEdit ? await usersApi.update(user.id, dto) : await usersApi.create(dto);
       onSaved(); onClose();
@@ -119,12 +117,6 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
             onChange={(e) => set("fullName", e.target.value)}
             onBlur={() => touch("fullName")}
             placeholder="Jon Gjokaj" autoFocus={isEdit} />
-        </Field>
-        <Field label="Email" required error={E.email}>
-          <TextInput hasError={!!E.email} type="email" value={form.email}
-            onChange={(e) => set("email", e.target.value)}
-            onBlur={() => touch("email")}
-            placeholder="jon@dlr.com" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Roli" required>
@@ -292,7 +284,7 @@ function UsersAdminPageInner() {
   const uq = searchQuery.trim().toLowerCase();
   const filtered = data.filter((u) => {
     const matchesTab = filter === "all" ? true : filter === "active" ? u.isActive : !u.isActive;
-    const matchesSearch = !uq || (u.fullName ?? "").toLowerCase().includes(uq) || (u.email ?? "").toLowerCase().includes(uq) || (u.username ?? "").toLowerCase().includes(uq);
+    const matchesSearch = !uq || (u.fullName ?? "").toLowerCase().includes(uq) || (u.username ?? "").toLowerCase().includes(uq);
     const matchesRole = !roleFilter || u.role === roleFilter;
     return matchesTab && matchesSearch && matchesRole;
   });
@@ -314,7 +306,7 @@ function UsersAdminPageInner() {
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Kërko sipas emrit ose emailit…"
+                placeholder="Kërko sipas emrit ose përdoruesit…"
                 className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
             </div>
             <Select
@@ -398,7 +390,7 @@ function UsersAdminPageInner() {
                     )}
                   </div>
                   <div className="text-[12px] text-gray-400 mt-0.5">
-                    @{u.username} · {u.email}{u.office ? ` · ${u.office.name}` : ""}
+                    @{u.username}{u.office ? ` · ${u.office.name}` : ""}
                   </div>
                 </div>
 

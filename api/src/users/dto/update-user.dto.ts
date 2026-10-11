@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, MaxLength, IsIn, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, MinLength, MaxLength, IsIn, IsOptional, IsBoolean } from 'class-validator';
 
 const ROLES = ['ADMIN', 'MANAGER', 'OFFICER', 'VIEWER'] as const;
 
@@ -8,11 +8,6 @@ export class UpdateUserDto {
   @MinLength(2, { message: 'Emri i plotë duhet të ketë të paktën 2 karaktere' })
   @MaxLength(100, { message: 'Emri i plotë nuk mund të kalojë 100 karaktere' })
   fullName?: string;
-
-  @IsOptional()
-  @IsEmail({}, { message: 'Vendosni një adresë emaili të vlefshme' })
-  @MaxLength(150, { message: 'Emaili nuk mund të kalojë 150 karaktere' })
-  email?: string;
 
   @IsOptional()
   @IsIn(ROLES, { message: 'Roli i zgjedhur nuk është i vlefshëm' })

@@ -29,7 +29,7 @@ export class AuthService {
       where: { username },
       select: {
         id: true, username: true, passwordHash: true, fullName: true,
-        role: true, officeId: true, email: true, isActive: true,
+        role: true, officeId: true, isActive: true,
         tokenVersion: true, failedLoginAttempts: true, lockedUntil: true,
       },
     });
@@ -81,7 +81,7 @@ export class AuthService {
     return user;
   }
 
-  async login(user: { id: string; username: string; role: string; fullName: string; officeId: string | null; email: string; tokenVersion: number }, ipAddress?: string) {
+  async login(user: { id: string; username: string; role: string; fullName: string; officeId: string | null; tokenVersion: number }, ipAddress?: string) {
     const payload = { sub: user.id, username: user.username, role: user.role, officeId: user.officeId, tv: user.tokenVersion };
     await this.audit.log({ userId: user.id, username: user.username, action: 'LOGIN', ipAddress });
     return {
@@ -93,7 +93,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.users.findOne(userId);
     if (!user) throw new Error('Përdoruesi nuk u gjet');
-    return { id: user.id, username: user.username, fullName: user.fullName, role: user.role, officeId: user.officeId, email: user.email, office: (user as any).office };
+    return { id: user.id, username: user.username, fullName: user.fullName, role: user.role, officeId: user.officeId, office: (user as any).office };
   }
 
   async refreshFromToken(token: string) {

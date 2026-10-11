@@ -37,7 +37,6 @@ const STAGE_COLOR: Record<string, string> = {
   D3: "bg-red-50 text-red-600",
   D4: "bg-red-100 text-red-700",
   LEGAL: "bg-brand-50 text-brand-700",
-  WRITTEN_OFF: "bg-gray-100 text-gray-500",
 };
 
 const PRIORITY_DOT: Record<string, string> = {
