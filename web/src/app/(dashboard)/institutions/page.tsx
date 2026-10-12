@@ -279,7 +279,7 @@ function InstitutionsPageInner() {
                     {/* Group label row */}
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="bg-gray-50 border-r border-gray-200" />
-                      <th colSpan={5} className="px-3 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100">
+                      <th colSpan={3} className="px-3 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100">
                         Portofoli
                       </th>
                       <th colSpan={3} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
@@ -303,10 +303,8 @@ function InstitutionsPageInner() {
                     <tr className="border-b border-gray-200 bg-gray-50">
                       <th className={`${TH} sticky left-0 bg-gray-50 z-10 border-r border-gray-200`}>Institucioni</th>
                       <th className={`${THR} bg-gray-50`}>Gjendja Aktuale</th>
-                      <th className={`${THR} bg-gray-50`}>Shuma Origjinale</th>
                       <th className={`${THR} bg-gray-50`}>% e Totalit</th>
                       <th className={`${THR} bg-gray-50`}>Klientë</th>
-                      <th className={`${THR} bg-gray-50`}>Aktive</th>
                       <th className={`${THR} bg-gray-50 ${GRP}`}>Shuma (€)</th>
                       <th className={`${THR} bg-gray-50`}>Nr.</th>
                       <th className={`${THR} bg-gray-50`}>Shkalla e Ark.</th>
@@ -334,10 +332,8 @@ function InstitutionsPageInner() {
                               <div className="h-full bg-brand-300 rounded-full" style={{ width: `${Math.min(share, 100)}%` }} />
                             </div>
                           </td>
-                          <td className={TD}><Cur v={inst.totalOriginal} /></td>
                           <td className={TD}><span className="tabular-nums text-[12px] text-gray-400">{share.toFixed(1)}%</span></td>
                           <td className={TD}><Num v={inst.totalCases} /></td>
-                          <td className={TD}><Num v={inst.activeCases} /></td>
                           {/* Payments */}
                           <td className={`${TD} ${GRP}`}><Cur v={inst.periodPaymentsValue} bold /></td>
                           <td className={TD}><Num v={inst.periodPaymentsCount} /></td>
@@ -379,10 +375,8 @@ function InstitutionsPageInner() {
                           <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wide">Totali</span>
                         </td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-bold text-gray-900">{formatCurrency(totals.totalOutstanding)}</span></td>
-                        <td className={TD}><span className="tabular-nums text-[12px] font-bold text-gray-900">{formatCurrency(totals.totalOriginal)}</span></td>
                         <td className={TD}><span className="text-[12px] text-gray-400">100%</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.totalCases.toLocaleString()}</span></td>
-                        <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.activeCases.toLocaleString()}</span></td>
                         <td className={`${TD} ${GRP}`}><span className="tabular-nums text-[12px] font-bold text-gray-900">{formatCurrency(totals.periodPaymentsValue)}</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodPaymentsCount.toLocaleString()}</span></td>
                         <td className={TD}>
