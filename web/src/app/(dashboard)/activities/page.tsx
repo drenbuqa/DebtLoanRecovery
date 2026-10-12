@@ -295,9 +295,15 @@ export default function ActivitiesPage() {
     if (!logType) { setLogError("Zgjidhni llojin e aktivitetit."); return; }
     const outcomeOptions = LOG_OUTCOME_MAP[logType] ?? [];
     if (outcomeOptions.length > 0 && !logOutcome) { setLogError("Zgjidhni rezultatin."); return; }
-    if (!logNotes.trim()) { setLogError("Shënimet janë të detyrueshme."); return; }
     const showPromise = LOG_PROMISE_TYPES.has(logType) && (logType === "PROMISE_TO_PAY" || logOutcome === "PROMISE_RECEIVED");
     const showFollowup = LOG_FOLLOWUP_TYPES.has(logType) && !showPromise;
+    if (showPromise) {
+      if (!logPromise || Number(logPromise) <= 0) { setLogError("Vendosni shumën e premtimit."); return; }
+      if (!logPromiseDate) { setLogError("Zgjidhni datën e premtimit."); return; }
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (new Date(logPromiseDate) <= today) { setLogError("Data e premtimit duhet të jetë pas datës së sotme."); return; }
+    }
+    if (!logNotes.trim()) { setLogError("Shënimet janë të detyrueshme."); return; }
     setLogging(true); setLogError("");
     try {
       await activitiesApi.log(logCaseId, {
@@ -447,12 +453,12 @@ export default function ActivitiesPage() {
                       {showPromise && (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className={lbl}>Shuma e Premtimit (€)</label>
-                            <input type="number" min="0" step="0.01" value={logPromise}
-                              onChange={(e) => setLogPromise(e.target.value)} placeholder="0.00" className={tinp} />
+                            <label className={lbl}>Shuma e Premtimit (€) <span className="text-red-500">*</span></label>
+                            <input type="number" min="0.01" step="0.01" value={logPromise}
+                              onChange={(e) => setLogPromise(e.target.value)} placeholder="0.00" className={tinp} required />
                           </div>
                           <div>
-                            <label className={lbl}>Data e Premtimit</label>
+                            <label className={lbl}>Data e Premtimit <span className="text-red-500">*</span></label>
                             <DatePicker value={logPromiseDate} onChange={setLogPromiseDate} placeholder="Zgjidhni datën" />
                           </div>
                         </div>
