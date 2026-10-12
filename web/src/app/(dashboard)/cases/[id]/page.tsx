@@ -204,13 +204,13 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   async function submit() {
     if (!type) { setError("Zgjidhni llojin e aktivitetit"); return; }
     if (outcomeOptions.length > 0 && !outcome) { setError("Zgjidhni rezultatin"); return; }
-    if (!notes.trim()) { setError("Shënimet janë të detyrueshme"); return; }
     if (showPromise) {
       if (!promiseAmount || parseFloat(promiseAmount) <= 0) { setError("Vendosni shumën e premtimit"); return; }
       if (!promiseDate) { setError("Zgjidhni datën e premtimit"); return; }
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (new Date(promiseDate) <= today) { setError("Data e premtimit duhet të jetë pas datës së sotme"); return; }
     }
+    if (!notes.trim()) { setError("Shënimet janë të detyrueshme"); return; }
     setLoading(true); setError("");
     try {
       await activitiesApi.log(caseId, {
@@ -278,12 +278,12 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                 {showPromise && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={lbl}>Shuma e Premtimit (€)</label>
-                      <input type="number" min="0" step="0.01" value={promiseAmount}
-                        onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00" className={tinp} />
+                      <label className={lbl}>Shuma e Premtimit (€) <span className="text-red-500">*</span></label>
+                      <input type="number" min="0.01" step="0.01" value={promiseAmount}
+                        onChange={(e) => setPromiseAmount(e.target.value)} placeholder="0.00" className={tinp} required />
                     </div>
                     <div>
-                      <label className={lbl}>Data e Premtimit</label>
+                      <label className={lbl}>Data e Premtimit <span className="text-red-500">*</span></label>
                       <DatePicker value={promiseDate} onChange={setPromiseDate} placeholder="Zgjidhni datën" />
                     </div>
                   </div>
