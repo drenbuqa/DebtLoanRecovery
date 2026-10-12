@@ -226,7 +226,7 @@ function InstitutionsPageInner() {
             presets={PERFORMANCE_PRESETS}
             onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }}
           />
-          <button onClick={() => triggerRefresh(() => mutate())} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
           {can("institution:create") && (
