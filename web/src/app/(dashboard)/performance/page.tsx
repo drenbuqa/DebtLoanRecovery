@@ -58,6 +58,7 @@ function OfficerBarChart({ officers }: { officers: any[] }) {
 function PerformancePageInner() {
   const { user } = useAuth();
   const isOfficer = user?.role === "OFFICER";
+  const isManager = user?.role === "MANAGER";
   const isAdmin = user?.role === "ADMIN";
 
   const [datePreset, setDatePreset] = useState<DatePreset>("month");
@@ -66,7 +67,7 @@ function PerformancePageInner() {
   const [officeFilter, setOfficeFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"officers" | "institutions">("officers");
 
-  const swrKey = useMemo(() => ['performance', dateFrom, dateTo, officeFilter, isAdmin, isOfficer], [dateFrom, dateTo, officeFilter, isAdmin, isOfficer]);
+  const swrKey = useMemo(() => ['performance', dateFrom, dateTo, officeFilter, isAdmin, isManager, isOfficer], [dateFrom, dateTo, officeFilter, isAdmin, isManager, isOfficer]);
 
   const { data: perfData, error, isLoading: loading, isValidating: refreshing, mutate } = useSWR(
     swrKey,
@@ -75,7 +76,7 @@ function PerformancePageInner() {
       if (!isOfficer && officeFilter) officerParams.officeId = officeFilter;
       const [o, off, instS] = await Promise.all([
         perfApi.officers(officerParams),
-        isAdmin ? officesApi.list() : Promise.resolve([]),
+        (isAdmin || isManager) ? officesApi.list() : Promise.resolve([]),
         perfApi.institutions({ from: dateFrom, to: dateTo }),
       ]);
       return { officers: o, offices: off, institutionStats: instS };
@@ -105,7 +106,7 @@ function PerformancePageInner() {
             presets={PERFORMANCE_PRESETS}
             onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }}
           />
-          {isAdmin && activeTab === "officers" && (
+          {(isAdmin || isManager) && activeTab === "officers" && (
             <div className="w-44 md:w-52">
               <Select
                 label="Zyra"
@@ -175,6 +176,7 @@ function PerformancePageInner() {
                 <tr>
                   <Th>Oficer</Th>
                   <Th>Zyrë</Th>
+                  <Th>Portofoli</Th>
                   <Th>Klient Aktive</Th>
                   <Th>Telefonata</Th>
                   <Th>Vizita</Th>
@@ -186,7 +188,7 @@ function PerformancePageInner() {
               </Thead>
               <Tbody>
                 {officers.length === 0 ? (
-                  <tr><td colSpan={9} className="text-center py-8 text-gray-400 text-[13px]">Nuk ka të dhëna për periudhën e zgjedhur</td></tr>
+                  <tr><td colSpan={10} className="text-center py-8 text-gray-400 text-[13px]">Nuk ka të dhëna për periudhën e zgjedhur</td></tr>
                 ) : officers.sort((a, b) => b.collectedAmount - a.collectedAmount).map((o) => (
                   <Tr key={o.id}>
                     <Td>
@@ -200,6 +202,7 @@ function PerformancePageInner() {
                       </div>
                     </Td>
                     <Td><span className="text-gray-500">{o.office?.name ?? "—"}</span></Td>
+                    <Td><span className="tabular text-gray-700 font-medium">{formatCurrency(o.portfolio ?? 0)}</span></Td>
                     <Td><span className="tabular text-gray-700 font-medium">{o.activeCases}</span></Td>
                     <Td><span className="tabular text-gray-700">{o.calls}</span></Td>
                     <Td><span className="tabular text-gray-700">{o.visits}</span></Td>

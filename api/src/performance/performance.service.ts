@@ -14,8 +14,11 @@ export class PerformanceService {
     // When scoped to a single officer, only show that officer
     if (query.officerId) officerWhere.id = query.officerId;
 
-    // 4 queries total regardless of officer count — no N+1
-    const [officers, caseCounts, activityGroups, paymentGroups] = await Promise.all([
+    const CALL_TYPES  = ['CALL', 'CALL_BORROWER', 'CALL_GUARANTOR'];
+    const VISIT_TYPES = ['VISIT', 'FIELD_VISIT', 'VISIT_BORROWER', 'VISIT_GUARANTOR', 'MEETING_BORROWER', 'MEETING_GUARANTOR'];
+
+    // 5 queries total regardless of officer count — no N+1
+    const [officers, caseCounts, portfolioAgg, activityGroups, paymentGroups] = await Promise.all([
       this.prisma.user.findMany({
         where: officerWhere,
         select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
@@ -25,6 +28,16 @@ export class PerformanceService {
         where: { assignedOfficerId: { not: null }, status: 'ACTIVE' },
         _count: { id: true },
       }),
+      // Total outstanding balance per officer (all active cases assigned to them)
+      this.prisma.$queryRaw<{ officer_id: string; portfolio: string }[]>`
+        SELECT c.assigned_officer_id AS officer_id,
+               COALESCE(SUM(l.current_outstanding_balance), 0)::text AS portfolio
+        FROM cases c
+        JOIN loans l ON l.id = c.loan_id
+        WHERE c.status = 'ACTIVE'
+          AND c.assigned_officer_id IS NOT NULL
+        GROUP BY c.assigned_officer_id
+      `,
       this.prisma.activity.groupBy({
         by: ['officerId', 'activityType'],
         where: { officer: officerWhere, occurredAt: { gte: from, lte: to } },
@@ -40,8 +53,9 @@ export class PerformanceService {
     ]);
 
     // Build lookup maps — O(n) instead of O(n²) scanning inside the map
-    const caseCountMap = new Map(caseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
-    const paymentMap = new Map(paymentGroups.map((r) => [r.officerId, { count: r._count.id, sum: Number(r._sum.amount ?? 0) }]));
+    const caseCountMap  = new Map(caseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
+    const portfolioMap  = new Map(portfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
+    const paymentMap    = new Map(paymentGroups.map((r) => [r.officerId, { count: r._count.id, sum: Number(r._sum.amount ?? 0) }]));
 
     const activityMap = new Map<string, { total: number; calls: number; visits: number; promises: number; promiseAmount: number }>();
     for (const r of activityGroups) {
@@ -49,8 +63,8 @@ export class PerformanceService {
       if (!activityMap.has(oid)) activityMap.set(oid, { total: 0, calls: 0, visits: 0, promises: 0, promiseAmount: 0 });
       const entry = activityMap.get(oid)!;
       entry.total += r._count.id;
-      if (r.activityType === 'CALL') entry.calls += r._count.id;
-      if (r.activityType === 'VISIT' || r.activityType === 'FIELD_VISIT') entry.visits += r._count.id;
+      if (CALL_TYPES.includes(r.activityType))  entry.calls  += r._count.id;
+      if (VISIT_TYPES.includes(r.activityType)) entry.visits += r._count.id;
       if (r.activityType === 'PROMISE_TO_PAY') {
         entry.promises += r._count.id;
         entry.promiseAmount += Number(r._sum.promiseAmount ?? 0);
@@ -59,10 +73,12 @@ export class PerformanceService {
 
     return officers.map((o) => {
       const activeCases = caseCountMap.get(o.id) ?? 0;
+      const portfolio   = portfolioMap.get(o.id)  ?? 0;
       const act = activityMap.get(o.id) ?? { total: 0, calls: 0, visits: 0, promises: 0, promiseAmount: 0 };
-      const pay = paymentMap.get(o.id) ?? { count: 0, sum: 0 };
+      const pay = paymentMap.get(o.id)  ?? { count: 0, sum: 0 };
       return {
         id: o.id, fullName: o.fullName, role: o.role, office: o.office,
+        portfolio,
         activeCases,
         totalActivities: act.total, calls: act.calls, visits: act.visits,
         promises: act.promises, promiseAmount: act.promiseAmount,
