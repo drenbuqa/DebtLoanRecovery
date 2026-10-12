@@ -53,8 +53,10 @@ export class ActivitiesService {
       });
     }
 
-    // Auto-set collection status based on activity type
-    if (dto.activityType === 'PROMISE_TO_PAY') {
+    const isPromise = dto.activityType === 'PROMISE_TO_PAY' || dto.outcome === 'PROMISE_RECEIVED';
+
+    // Auto-set collection status
+    if (isPromise) {
       await this.prisma.case.update({
         where: { id: dto.caseId },
         data: { collectionStatus: 'ZOTIM_PAGESE' as any },
@@ -66,8 +68,8 @@ export class ActivitiesService {
       });
     }
 
-    // Track promises_to_pay separately for structured reporting
-    if (dto.activityType === 'PROMISE_TO_PAY' && dto.promiseAmount && dto.promiseAmount > 0) {
+    // Track as structured promise for reporting
+    if (isPromise && dto.promiseAmount && dto.promiseAmount > 0) {
       await this.prisma.promiseToPay.create({
         data: {
           caseId: dto.caseId,

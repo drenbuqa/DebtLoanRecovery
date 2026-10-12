@@ -96,7 +96,7 @@ export class PerformanceService {
                COUNT(a.id)::text AS cnt,
                COALESCE(SUM(a.promise_amount), 0)::text AS amount
         FROM activities a JOIN cases c ON c.id = a.case_id
-        WHERE a.activity_type = 'PROMISE_TO_PAY'
+        WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
           AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
           AND c.assigned_officer_id IS NOT NULL
         GROUP BY c.assigned_officer_id
@@ -107,7 +107,7 @@ export class PerformanceService {
                COUNT(a.id)::text AS cnt,
                COALESCE(SUM(a.promise_amount), 0)::text AS amount
         FROM activities a JOIN cases c ON c.id = a.case_id
-        WHERE a.activity_type = 'PROMISE_TO_PAY'
+        WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
           AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
           AND c.secondary_officer_id IS NOT NULL
         GROUP BY c.secondary_officer_id
