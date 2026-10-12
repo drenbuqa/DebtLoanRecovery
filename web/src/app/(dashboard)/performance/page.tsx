@@ -247,7 +247,7 @@ function PerformancePageInner() {
                   <Th>Borxhi Origjinal</Th>
                   <Th>Aktivitete</Th>
                   <Th>I Mbledhur</Th>
-                  <Th>Shkalla Arkëtimit</Th>
+                  <Th>Mbledhur/Portfolio %</Th>
                 </tr>
               </Thead>
               <Tbody>

@@ -291,14 +291,6 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                   </div>
                 )}
 
-                {/* Faza */}
-                {type !== "PROMISE_TO_PAY" && (
-                  <div>
-                    <label className={lbl}>Ndrysho Fazën e Klientit</label>
-                    <Select value={collectionStatus} onChange={setCollectionStatus} placeholder="Mbaj fazën aktuale…" options={FAZA_OPTIONS} clearable />
-                  </div>
-                )}
-
                 {/* Kategoria e Klientit */}
                 <div>
                   <label className={lbl}>Kategoria e Klientit</label>

@@ -17,8 +17,8 @@ export class PerformanceService {
     const CALL_TYPES  = ['CALL', 'CALL_BORROWER', 'CALL_GUARANTOR'];
     const VISIT_TYPES = ['VISIT', 'FIELD_VISIT', 'VISIT_BORROWER', 'VISIT_GUARANTOR', 'MEETING_BORROWER', 'MEETING_GUARANTOR'];
 
-    // 5 queries total regardless of officer count — no N+1
-    const [officers, caseCounts, portfolioAgg, activityGroups, paymentGroups] = await Promise.all([
+    // 6 queries total regardless of officer count — no N+1
+    const [officers, caseCounts, portfolioAgg, activityGroups, paymentGroups, promiseGroups] = await Promise.all([
       this.prisma.user.findMany({
         where: officerWhere,
         select: { id: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
@@ -50,41 +50,51 @@ export class PerformanceService {
         _count: { id: true },
         _sum: { amount: true },
       }),
+      // Promises scoped to the case's assigned officer (not who logged the activity)
+      this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
+        SELECT c.assigned_officer_id AS officer_id,
+               COUNT(a.id)::text AS cnt,
+               COALESCE(SUM(a.promise_amount), 0)::text AS amount
+        FROM activities a
+        JOIN cases c ON c.id = a.case_id
+        WHERE a.activity_type = 'PROMISE_TO_PAY'
+          AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+          AND c.assigned_officer_id IS NOT NULL
+        GROUP BY c.assigned_officer_id
+      `,
     ]);
 
     // Build lookup maps — O(n) instead of O(n²) scanning inside the map
     const caseCountMap  = new Map(caseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
     const portfolioMap  = new Map(portfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
     const paymentMap    = new Map(paymentGroups.map((r) => [r.officerId, { count: r._count.id, sum: Number(r._sum.amount ?? 0) }]));
+    const promiseMap    = new Map(promiseGroups.map((r) => [r.officer_id, { count: Number(r.cnt), amount: Number(r.amount) }]));
 
-    const activityMap = new Map<string, { total: number; calls: number; visits: number; promises: number; promiseAmount: number }>();
+    const activityMap = new Map<string, { total: number; calls: number; visits: number }>();
     for (const r of activityGroups) {
       const oid = r.officerId;
-      if (!activityMap.has(oid)) activityMap.set(oid, { total: 0, calls: 0, visits: 0, promises: 0, promiseAmount: 0 });
+      if (!activityMap.has(oid)) activityMap.set(oid, { total: 0, calls: 0, visits: 0 });
       const entry = activityMap.get(oid)!;
       entry.total += r._count.id;
       if (CALL_TYPES.includes(r.activityType))  entry.calls  += r._count.id;
       if (VISIT_TYPES.includes(r.activityType)) entry.visits += r._count.id;
-      if (r.activityType === 'PROMISE_TO_PAY') {
-        entry.promises += r._count.id;
-        entry.promiseAmount += Number(r._sum.promiseAmount ?? 0);
-      }
     }
 
     return officers.map((o) => {
       const activeCases = caseCountMap.get(o.id) ?? 0;
       const portfolio   = portfolioMap.get(o.id)  ?? 0;
-      const act = activityMap.get(o.id) ?? { total: 0, calls: 0, visits: 0, promises: 0, promiseAmount: 0 };
-      const pay = paymentMap.get(o.id)  ?? { count: 0, sum: 0 };
+      const act     = activityMap.get(o.id) ?? { total: 0, calls: 0, visits: 0 };
+      const pay     = paymentMap.get(o.id)  ?? { count: 0, sum: 0 };
+      const promise = promiseMap.get(o.id)  ?? { count: 0, amount: 0 };
       return {
         id: o.id, fullName: o.fullName, role: o.role, office: o.office,
         portfolio,
         activeCases,
         totalActivities: act.total, calls: act.calls, visits: act.visits,
-        promises: act.promises, promiseAmount: act.promiseAmount,
+        promises: promise.count, promiseAmount: promise.amount,
         collectedAmount: pay.sum, paymentCount: pay.count,
         activitiesPerCase: activeCases > 0 ? +(act.total / activeCases).toFixed(1) : 0,
-        collectionRate: act.promiseAmount > 0 ? +((pay.sum / act.promiseAmount) * 100).toFixed(1) : null,
+        collectionRate: promise.amount > 0 ? +((pay.sum / promise.amount) * 100).toFixed(1) : null,
       };
     });
   }

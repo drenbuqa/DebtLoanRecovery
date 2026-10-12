@@ -273,13 +273,6 @@ function InstitutionsPageInner() {
           <>
             {/* ── Desktop table ── */}
             <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              {/* Table toolbar */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
-                <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Institucione</span>
-                <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
-                  <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                </button>
-              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px] border-collapse">
                   <thead>
@@ -295,8 +288,13 @@ function InstitutionsPageInner() {
                       <th colSpan={2} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Premtimet · {periodLabel}
                       </th>
-                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
-                        Aktivitetet · {periodLabel}
+                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest bg-gray-50 border-b border-gray-100 ${GRP}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>Aktivitetet · {periodLabel}</span>
+                          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+                            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+                          </button>
+                        </div>
                       </th>
                     </tr>
                     {/* Sub-header row */}
