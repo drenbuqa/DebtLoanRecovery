@@ -388,7 +388,7 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
       await paymentsApi.register({
         caseId, officerId,
         amount: parseFloat(amount),
-        paymentMethod: "BANK_TRANSFER",
+        paymentChannel: "BANK_TRANSFER",
         paymentDate: date,
         notes,
         nextPaymentDate: nextDate || undefined,
