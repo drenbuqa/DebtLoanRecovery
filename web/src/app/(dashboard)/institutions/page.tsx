@@ -288,10 +288,12 @@ function InstitutionsPageInner() {
                       <th colSpan={2} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Premtimet · {periodLabel}
                       </th>
-                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest bg-gray-50 border-b border-gray-100 ${GRP}`}>
-                        <div className="flex items-center justify-between gap-2">
-                          <span>Aktivitetet · {periodLabel}</span>
-                          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
+                        Aktivitetet · {periodLabel}
+                      </th>
+                      <th className="bg-gray-50 border-b border-gray-100 w-12 pr-2">
+                        <div className="flex justify-end">
+                          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
                             <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
                           </button>
                         </div>
@@ -314,7 +316,7 @@ function InstitutionsPageInner() {
                       <th className={`${THR} bg-gray-50`}>Vizita</th>
                       <th className={`${THR} bg-gray-50`}>Juridike</th>
                       <th className={`${THR} bg-gray-50`}>Tjera</th>
-                      {can("institution:edit") && <th className="bg-gray-50 w-12" />}
+                      <th className="bg-gray-50 w-12" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -392,7 +394,7 @@ function InstitutionsPageInner() {
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodVisits.toLocaleString()}</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodLegal.toLocaleString()}</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodOther.toLocaleString()}</span></td>
-                        {can("institution:edit") && <td />}
+                        <td />
                       </tr>
                     </tfoot>
                   )}

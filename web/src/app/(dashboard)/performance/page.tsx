@@ -183,7 +183,7 @@ function PerformancePageInner() {
                   <Th>Premtime</Th>
                   <Th>Shuma e Premtimit</Th>
                   <Th>I Mbledhur</Th>
-                  <Th>Shkalla e Arkëtimit</Th>
+                  <Th>Mbledhur/Portfolio %</Th>
                 </tr>
               </Thead>
               <Tbody>
