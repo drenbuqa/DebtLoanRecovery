@@ -178,10 +178,12 @@ export class CasesService {
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.institutionId) where.loan = { institutionId: query.institutionId };
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use Kosovo's current date (UTC+2/CET) as the day boundary so comparisons
+    // reflect the user's local date rather than the server's UTC date.
+    const kosovoDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
+    const today = new Date(kosovoDateStr + 'T00:00:00.000Z');
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     if (query.view === 'promises_today') {
       where.OR = [
@@ -194,17 +196,16 @@ export class CasesService {
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any } } },
       ];
     } else if (query.view === 'vonesa') {
-      // lte: include promises whose date is today — a same-day unkept promise is already overdue
       where.OR = [
-        { promises: { some: { promiseDate: { lte: today }, status: 'PENDING' } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lte: today } } } },
+        { promises: { some: { promiseDate: { lt: today }, status: 'PENDING' } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: today } } } },
       ];
     } else if (query.view === 'premtime_thyera') {
       const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
       where.OR = [
-        { promises: { some: { promiseDate: { lte: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lte: thirtyDaysAgo } } } },
+        { promises: { some: { promiseDate: { lt: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
       ];
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
