@@ -126,7 +126,7 @@ function PerformancePageInner() {
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(activeTab === "officers" ? [
-            { label: isOfficer ? "Klientët Aktive Tuaja" : "Oficerë të Gjurmuar", value: isOfficer ? (officers[0]?.activeCases ?? 0) : officers.length },
+            { label: isOfficer ? "Klientët Aktive Tuaja" : "Oficerë të Gjurmuar", value: isOfficer ? ((officers[0]?.activeCases ?? 0) + (officers[0]?.secondaryActiveCases ?? 0)) : officers.length },
             { label: "Aktivitete Totale", value: totalActivities.toLocaleString() },
             { label: "Totali i Mbledhur", value: formatCurrency(totalCollected) },
             { label: isOfficer ? "Premtime të Hapura" : "Mesatare për Oficer", value: isOfficer ? (officers[0]?.promises ?? 0) : (officers.length ? formatCurrency(totalCollected / officers.length) : "€0") },
@@ -202,8 +202,27 @@ function PerformancePageInner() {
                       </div>
                     </Td>
                     <Td><span className="text-gray-500">{o.office?.name ?? "—"}</span></Td>
-                    <Td><span className="tabular text-gray-700 font-medium">{formatCurrency(o.portfolio ?? 0)}</span></Td>
-                    <Td><span className="tabular text-gray-700 font-medium">{o.activeCases}</span></Td>
+                    <Td>
+                      <div>
+                        <span className="tabular text-gray-700 font-medium">{formatCurrency(o.portfolio ?? 0)}</span>
+                        {(o.secondaryPortfolio ?? 0) > 0 && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold bg-gray-100 text-gray-500">SEK</span>
+                            <span className="text-[11px] text-gray-400 tabular">+{formatCurrency(o.secondaryPortfolio)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="tabular text-gray-700 font-medium">{o.activeCases}</span>
+                        {(o.secondaryActiveCases ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            +{o.secondaryActiveCases} sek
+                          </span>
+                        )}
+                      </div>
+                    </Td>
                     <Td><span className="tabular text-gray-700">{o.calls}</span></Td>
                     <Td><span className="tabular text-gray-700">{o.visits}</span></Td>
                     <Td><span className="tabular text-gray-700">{o.promises}</span></Td>
