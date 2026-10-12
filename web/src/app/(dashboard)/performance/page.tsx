@@ -16,7 +16,6 @@ import { DatePresetPicker, DatePreset, presetToRange, PERFORMANCE_PRESETS } from
 function OfficerTable({ officers, role }: { officers: any[]; role: "primary" | "secondary" }) {
   const rows = [...officers]
     .map((o) => ({ ...o, stats: o[role] }))
-    .filter((o) => role === "primary" || o.stats.activeCases > 0)
     .sort((a, b) => b.stats.collectedAmount - a.stats.collectedAmount);
 
   return (
@@ -39,7 +38,7 @@ function OfficerTable({ officers, role }: { officers: any[]; role: "primary" | "
         <Tbody>
           {rows.length === 0 ? (
             <tr><td colSpan={10} className="text-center py-8 text-gray-400 text-[13px]">
-              {role === "secondary" ? "Asnjë oficer nuk ka klientë sekondarë" : "Nuk ka të dhëna për periudhën e zgjedhur"}
+              Nuk ka të dhëna për periudhën e zgjedhur
             </td></tr>
           ) : rows.map((o) => {
             const s = o.stats;
@@ -158,35 +157,34 @@ function PerformancePageInner() {
           </button>
         </div>
 
-        {/* Role pills + KPIs */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-            {(["primary", "secondary"] as const).map((r) => (
-              <button key={r} onClick={() => setRoleTab(r)}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
-                  roleTab === r
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}>
-                {r === "primary" ? "Primar" : "Sekondar"}
-              </button>
-            ))}
-          </div>
+        {/* KPIs */}
+        <div className="flex gap-3 flex-wrap">
+          {[
+            { label: isOfficer ? "Klientë Aktive" : "Oficerë", value: isOfficer ? (officers[0]?.[roleTab]?.activeCases ?? 0) : officers.length },
+            { label: "Aktivitete", value: totalActivities.toLocaleString() },
+            { label: "I Mbledhur", value: formatCurrency(totalCollected) },
+            { label: "Mesatare/Oficer", value: officers.length ? formatCurrency(totalCollected / officers.length) : "€0" },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex-1 min-w-[120px]"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
+              <div className="text-[18px] font-bold text-gray-900 tabular leading-tight mt-1">{s.value}</div>
+            </div>
+          ))}
+        </div>
 
-          <div className="flex gap-3 flex-1 flex-wrap">
-            {[
-              { label: isOfficer ? "Klientë Aktive" : "Oficerë", value: isOfficer ? (officers[0]?.[roleTab]?.activeCases ?? 0) : officers.length },
-              { label: "Aktivitete", value: totalActivities.toLocaleString() },
-              { label: "I Mbledhur", value: formatCurrency(totalCollected) },
-              { label: "Mesatare/Oficer", value: officers.length ? formatCurrency(totalCollected / officers.length) : "€0" },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex-1 min-w-[120px]"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
-                <div className="text-[18px] font-bold text-gray-900 tabular leading-tight mt-1">{s.value}</div>
-              </div>
-            ))}
-          </div>
+        {/* Role pills */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+          {(["primary", "secondary"] as const).map((r) => (
+            <button key={r} onClick={() => setRoleTab(r)}
+              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
+                roleTab === r
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}>
+              {r === "primary" ? "Primar" : "Sekondar"}
+            </button>
+          ))}
         </div>
 
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error?.message ?? String(error)}</div>}
