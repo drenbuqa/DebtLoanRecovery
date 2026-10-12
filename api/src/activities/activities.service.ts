@@ -55,27 +55,33 @@ export class ActivitiesService {
 
     const isPromise = dto.activityType === 'PROMISE_TO_PAY' || dto.outcome === 'PROMISE_RECEIVED';
 
-    // Auto-set collection status
-    if (isPromise) {
+    // Derive collectionStatus from outcome when not explicitly set
+    const outcomeStatusMap: Record<string, string> = {
+      PROMISE_RECEIVED: 'ZOTIM_PAGESE',
+      REFUSED:          'NUK_PRANON_MARREVESHJE',
+      DISPUTE:          'KONTESTIM_BORGJI',
+      NO_ANSWER:        'PAKONTAKTUAR',
+      DECEASED:         'TJERA',
+    };
+    const autoStatus = isPromise
+      ? 'ZOTIM_PAGESE'
+      : (dto.outcome ? outcomeStatusMap[dto.outcome] : null) ?? dto.collectionStatus;
+
+    if (autoStatus) {
       await this.prisma.case.update({
         where: { id: dto.caseId },
-        data: { collectionStatus: 'ZOTIM_PAGESE' as any },
-      });
-    } else if (dto.collectionStatus) {
-      await this.prisma.case.update({
-        where: { id: dto.caseId },
-        data: { collectionStatus: dto.collectionStatus as any },
+        data: { collectionStatus: autoStatus as any },
       });
     }
 
-    // Track as structured promise for reporting
-    if (isPromise && dto.promiseAmount && dto.promiseAmount > 0) {
+    // Create a structured PromiseToPay record for every promise (amount may be 0 if not specified)
+    if (isPromise) {
       await this.prisma.promiseToPay.create({
         data: {
           caseId: dto.caseId,
           activityId: activity.id,
           createdById: dto.officerId,
-          promisedAmount: dto.promiseAmount,
+          promisedAmount: dto.promiseAmount ?? 0,
           currency: dto.promiseCurrency ?? 'EUR',
           promiseDate: dto.nextActionDate ? new Date(dto.nextActionDate) : new Date(),
         },
@@ -141,5 +147,32 @@ export class ActivitiesService {
   async deleteActivity(id: string) {
     await this.prisma.activity.delete({ where: { id } });
     return { success: true };
+  }
+
+  // Backfill PromiseToPay records for existing PROMISE_RECEIVED activities that lack them
+  async backfillPromiseReceivedActivities() {
+    const activities = await this.prisma.activity.findMany({
+      where: {
+        outcome: 'PROMISE_RECEIVED' as any,
+        promise: null,
+      },
+      select: { id: true, caseId: true, officerId: true, promiseAmount: true, nextActionDate: true, occurredAt: true },
+    });
+
+    let created = 0;
+    for (const a of activities) {
+      await this.prisma.promiseToPay.create({
+        data: {
+          caseId: a.caseId,
+          activityId: a.id,
+          createdById: a.officerId,
+          promisedAmount: (a.promiseAmount as any) ?? 0,
+          currency: 'EUR',
+          promiseDate: a.nextActionDate ?? a.occurredAt,
+        },
+      });
+      created++;
+    }
+    return { backfilled: created };
   }
 }

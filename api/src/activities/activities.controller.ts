@@ -32,4 +32,10 @@ export class ActivitiesController {
   remove(@Param('id') id: string) {
     return this.svc.deleteActivity(id);
   }
+
+  @Post('activities/backfill-promise-received')
+  @RequireRoles('ADMIN')
+  backfill() {
+    return this.svc.backfillPromiseReceivedActivities();
+  }
 }
