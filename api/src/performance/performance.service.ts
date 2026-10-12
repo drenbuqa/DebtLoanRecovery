@@ -114,9 +114,9 @@ export class PerformanceService {
       `,
     ]);
 
-    // Build lookup maps
-    const primaryCaseMap  = new Map(primaryCaseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
-    const secondaryCaseMap = new Map(secondaryCaseCounts.map((r) => [r.secondaryOfficerId, r._count.id]));
+    // Build lookup maps — filter null keys (nullable FK fields from groupBy)
+    const primaryCaseMap  = new Map(primaryCaseCounts.filter((r) => r.assignedOfficerId != null).map((r) => [r.assignedOfficerId as string, r._count.id]));
+    const secondaryCaseMap = new Map(secondaryCaseCounts.filter((r) => r.secondaryOfficerId != null).map((r) => [r.secondaryOfficerId as string, r._count.id]));
     const primaryPortMap  = new Map(primaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
     const secondaryPortMap = new Map(secondaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
     const primaryPayMap   = new Map(primaryPaymentAgg.map((r) => [r.officer_id, { count: Number(r.cnt), sum: Number(r.total) }]));
