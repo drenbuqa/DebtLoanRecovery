@@ -156,7 +156,7 @@ function InstitutionsPageInner() {
     () => instApi.stats({ from: dateFrom, to: dateTo }),
     { keepPreviousData: true },
   );
-  const { triggerRefresh } = useRefreshing(refreshing);
+  const [, triggerRefresh] = useRefreshing();
 
   function deleteInst(inst: any) {
     openConfirm({
