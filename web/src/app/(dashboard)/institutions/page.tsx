@@ -196,10 +196,13 @@ function InstitutionsPageInner() {
     { totalCases: 0, activeCases: 0, totalOutstanding: 0, totalOriginal: 0, periodPaymentsValue: 0, periodPaymentsCount: 0, periodPromisesValue: 0, periodPromisesCount: 0, periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0 },
   ), [list]);
 
-  // Period label for column headers
+  // Period label for column headers — parse as local time to avoid UTC-offset day shift
   const periodLabel = useMemo(() => {
     if (!dateFrom && !dateTo) return "Ky Muaj";
-    const fmt = (d: string) => new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+    const fmt = (d: string) => {
+      const [y, m, day] = d.split("-").map(Number);
+      return new Date(y, m - 1, day).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+    };
     if (dateFrom && dateTo) return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
     return dateFrom ? `nga ${fmt(dateFrom)}` : `deri ${fmt(dateTo!)}`;
   }, [dateFrom, dateTo]);
@@ -226,15 +229,15 @@ function InstitutionsPageInner() {
             presets={PERFORMANCE_PRESETS}
             onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }}
           />
-          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-          </button>
           {can("institution:create") && (
             <button onClick={() => setShowCreate(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
               <Plus size={14} /> Shto Institucion
             </button>
           )}
+          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-auto">
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
       </div>
 
@@ -276,37 +279,37 @@ function InstitutionsPageInner() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px] border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/80">
-                      <th className={`${TH} sticky left-0 bg-gray-50/80 z-10`} rowSpan={2}>Institucioni</th>
-                      <th colSpan={5} className="px-3 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-gray-50/80 border-b border-gray-100">
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className={`${TH} sticky left-0 bg-gray-50 z-10`} rowSpan={2}>Institucioni</th>
+                      <th colSpan={5} className="px-3 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100">
                         Portofoli
                       </th>
-                      <th colSpan={3} className={`px-3 py-1.5 text-[9px] font-semibold text-indigo-500 uppercase tracking-widest text-center bg-indigo-50/60 border-b border-gray-100 ${GRP}`}>
+                      <th colSpan={3} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Pagesat · {periodLabel}
                       </th>
-                      <th colSpan={2} className={`px-3 py-1.5 text-[9px] font-semibold text-amber-600 uppercase tracking-widest text-center bg-amber-50/60 border-b border-gray-100 ${GRP}`}>
+                      <th colSpan={2} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Premtimet · {periodLabel}
                       </th>
-                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-teal-600 uppercase tracking-widest text-center bg-teal-50/60 border-b border-gray-100 ${GRP}`}>
+                      <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Aktivitetet · {periodLabel}
                       </th>
-                      {can("institution:edit") && <th className="bg-gray-50/80 border-b border-gray-100 w-12" rowSpan={2} />}
+                      {can("institution:edit") && <th className="bg-gray-50 border-b border-gray-100 w-12" rowSpan={2} />}
                     </tr>
-                    <tr className="border-b border-gray-200 bg-gray-50/80">
-                      <th className={`${THR} bg-gray-50/80`}>Borxh Aktual</th>
-                      <th className={`${THR} bg-gray-50/80`}>Origjinal</th>
-                      <th className={`${THR} bg-gray-50/80`}>%</th>
-                      <th className={`${THR} bg-gray-50/80`}>Klientë</th>
-                      <th className={`${THR} bg-gray-50/80`}>Aktive</th>
-                      <th className={`${THR} bg-indigo-50/60 ${GRP}`}>Vlerë (€)</th>
-                      <th className={`${THR} bg-indigo-50/60`}>Nr.</th>
-                      <th className={`${THR} bg-indigo-50/60`}>Shkalla</th>
-                      <th className={`${THR} bg-amber-50/60 ${GRP}`}>Vlerë (€)</th>
-                      <th className={`${THR} bg-amber-50/60`}>Nr.</th>
-                      <th className={`${THR} bg-teal-50/60 ${GRP}`}>Telefonata</th>
-                      <th className={`${THR} bg-teal-50/60`}>Vizita</th>
-                      <th className={`${THR} bg-teal-50/60`}>Juridike</th>
-                      <th className={`${THR} bg-teal-50/60`}>Tjera</th>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className={`${THR} bg-gray-50`}>Gjendja Aktuale</th>
+                      <th className={`${THR} bg-gray-50`}>Shuma Origjinale</th>
+                      <th className={`${THR} bg-gray-50`}>% e Totalit</th>
+                      <th className={`${THR} bg-gray-50`}>Klientë</th>
+                      <th className={`${THR} bg-gray-50`}>Aktive</th>
+                      <th className={`${THR} bg-gray-50 ${GRP}`}>Shuma (€)</th>
+                      <th className={`${THR} bg-gray-50`}>Nr.</th>
+                      <th className={`${THR} bg-gray-50`}>Shkalla e Ark.</th>
+                      <th className={`${THR} bg-gray-50 ${GRP}`}>Shuma (€)</th>
+                      <th className={`${THR} bg-gray-50`}>Nr.</th>
+                      <th className={`${THR} bg-gray-50 ${GRP}`}>Telefonata</th>
+                      <th className={`${THR} bg-gray-50`}>Vizita</th>
+                      <th className={`${THR} bg-gray-50`}>Juridike</th>
+                      <th className={`${THR} bg-gray-50`}>Tjera</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -315,12 +318,7 @@ function InstitutionsPageInner() {
                       return (
                         <tr key={inst.id} className="hover:bg-brand-50/30 transition-colors group">
                           <td className={`${TDL} sticky left-0 bg-white group-hover:bg-brand-50/30 transition-colors z-10`}>
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                                <span className="text-gray-600 text-[9px] font-bold leading-none">{inst.shortName}</span>
-                              </div>
-                              <span className="text-[13px] font-medium text-gray-900 whitespace-nowrap">{inst.name}</span>
-                            </div>
+                            <span className="text-[13px] font-medium text-gray-900 whitespace-nowrap">{inst.name}</span>
                           </td>
                           {/* Portfolio */}
                           <td className={TD}>
@@ -408,14 +406,9 @@ function InstitutionsPageInner() {
                     style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                     {/* Header */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                          <span className="text-gray-600 text-[10px] font-bold leading-none">{inst.shortName}</span>
-                        </div>
-                        <div>
-                          <div className="text-[14px] font-semibold text-gray-900">{inst.name}</div>
-                          <div className="text-[11px] text-gray-400">{share.toFixed(1)}% e portofolit total</div>
-                        </div>
+                      <div>
+                        <div className="text-[14px] font-semibold text-gray-900">{inst.name}</div>
+                        <div className="text-[11px] text-gray-400">{share.toFixed(1)}% e portofolit total</div>
                       </div>
                       {can("institution:edit") && (
                         <div className="flex items-center gap-1">
