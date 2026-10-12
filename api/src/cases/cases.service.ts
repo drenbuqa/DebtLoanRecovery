@@ -49,6 +49,13 @@ const CASE_LIST_SELECT = {
     take: 1,
     select: { id: true, promiseDate: true, promisedAmount: true, status: true, createdAt: true },
   },
+  // Latest PROMISE_RECEIVED activity for cases that haven't created a PromiseToPay record yet
+  activities: {
+    where: { outcome: 'PROMISE_RECEIVED' as any },
+    orderBy: { occurredAt: 'desc' as const },
+    take: 1,
+    select: { id: true, nextActionDate: true, promiseAmount: true, occurredAt: true },
+  },
   _count: { select: { activities: true, payments: true } },
 };
 
@@ -230,7 +237,24 @@ export class CasesService {
       }),
     ]);
 
-    return { data: items, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+    // Merge PromiseToPay records + PROMISE_RECEIVED activities into a single latestPromise field
+    const data = items.map((c: any) => {
+      const fromRecord = c.promises?.[0]
+        ? { promiseDate: c.promises[0].promiseDate, promisedAmount: c.promises[0].promisedAmount, status: c.promises[0].status }
+        : null;
+      const fromActivity = c.activities?.[0]
+        ? { promiseDate: c.activities[0].nextActionDate ?? c.activities[0].occurredAt, promisedAmount: c.activities[0].promiseAmount, status: 'PENDING' }
+        : null;
+      // Pick whichever is more recent
+      let latestPromise = fromRecord;
+      if (fromActivity && (!fromRecord || new Date(fromActivity.promiseDate) > new Date(fromRecord.promiseDate))) {
+        latestPromise = fromActivity;
+      }
+      const { activities: _acts, ...rest } = c;
+      return { ...rest, latestPromise };
+    });
+
+    return { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
   }
 
   async findOne(id: string) {

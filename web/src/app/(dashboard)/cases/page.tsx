@@ -839,7 +839,7 @@ function CasesPageInner() {
                   const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
-                  const latestPromise = (c.promises ?? c.promisesToPay)?.[0];
+                  const latestPromise = c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0];
                   const promiseDaysOverdue = latestPromise
                     ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
                     : 0;
