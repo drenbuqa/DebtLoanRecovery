@@ -177,22 +177,27 @@ export class CasesService {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     if (query.view === 'promises_today') {
-      where.promises = { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } };
+      where.OR = [
+        { promises: { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED', nextActionDate: { gte: today, lt: tomorrow } } } },
+      ];
     } else if (query.view === 'all_promises') {
-      where.promises = { some: { status: 'PENDING' } };
+      where.OR = [
+        { promises: { some: { status: 'PENDING' } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any } } },
+      ];
     } else if (query.view === 'vonesa') {
-      // Promise date has passed, still no payment (status PENDING)
-      where.promises = { some: { promiseDate: { lt: today }, status: 'PENDING' } };
+      where.OR = [
+        { promises: { some: { promiseDate: { lt: today }, status: 'PENDING' } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: today } } } },
+      ];
     } else if (query.view === 'premtime_thyera') {
-      // Promise date was > 30 days ago, still no payment
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      where.promises = {
-        some: {
-          promiseDate: { lt: thirtyDaysAgo },
-          status: { in: ['PENDING', 'BROKEN'] },
-        },
-      };
+      where.OR = [
+        { promises: { some: { promiseDate: { lt: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
+      ];
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
@@ -200,12 +205,18 @@ export class CasesService {
     }
 
     if (query.search) {
-      where.OR = [
+      const searchOr = [
         { caseReference: { contains: query.search, mode: 'insensitive' } },
         { loan: { loanNumber: { contains: query.search, mode: 'insensitive' } } },
         { loan: { borrower: { fullName: { contains: query.search, mode: 'insensitive' } } } },
         { loan: { borrower: { personalId: { contains: query.search, mode: 'insensitive' } } } },
       ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     const [total, items] = await Promise.all([
