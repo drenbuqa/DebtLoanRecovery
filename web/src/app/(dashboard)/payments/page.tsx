@@ -325,7 +325,7 @@ export default function PaymentsPage() {
         { title: "Filtrimi sipas datës", body: "Përdorni zgjedhësin e datave në krye për të shfaqur vetëm pagesat nga një periudhë e caktuar — për shembull, të gjitha pagesat e marra këtë javë ose këtë muaj." },
       ]} />
 
-      <div className="p-3 md:p-6 space-y-4 md:space-y-5">
+      <div className="p-3 md:p-6 pb-0">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2 md:gap-3">
@@ -353,6 +353,8 @@ export default function PaymentsPage() {
           ))}
         </div>
 
+      </div>
+      <div className="sticky top-14 z-10 bg-[#F4F5F7] px-3 md:px-6 py-3">
         {/* Filter bar */}
         {isMobile ? (
           <div className="flex gap-2">
@@ -391,6 +393,8 @@ export default function PaymentsPage() {
             <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
           </div>
         )}
+      </div>
+      <div className="px-3 md:px-6 pb-3 md:pb-6 space-y-4 md:space-y-5">
 
         {isMobile ? (
           /* ── Mobile card list ── */

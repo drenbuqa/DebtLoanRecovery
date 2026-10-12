@@ -527,8 +527,7 @@ export default function ActivitiesPage() {
         );
       })()}
 
-      <div className="p-4 md:p-6 space-y-4">
-
+      <div className="sticky top-14 z-10 bg-[#F4F5F7] px-4 md:px-6 pt-4 pb-3">
         {/* ── Filters ─────────────────────────────────────────────────────── */}
         {isMobile ? (
           <div className="space-y-2">
@@ -651,6 +650,8 @@ export default function ActivitiesPage() {
             </div>
           </div>
         )}
+      </div>
+      <div className="px-4 md:px-6 pb-6 space-y-4">
 
         {/* ── Error ───────────────────────────────────────────────────────── */}
         {error && (
