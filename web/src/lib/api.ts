@@ -201,7 +201,10 @@ export const users = {
 // Institutions
 export const institutions = {
   list: () => req<any[]>('/institutions'),
-  stats: () => req<any[]>('/institutions/stats'),
+  stats: (params?: { from?: string; to?: string }) => {
+    const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString() : '';
+    return req<any[]>(`/institutions/stats${qs ? `?${qs}` : ''}`);
+  },
   get: (id: string) => req<any>(`/institutions/${id}`),
   create: (data: any) => req('/institutions', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => req(`/institutions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

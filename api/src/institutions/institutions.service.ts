@@ -56,17 +56,19 @@ export class InstitutionsService {
     return { success: true };
   }
 
-  async stats() {
-    const now   = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  async stats(query: { from?: string; to?: string } = {}) {
+    const now = new Date();
+    const from = query.from ? new Date(query.from) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const to   = query.to   ? new Date(query.to)   : now;
 
-    // 1. Institutions with all loans (for portfolio / outstanding balance)
+    // 1. Institutions with all loans
     const institutions = await this.prisma.institution.findMany({
       where: { isActive: true },
       select: {
         id: true, name: true, shortName: true,
         loans: {
           select: {
+            originalLoanAmount: true,
             currentOutstandingBalance: true,
             case: { select: { id: true, status: true } },
           },
@@ -89,34 +91,35 @@ export class InstitutionsService {
     if (allCaseIds.length === 0) {
       return institutions.map((inst) => ({
         id: inst.id, name: inst.name, shortName: inst.shortName,
-        totalLoans: 0, totalCases: 0, activeCases: 0, totalOutstanding: 0,
-        monthPaymentsValue: 0, monthPaymentsCount: 0,
-        monthPromisesValue: 0, monthPromisesCount: 0,
-        monthCalls: 0, monthVisits: 0, monthLegal: 0, monthOther: 0,
+        totalLoans: 0, totalCases: 0, activeCases: 0,
+        totalOutstanding: 0, totalOriginal: 0,
+        periodPaymentsValue: 0, periodPaymentsCount: 0,
+        periodPromisesValue: 0, periodPromisesCount: 0,
+        periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0,
       }));
     }
 
-    // 2. Batch: payments this month
-    const monthPayments = await this.prisma.payment.findMany({
-      where: { caseId: { in: allCaseIds }, paymentDate: { gte: monthStart, lte: now }, voidedAt: null },
+    // 2. Batch: payments in period
+    const periodPayments = await this.prisma.payment.findMany({
+      where: { caseId: { in: allCaseIds }, paymentDate: { gte: from, lte: to }, voidedAt: null },
       select: { caseId: true, amount: true },
     });
 
-    // 3. Batch: activities this month
-    const monthActivities = await this.prisma.activity.findMany({
-      where: { caseId: { in: allCaseIds }, occurredAt: { gte: monthStart, lte: now } },
+    // 3. Batch: activities in period
+    const periodActivities = await this.prisma.activity.findMany({
+      where: { caseId: { in: allCaseIds }, occurredAt: { gte: from, lte: to } },
       select: { caseId: true, activityType: true, promiseAmount: true },
     });
 
     // 4. Aggregate per institution
     return institutions.map((inst) => {
       const caseIds = instCaseIds.get(inst.id) ?? new Set<string>();
-      const activeCases = inst.loans.filter((l) => l.case?.status === 'ACTIVE').length;
+      const activeCases   = inst.loans.filter((l) => l.case?.status === 'ACTIVE').length;
       const totalOutstanding = inst.loans.reduce((s, l) => s + Number(l.currentOutstandingBalance), 0);
+      const totalOriginal    = inst.loans.reduce((s, l) => s + Number(l.originalLoanAmount ?? 0), 0);
 
-      const pyms = monthPayments.filter((p) => caseIds.has(p.caseId));
-      const acts = monthActivities.filter((a) => caseIds.has(a.caseId));
-
+      const pyms = periodPayments.filter((p) => caseIds.has(p.caseId));
+      const acts = periodActivities.filter((a) => caseIds.has(a.caseId));
       const promises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY');
 
       return {
@@ -125,14 +128,15 @@ export class InstitutionsService {
         totalCases: caseIds.size,
         activeCases,
         totalOutstanding,
-        monthPaymentsValue: pyms.reduce((s, p) => s + Number(p.amount), 0),
-        monthPaymentsCount: pyms.length,
-        monthPromisesValue: promises.reduce((s, a) => s + Number(a.promiseAmount ?? 0), 0),
-        monthPromisesCount: promises.length,
-        monthCalls:  acts.filter((a) => CALL_TYPES.includes(a.activityType)).length,
-        monthVisits: acts.filter((a) => VISIT_TYPES.includes(a.activityType)).length,
-        monthLegal:  acts.filter((a) => LEGAL_TYPES.includes(a.activityType)).length,
-        monthOther:  acts.filter((a) => !SKIP_TYPES.includes(a.activityType)).length,
+        totalOriginal,
+        periodPaymentsValue: pyms.reduce((s, p) => s + Number(p.amount), 0),
+        periodPaymentsCount: pyms.length,
+        periodPromisesValue: promises.reduce((s, a) => s + Number(a.promiseAmount ?? 0), 0),
+        periodPromisesCount: promises.length,
+        periodCalls:  acts.filter((a) => CALL_TYPES.includes(a.activityType)).length,
+        periodVisits: acts.filter((a) => VISIT_TYPES.includes(a.activityType)).length,
+        periodLegal:  acts.filter((a) => LEGAL_TYPES.includes(a.activityType)).length,
+        periodOther:  acts.filter((a) => !SKIP_TYPES.includes(a.activityType)).length,
       };
     });
   }
