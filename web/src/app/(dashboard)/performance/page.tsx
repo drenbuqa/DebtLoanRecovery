@@ -6,53 +6,12 @@ import Topbar from "@/components/layout/Topbar";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
 import { performance as perfApi, offices as officesApi } from "@/lib/api";
-import { RefreshCw, TrendingUp } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AccessGuard } from "@/components/AccessGuard";
 import { Select } from "@/components/ui/Select";
 import { DatePresetPicker, DatePreset, presetToRange, PERFORMANCE_PRESETS } from "@/components/ui/DatePresetPicker";
 
-function OfficerBarChart({ officers }: { officers: any[] }) {
-  const sorted = [...officers].sort((a, b) => b.collectedAmount - a.collectedAmount).slice(0, 8);
-  const maxAmt = Math.max(...sorted.map((o) => o.collectedAmount), 1);
-  if (sorted.length === 0) return null;
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp size={14} className="text-brand-600" />
-        <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime sipas Oficerit</h3>
-        <span className="text-[11px] text-gray-400 ml-auto">Top {sorted.length} · renditur sipas të mbledhurës</span>
-      </div>
-      <div className="space-y-3">
-        {sorted.map((o, i) => {
-          const pct = maxAmt > 0 ? (o.collectedAmount / maxAmt) * 100 : 0;
-          const initials = o.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-          return (
-            <div key={o.id} className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
-                <span className="text-brand-700 text-[9px] font-bold">{initials}</span>
-              </div>
-              <div className="w-28 shrink-0 text-[12px] text-gray-700 truncate">{o.fullName.split(" ")[0]}</div>
-              <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden relative">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${pct}%`,
-                    background: i === 0 ? "#7c3aed" : i <= 2 ? "#a78bfa" : "#c4b5fd",
-                  }}
-                />
-              </div>
-              <div className="w-20 text-right text-[12px] font-semibold tabular shrink-0"
-                style={{ color: o.collectedAmount > 0 ? "#059669" : "#9ca3af" }}>
-                {formatCurrency(o.collectedAmount)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function PerformancePageInner() {
   const { user } = useAuth();
@@ -132,11 +91,6 @@ function PerformancePageInner() {
             </div>
           ))}
         </div>
-
-        {/* Officers bar chart */}
-        {!loading && officers.length > 0 && (
-          <OfficerBarChart officers={officers} />
-        )}
 
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error?.message ?? String(error)}</div>}
 
