@@ -205,6 +205,12 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
     if (!type) { setError("Zgjidhni llojin e aktivitetit"); return; }
     if (outcomeOptions.length > 0 && !outcome) { setError("Zgjidhni rezultatin"); return; }
     if (!notes.trim()) { setError("Shënimet janë të detyrueshme"); return; }
+    if (showPromise) {
+      if (!promiseAmount || parseFloat(promiseAmount) <= 0) { setError("Vendosni shumën e premtimit"); return; }
+      if (!promiseDate) { setError("Zgjidhni datën e premtimit"); return; }
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (new Date(promiseDate) <= today) { setError("Data e premtimit duhet të jetë pas datës së sotme"); return; }
+    }
     setLoading(true); setError("");
     try {
       await activitiesApi.log(caseId, {

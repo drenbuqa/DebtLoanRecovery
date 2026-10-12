@@ -194,16 +194,17 @@ export class CasesService {
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any } } },
       ];
     } else if (query.view === 'vonesa') {
+      // lte: include promises whose date is today — a same-day unkept promise is already overdue
       where.OR = [
-        { promises: { some: { promiseDate: { lt: today }, status: 'PENDING' } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: today } } } },
+        { promises: { some: { promiseDate: { lte: today }, status: 'PENDING' } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lte: today } } } },
       ];
     } else if (query.view === 'premtime_thyera') {
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       where.OR = [
-        { promises: { some: { promiseDate: { lt: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
+        { promises: { some: { promiseDate: { lte: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lte: thirtyDaysAgo } } } },
       ];
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
