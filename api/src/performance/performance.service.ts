@@ -66,13 +66,14 @@ export class PerformanceService {
         WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
         GROUP BY a.officer_id, a.activity_type
       `,
-      // Activities logged by officer on their SECONDARY cases
+      // All activities on cases where officer is secondary
       this.prisma.$queryRaw<{ officer_id: string; activity_type: string; cnt: string }[]>`
-        SELECT a.officer_id, a.activity_type, COUNT(a.id)::text AS cnt
+        SELECT c.secondary_officer_id AS officer_id, a.activity_type, COUNT(a.id)::text AS cnt
         FROM activities a
-        JOIN cases c ON c.id = a.case_id AND c.secondary_officer_id = a.officer_id
-        WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-        GROUP BY a.officer_id, a.activity_type
+        JOIN cases c ON c.id = a.case_id
+        WHERE c.secondary_officer_id IS NOT NULL
+          AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+        GROUP BY c.secondary_officer_id, a.activity_type
       `,
       // Payments recorded by officer on their PRIMARY cases
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; total: string }[]>`
@@ -82,13 +83,14 @@ export class PerformanceService {
         WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
         GROUP BY p.officer_id
       `,
-      // Payments recorded by officer on their SECONDARY cases
+      // All payments on cases where officer is secondary
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; total: string }[]>`
-        SELECT p.officer_id, COUNT(p.id)::text AS cnt, COALESCE(SUM(p.amount), 0)::text AS total
+        SELECT c.secondary_officer_id AS officer_id, COUNT(p.id)::text AS cnt, COALESCE(SUM(p.amount), 0)::text AS total
         FROM payments p
-        JOIN cases c ON c.id = p.case_id AND c.secondary_officer_id = p.officer_id
-        WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
-        GROUP BY p.officer_id
+        JOIN cases c ON c.id = p.case_id
+        WHERE c.secondary_officer_id IS NOT NULL
+          AND p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
+        GROUP BY c.secondary_officer_id
       `,
       // Promises on PRIMARY cases (scoped to the case's primary officer)
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
