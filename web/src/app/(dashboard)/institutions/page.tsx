@@ -231,13 +231,10 @@ function InstitutionsPageInner() {
           />
           {can("institution:create") && (
             <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors shrink-0">
               <Plus size={14} /> Shto Institucion
             </button>
           )}
-          <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0 ml-auto">
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-          </button>
         </div>
       </div>
 
@@ -276,11 +273,19 @@ function InstitutionsPageInner() {
           <>
             {/* ── Desktop table ── */}
             <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              {/* Table toolbar */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+                <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">Institucione</span>
+                <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                </button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px] border-collapse">
                   <thead>
+                    {/* Group label row */}
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className={`${TH} sticky left-0 bg-gray-50 z-10`} rowSpan={2}>Institucioni</th>
+                      <th className="bg-gray-50 border-r border-gray-200" />
                       <th colSpan={5} className="px-3 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100">
                         Portofoli
                       </th>
@@ -293,9 +298,10 @@ function InstitutionsPageInner() {
                       <th colSpan={4} className={`px-3 py-1.5 text-[9px] font-semibold text-gray-500 uppercase tracking-widest text-center bg-gray-50 border-b border-gray-100 ${GRP}`}>
                         Aktivitetet · {periodLabel}
                       </th>
-                      {can("institution:edit") && <th className="bg-gray-50 border-b border-gray-100 w-12" rowSpan={2} />}
                     </tr>
+                    {/* Sub-header row */}
                     <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className={`${TH} sticky left-0 bg-gray-50 z-10 border-r border-gray-200`}>Institucioni</th>
                       <th className={`${THR} bg-gray-50`}>Gjendja Aktuale</th>
                       <th className={`${THR} bg-gray-50`}>Shuma Origjinale</th>
                       <th className={`${THR} bg-gray-50`}>% e Totalit</th>
@@ -310,6 +316,7 @@ function InstitutionsPageInner() {
                       <th className={`${THR} bg-gray-50`}>Vizita</th>
                       <th className={`${THR} bg-gray-50`}>Juridike</th>
                       <th className={`${THR} bg-gray-50`}>Tjera</th>
+                      {can("institution:edit") && <th className="bg-gray-50 w-12" />}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -317,7 +324,7 @@ function InstitutionsPageInner() {
                       const share = totalOutstanding > 0 ? (inst.totalOutstanding / totalOutstanding) * 100 : 0;
                       return (
                         <tr key={inst.id} className="hover:bg-brand-50/30 transition-colors group">
-                          <td className={`${TDL} sticky left-0 bg-white group-hover:bg-brand-50/30 transition-colors z-10`}>
+                          <td className={`${TDL} sticky left-0 bg-white group-hover:bg-brand-50/30 transition-colors z-10 border-r border-gray-200`}>
                             <span className="text-[13px] font-medium text-gray-900 whitespace-nowrap">{inst.name}</span>
                           </td>
                           {/* Portfolio */}
@@ -368,7 +375,7 @@ function InstitutionsPageInner() {
                   {list.length > 1 && (
                     <tfoot>
                       <tr className="border-t-2 border-gray-200 bg-gray-50/80">
-                        <td className={`${TDL} sticky left-0 bg-gray-50/80 z-10`}>
+                        <td className={`${TDL} sticky left-0 bg-gray-50 z-10 border-r border-gray-200`}>
                           <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wide">Totali</span>
                         </td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-bold text-gray-900">{formatCurrency(totals.totalOutstanding)}</span></td>

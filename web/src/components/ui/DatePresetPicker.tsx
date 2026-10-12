@@ -16,7 +16,9 @@ interface DateRange { from: string; to: string; }
 
 export function presetToRange(preset: DatePreset): DateRange {
   const now = new Date();
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  // Format as local date (not UTC) to avoid timezone day-shift
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const today = fmt(now);
 
   if (preset === "today")      return { from: today, to: today };
