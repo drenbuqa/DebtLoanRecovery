@@ -17,13 +17,14 @@ export class PerformanceService {
     const CALL_TYPES  = ['CALL', 'CALL_BORROWER', 'CALL_GUARANTOR'];
     const VISIT_TYPES = ['VISIT', 'FIELD_VISIT', 'VISIT_BORROWER', 'VISIT_GUARANTOR', 'MEETING_BORROWER', 'MEETING_GUARANTOR'];
 
-    // 8 queries total regardless of officer count — no N+1
+    // 10 queries — all stats split by primary vs secondary role
     const [
       officers,
       primaryCaseCounts, secondaryCaseCounts,
       primaryPortfolioAgg, secondaryPortfolioAgg,
-      activityGroups, paymentGroups,
-      primaryPromiseGroups, secondaryPromiseGroups,
+      primaryActivityAgg, secondaryActivityAgg,
+      primaryPaymentAgg, secondaryPaymentAgg,
+      primaryPromiseAgg, secondaryPromiseAgg,
     ] = await Promise.all([
       this.prisma.user.findMany({
         where: officerWhere,
@@ -45,8 +46,7 @@ export class PerformanceService {
       this.prisma.$queryRaw<{ officer_id: string; portfolio: string }[]>`
         SELECT c.assigned_officer_id AS officer_id,
                COALESCE(SUM(l.current_outstanding_balance), 0)::text AS portfolio
-        FROM cases c
-        JOIN loans l ON l.id = c.loan_id
+        FROM cases c JOIN loans l ON l.id = c.loan_id
         WHERE c.status = 'ACTIVE' AND c.assigned_officer_id IS NOT NULL
         GROUP BY c.assigned_officer_id
       `,
@@ -54,44 +54,59 @@ export class PerformanceService {
       this.prisma.$queryRaw<{ officer_id: string; portfolio: string }[]>`
         SELECT c.secondary_officer_id AS officer_id,
                COALESCE(SUM(l.current_outstanding_balance), 0)::text AS portfolio
-        FROM cases c
-        JOIN loans l ON l.id = c.loan_id
+        FROM cases c JOIN loans l ON l.id = c.loan_id
         WHERE c.status = 'ACTIVE' AND c.secondary_officer_id IS NOT NULL
         GROUP BY c.secondary_officer_id
       `,
-      // Activities: attributed to whoever logged them (already covers both primary & secondary officers)
-      this.prisma.activity.groupBy({
-        by: ['officerId', 'activityType'],
-        where: { occurredAt: { gte: from, lte: to } },
-        _count: { id: true },
-        _sum: { promiseAmount: true },
-      }),
-      // Payments: attributed to whoever recorded them
-      this.prisma.payment.groupBy({
-        by: ['officerId'],
-        where: { paymentDate: { gte: from, lte: to }, voidedAt: null },
-        _count: { id: true },
-        _sum: { amount: true },
-      }),
-      // Promises on primary cases — scoped to the case's primary officer
+      // Activities logged by officer on their PRIMARY cases
+      this.prisma.$queryRaw<{ officer_id: string; activity_type: string; cnt: string }[]>`
+        SELECT a.officer_id, a.activity_type, COUNT(a.id)::text AS cnt
+        FROM activities a
+        JOIN cases c ON c.id = a.case_id AND c.assigned_officer_id = a.officer_id
+        WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+        GROUP BY a.officer_id, a.activity_type
+      `,
+      // Activities logged by officer on their SECONDARY cases
+      this.prisma.$queryRaw<{ officer_id: string; activity_type: string; cnt: string }[]>`
+        SELECT a.officer_id, a.activity_type, COUNT(a.id)::text AS cnt
+        FROM activities a
+        JOIN cases c ON c.id = a.case_id AND c.secondary_officer_id = a.officer_id
+        WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+        GROUP BY a.officer_id, a.activity_type
+      `,
+      // Payments recorded by officer on their PRIMARY cases
+      this.prisma.$queryRaw<{ officer_id: string; cnt: string; total: string }[]>`
+        SELECT p.officer_id, COUNT(p.id)::text AS cnt, COALESCE(SUM(p.amount), 0)::text AS total
+        FROM payments p
+        JOIN cases c ON c.id = p.case_id AND c.assigned_officer_id = p.officer_id
+        WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
+        GROUP BY p.officer_id
+      `,
+      // Payments recorded by officer on their SECONDARY cases
+      this.prisma.$queryRaw<{ officer_id: string; cnt: string; total: string }[]>`
+        SELECT p.officer_id, COUNT(p.id)::text AS cnt, COALESCE(SUM(p.amount), 0)::text AS total
+        FROM payments p
+        JOIN cases c ON c.id = p.case_id AND c.secondary_officer_id = p.officer_id
+        WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
+        GROUP BY p.officer_id
+      `,
+      // Promises on PRIMARY cases (scoped to the case's primary officer)
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
         SELECT c.assigned_officer_id AS officer_id,
                COUNT(a.id)::text AS cnt,
                COALESCE(SUM(a.promise_amount), 0)::text AS amount
-        FROM activities a
-        JOIN cases c ON c.id = a.case_id
+        FROM activities a JOIN cases c ON c.id = a.case_id
         WHERE a.activity_type = 'PROMISE_TO_PAY'
           AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
           AND c.assigned_officer_id IS NOT NULL
         GROUP BY c.assigned_officer_id
       `,
-      // Promises on secondary cases — scoped to the case's secondary officer
+      // Promises on SECONDARY cases (scoped to the case's secondary officer)
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
         SELECT c.secondary_officer_id AS officer_id,
                COUNT(a.id)::text AS cnt,
                COALESCE(SUM(a.promise_amount), 0)::text AS amount
-        FROM activities a
-        JOIN cases c ON c.id = a.case_id
+        FROM activities a JOIN cases c ON c.id = a.case_id
         WHERE a.activity_type = 'PROMISE_TO_PAY'
           AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
           AND c.secondary_officer_id IS NOT NULL
@@ -100,49 +115,58 @@ export class PerformanceService {
     ]);
 
     // Build lookup maps
-    const primaryCaseMap    = new Map(primaryCaseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
-    const secondaryCaseMap  = new Map(secondaryCaseCounts.map((r) => [r.secondaryOfficerId, r._count.id]));
-    const primaryPortMap    = new Map(primaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
-    const secondaryPortMap  = new Map(secondaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
-    const paymentMap        = new Map(paymentGroups.map((r) => [r.officerId, { count: r._count.id, sum: Number(r._sum.amount ?? 0) }]));
-    const primaryPromiseMap = new Map(primaryPromiseGroups.map((r) => [r.officer_id, { count: Number(r.cnt), amount: Number(r.amount) }]));
-    const secondaryPromiseMap = new Map(secondaryPromiseGroups.map((r) => [r.officer_id, { count: Number(r.cnt), amount: Number(r.amount) }]));
+    const primaryCaseMap  = new Map(primaryCaseCounts.map((r) => [r.assignedOfficerId, r._count.id]));
+    const secondaryCaseMap = new Map(secondaryCaseCounts.map((r) => [r.secondaryOfficerId, r._count.id]));
+    const primaryPortMap  = new Map(primaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
+    const secondaryPortMap = new Map(secondaryPortfolioAgg.map((r) => [r.officer_id, Number(r.portfolio)]));
+    const primaryPayMap   = new Map(primaryPaymentAgg.map((r) => [r.officer_id, { count: Number(r.cnt), sum: Number(r.total) }]));
+    const secondaryPayMap = new Map(secondaryPaymentAgg.map((r) => [r.officer_id, { count: Number(r.cnt), sum: Number(r.total) }]));
+    const primaryPromMap  = new Map(primaryPromiseAgg.map((r) => [r.officer_id, { count: Number(r.cnt), amount: Number(r.amount) }]));
+    const secondaryPromMap = new Map(secondaryPromiseAgg.map((r) => [r.officer_id, { count: Number(r.cnt), amount: Number(r.amount) }]));
 
-    const activityMap = new Map<string, { total: number; calls: number; visits: number }>();
-    for (const r of activityGroups) {
-      const oid = r.officerId;
-      if (!activityMap.has(oid)) activityMap.set(oid, { total: 0, calls: 0, visits: 0 });
-      const entry = activityMap.get(oid)!;
-      entry.total += r._count.id;
-      if (CALL_TYPES.includes(r.activityType))  entry.calls  += r._count.id;
-      if (VISIT_TYPES.includes(r.activityType)) entry.visits += r._count.id;
-    }
+    type ActMap = Map<string, { total: number; calls: number; visits: number }>;
+    const buildActMap = (rows: { officer_id: string; activity_type: string; cnt: string }[]): ActMap => {
+      const m: ActMap = new Map();
+      for (const r of rows) {
+        if (!m.has(r.officer_id)) m.set(r.officer_id, { total: 0, calls: 0, visits: 0 });
+        const e = m.get(r.officer_id)!;
+        e.total += Number(r.cnt);
+        if (CALL_TYPES.includes(r.activity_type))  e.calls  += Number(r.cnt);
+        if (VISIT_TYPES.includes(r.activity_type)) e.visits += Number(r.cnt);
+      }
+      return m;
+    };
+    const primaryActMap   = buildActMap(primaryActivityAgg);
+    const secondaryActMap = buildActMap(secondaryActivityAgg);
 
-    return officers.map((o) => {
-      const activeCases          = primaryCaseMap.get(o.id)   ?? 0;
-      const secondaryActiveCases = secondaryCaseMap.get(o.id) ?? 0;
-      const portfolio            = primaryPortMap.get(o.id)   ?? 0;
-      const secondaryPortfolio   = secondaryPortMap.get(o.id) ?? 0;
-      const act = activityMap.get(o.id)       ?? { total: 0, calls: 0, visits: 0 };
-      const pay = paymentMap.get(o.id)        ?? { count: 0, sum: 0 };
-      const pp  = primaryPromiseMap.get(o.id)   ?? { count: 0, amount: 0 };
-      const sp  = secondaryPromiseMap.get(o.id) ?? { count: 0, amount: 0 };
-      const totalPromises = pp.count + sp.count;
-      const totalPromiseAmount = pp.amount + sp.amount;
+    const makeStats = (
+      actMap: ActMap,
+      payMap: Map<string, { count: number; sum: number }>,
+      promMap: Map<string, { count: number; amount: number }>,
+      caseMap: Map<string, number>,
+      portMap: Map<string, number>,
+      oid: string,
+    ) => {
+      const act  = actMap.get(oid)  ?? { total: 0, calls: 0, visits: 0 };
+      const pay  = payMap.get(oid)  ?? { count: 0, sum: 0 };
+      const prom = promMap.get(oid) ?? { count: 0, amount: 0 };
+      const cases = caseMap.get(oid) ?? 0;
+      const port  = portMap.get(oid) ?? 0;
       return {
-        id: o.id, fullName: o.fullName, role: o.role, office: o.office,
-        portfolio,
-        secondaryPortfolio,
-        activeCases,
-        secondaryActiveCases,
+        activeCases: cases,
+        portfolio: port,
         totalActivities: act.total, calls: act.calls, visits: act.visits,
-        promises: totalPromises, promiseAmount: totalPromiseAmount,
+        promises: prom.count, promiseAmount: prom.amount,
         collectedAmount: pay.sum, paymentCount: pay.count,
-        activitiesPerCase: (activeCases + secondaryActiveCases) > 0
-          ? +(act.total / (activeCases + secondaryActiveCases)).toFixed(1) : 0,
-        collectionRate: totalPromiseAmount > 0 ? +((pay.sum / totalPromiseAmount) * 100).toFixed(1) : null,
+        collectionRate: prom.amount > 0 ? +((pay.sum / prom.amount) * 100).toFixed(1) : null,
       };
-    });
+    };
+
+    return officers.map((o) => ({
+      id: o.id, fullName: o.fullName, role: o.role, office: o.office,
+      primary:   makeStats(primaryActMap,   primaryPayMap,   primaryPromMap,   primaryCaseMap,   primaryPortMap,   o.id),
+      secondary: makeStats(secondaryActMap, secondaryPayMap, secondaryPromMap, secondaryCaseMap, secondaryPortMap, o.id),
+    }));
   }
 
   async officeStats(query: { from?: string; to?: string }) {
