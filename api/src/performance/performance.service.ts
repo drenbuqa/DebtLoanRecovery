@@ -40,13 +40,13 @@ export class PerformanceService {
       `,
       this.prisma.activity.groupBy({
         by: ['officerId', 'activityType'],
-        where: { officer: officerWhere, occurredAt: { gte: from, lte: to } },
+        where: { occurredAt: { gte: from, lte: to } },
         _count: { id: true },
         _sum: { promiseAmount: true },
       }),
       this.prisma.payment.groupBy({
         by: ['officerId'],
-        where: { officer: officerWhere, paymentDate: { gte: from, lte: to }, voidedAt: null },
+        where: { paymentDate: { gte: from, lte: to }, voidedAt: null },
         _count: { id: true },
         _sum: { amount: true },
       }),
