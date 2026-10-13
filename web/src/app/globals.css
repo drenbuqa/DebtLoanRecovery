@@ -53,11 +53,12 @@
     content: "";
     display: block;
     flex-shrink: 0;
-    width: 36px;
+    width: 40px;
     height: 4px;
-    background: #d1d5db;
+    background: #cbd5e1;
     border-radius: 2px;
-    margin: 10px auto 4px;
+    margin: 12px auto 2px;
+    touch-action: none;
   }
   /* Scrollable body inside modal fills remaining space */
   .modal-panel > div:not(:first-child):not(:last-child) {
