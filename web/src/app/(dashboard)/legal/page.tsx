@@ -114,7 +114,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
             <h2 className="text-[15px] font-semibold text-gray-900">Procedim i Ri Gjyqësor</h2>
             <p className="text-[12px] text-gray-400 mt-0.5">Inicioni një procedim gjyqësor ndaj një debitori</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
 
         <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
@@ -457,7 +457,9 @@ export default function LegalPage() {
                               : "—"}
                           </span>
                           {lp.case?.loan?.borrower?.personalId && (
-                            <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
+                            {!lp.case.loan.borrower.personalId.startsWith("NOID-") && (
+                              <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
+                            )}
                           )}
                           {lp.notes && (
                             <div className="text-[11px] text-gray-400 italic mt-0.5 line-clamp-1">{lp.notes}</div>
@@ -530,7 +532,7 @@ export default function LegalPage() {
                 <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Procedimin</h2>
                 <p className="text-[12px] text-gray-400 mt-0.5">{editLp.case?.caseReference} · {editLp.case?.loan?.borrower ? `${editLp.case.loan.borrower.fullName}` : ""}</p>
               </div>
-              <button onClick={() => setEditLp(null)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+              <button onClick={() => setEditLp(null)} className="modal-close-btn"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4">
               {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}

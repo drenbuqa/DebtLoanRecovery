@@ -191,7 +191,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
               <p className="text-[12px] text-gray-400">{report.desc}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">

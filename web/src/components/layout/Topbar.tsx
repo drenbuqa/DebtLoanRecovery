@@ -286,7 +286,7 @@ function HelpPanel({ items }: { items: HelpItem[] }) {
         <div className="absolute top-full right-0 mt-1.5 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-gray-900">Ndihmë — Si të përdorni këtë faqe</span>
-            <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+            <button onClick={() => setOpen(false)} className="modal-close-btn"><X size={14} /></button>
           </div>
           <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
             {items.map((item, i) => (

@@ -88,26 +88,23 @@ export function ActivityTrendChart({
   return (
     <div
       className="relative w-full select-none"
-      style={{ userSelect: "none" }}
+      style={{ userSelect: "none", height: "100%" }}
       onMouseLeave={onMouseLeave}
     >
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
-        style={{ display: "block", overflow: "visible" }}
+        style={{ display: "block", width: "100%", height: "100%", overflow: "visible" }}
       >
         <defs>
-          {/* Main line gradient fill */}
           <linearGradient id="actFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.18" />
             <stop offset="75%" stopColor="#7c3aed" stopOpacity="0.04" />
             <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
           </linearGradient>
-          {/* Glow filter for the line */}
-          <filter id="lineGlow" x="-20%" y="-40%" width="140%" height="180%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
+          {/* Clip to chart area — prevents bezier overshoot below x-axis */}
+          <clipPath id="chartClip">
+            <rect x={PL} y={PT} width={chartW} height={chartH} />
+          </clipPath>
         </defs>
 
         {/* Horizontal grid lines */}
@@ -132,10 +129,20 @@ export function ActivityTrendChart({
         {/* Baseline */}
         <line x1={PL} y1={baseY} x2={W - PR} y2={baseY} stroke="#e2e8f0" strokeWidth={1} />
 
-        {/* Area fill */}
-        <path d={smoothArea(pts, baseY)} fill="url(#actFill)" />
+        {/* Area fill + line — clipped so bezier never shows below x-axis */}
+        <g clipPath="url(#chartClip)">
+          <path d={smoothArea(pts, baseY)} fill="url(#actFill)" />
+          <path
+            d={smoothPath(pts)}
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth={2.2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </g>
 
-        {/* Hover vertical rule */}
+        {/* Hover vertical rule (full height, outside clip) */}
         {hovered !== null && (
           <line
             x1={pts[hovered][0]} y1={PT}
@@ -144,31 +151,17 @@ export function ActivityTrendChart({
           />
         )}
 
-        {/* Main smooth line */}
-        <path
-          d={smoothPath(pts)}
-          fill="none"
-          stroke="#7c3aed"
-          strokeWidth={2.2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-
-        {/* Dots — small static, enlarged on hover */}
-        {pts.map(([cx, cy], i) => {
-          const isHov = hovered === i;
+        {/* Single dot on hover only */}
+        {hovered !== null && (() => {
+          const [cx, cy] = pts[hovered];
           return (
-            <circle
-              key={i}
-              cx={cx} cy={cy}
-              r={isHov ? 5 : 2.5}
-              fill={isHov ? "#7c3aed" : "white"}
-              stroke="#7c3aed"
-              strokeWidth={isHov ? 2 : 1.5}
-              style={{ transition: "r 0.12s ease, fill 0.12s ease" }}
-            />
+            <>
+              <circle cx={cx} cy={cy} r={9} fill="#7c3aed" fillOpacity={0.12} />
+              <circle cx={cx} cy={cy} r={5} fill="#7c3aed" />
+              <circle cx={cx} cy={cy} r={2.5} fill="white" />
+            </>
           );
-        })}
+        })()}
 
         {/* X-axis labels + invisible wide hit areas */}
         {buckets.map((b, i) => {

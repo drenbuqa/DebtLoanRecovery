@@ -73,7 +73,7 @@ function KpiCard({
       </div>
     </div>
   ) : (
-    <div className={`bg-white rounded-xl border px-4 py-3.5 flex items-center gap-3 transition-colors ${
+    <div className={`bg-white rounded-xl border px-4 py-3.5 flex items-center gap-3 transition-colors min-h-[76px] ${
       href ? "hover:border-gray-300 cursor-pointer" : ""
     } ${urgent ? "border-red-200" : "border-gray-200"}`}
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -81,7 +81,7 @@ function KpiCard({
         <Icon size={15} className={urgent ? "text-red-500" : "text-gray-500"} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[10.5px] font-medium text-gray-400 uppercase tracking-wide leading-none mb-1.5">{label}</div>
+        <div className="text-[10.5px] font-medium text-gray-400 uppercase tracking-wide leading-tight mb-1.5">{label}</div>
         <div className={`text-[19px] font-bold tabular leading-none ${urgent ? "text-red-600" : "text-gray-900"}`}>{value}</div>
       </div>
     </div>
@@ -391,7 +391,7 @@ function OfficerDashboard({ user }: { user: any }) {
               downloadExcel(all.map((c: any) => ({
                 "Ref. Klientit":      c.caseReference ?? "",
                 "Emri i Plotë":       c.loan?.borrower?.fullName ?? "",
-                "Nr. Personal":       c.loan?.borrower?.personalId ?? "",
+                "Nr. Personal":       (c.loan?.borrower?.personalId?.startsWith("NOID-") ? "" : c.loan?.borrower?.personalId) ?? "",
                 "Telefon":            c.loan?.borrower?.phones?.[0]?.phoneNumber ?? "",
                 "Banka":              c.loan?.institution?.name ?? "",
                 "Nr. Kredie":         c.loan?.loanNumber ?? "",
@@ -715,7 +715,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     return {
                       "Ref. Klientit":      c.caseReference ?? "",
                       "Emri i Plotë":       b?.fullName ?? "",
-                      "Nr. Personal":       b?.personalId ?? "",
+                      "Nr. Personal":       (b?.personalId?.startsWith("NOID-") ? "" : b?.personalId) ?? "",
                       "Telefon":            b?.phones?.[0]?.phoneNumber ?? "",
                       "Adresa":             b?.address ?? "",
                       "Qyteti":             b?.city ?? "",

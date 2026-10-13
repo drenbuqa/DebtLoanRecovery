@@ -7,6 +7,7 @@ import {
   Upload, Download, CheckCircle, XCircle, AlertTriangle,
   FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp, Copy, Check, X, RefreshCw,
 } from "lucide-react";
+import { downloadExcel } from "@/lib/exportExcel";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function UploadZone({ onFile }: { onFile: (f: File) => void }) {
       onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
       onDragLeave={() => setDrag(false)}
       onDrop={(e) => { e.preventDefault(); setDrag(false); handle(e.dataTransfer.files[0]); }}
-      className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl px-6 py-12 cursor-pointer transition-all select-none
+      className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl px-6 py-12 cursor-pointer transition-all select-none flex-1
         ${drag ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-gray-50 hover:border-brand-300 hover:bg-brand-50/50"}`}
     >
       <input ref={inputRef} type="file" accept=".csv,.xls,.xlsx" className="hidden"
@@ -443,7 +444,7 @@ function ReferencePanel() {
             ))}
           </div>
 
-          <div className="p-5">
+          <div className="p-5 max-h-80 overflow-y-auto">
             {tab === "officers" && (
               <div className="space-y-1">
                 <p className="text-[11px] text-gray-400 mb-3">
@@ -620,75 +621,49 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
             ))}
           </div>
 
-          {/* Excel structure reference */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2.5">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Si duhet të duket dokumenti Excel</p>
-            <div className="overflow-x-auto">
-              <table className="text-[12px] border-collapse" style={{ minWidth: 320 }}>
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 bg-gray-200 text-gray-500 font-semibold px-3 py-1 text-center text-[10px] w-10">nr</th>
-                    <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">A &nbsp;—&nbsp; Numri i klientit</th>
-                    <th className="border border-gray-300 bg-gray-200 text-gray-600 font-semibold px-3 py-1 text-left text-[11px]">
-                      B &nbsp;—&nbsp; {type === "officer" ? "Kodi i zyrtatit" : type === "institution" ? "Kodi i institucionit" : "Kodi i qytetit"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-white">
-                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">1</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">Q71234567R</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
-                      {type === "officer" ? "3" : type === "institution" ? "4" : "19"}
-                    </td>
-                  </tr>
-                  <tr className="bg-gray-50/60">
-                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">2</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-700">M31234567N</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-brand-700">
-                      {type === "officer" ? "7" : type === "institution" ? "9" : "5"}
-                    </td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="border border-gray-200 px-3 py-1.5 text-gray-300 text-center text-[11px]">3</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-400">…</td>
-                    <td className="border border-gray-200 px-3 py-1.5 font-mono text-gray-400">…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="space-y-1 text-[11px] text-gray-500">
-              <p><span className="font-semibold text-gray-700">Kolona A</span> — numri i klientit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">Q71234567R</span>), ashtu siç shfaqet në tabelën e klientëve</p>
-              <p><span className="font-semibold text-gray-700">Kolona B</span> — kodi numerik nga tabela e referencës majtas</p>
-            </div>
-            <p className="text-[11px] text-gray-400">Titujt e kolonave janë opsionalë — sistemi i njeh dhe i kapërcen automatikisht.</p>
-          </div>
-
+          {/* Template download + upload side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            {/* Left: code reference */}
+            {/* Left: download template */}
             <div>
-              <div className="mb-3">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Kodet e referencës · {BULK_TYPE_OPTIONS.find(t => t.key === type)!.label}
-                </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  Kopjoni kodin dhe vendoseni në kolonën A të dokumentit tuaj
-                </p>
-              </div>
-              <CodeTable />
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                Shkarko Template
+              </p>
+              <button
+                onClick={() => {
+                  const colB = type === "officer" ? "Kodi i Zyratarit" : type === "institution" ? "Kodi i Institucionit" : "Kodi i Qytetit";
+                  const rows = [
+                    { "Numri i Klientit (case_reference)": "Q71234567R", [colB]: type === "officer" ? 3 : type === "institution" ? 4 : 19 },
+                    { "Numri i Klientit (case_reference)": "M31234567N", [colB]: type === "officer" ? 7 : type === "institution" ? 9 : 5 },
+                    { "Numri i Klientit (case_reference)": "", [colB]: "" },
+                  ];
+                  downloadExcel(rows, `template-${type}`);
+                }}
+                className="w-full flex items-center gap-4 px-4 py-4 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 group-hover:border-brand-200 flex items-center justify-center shrink-0 transition-colors">
+                  <FileSpreadsheet size={18} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-semibold text-gray-800 group-hover:text-brand-700 transition-colors">
+                    template-{type}.xlsx
+                  </div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">
+                    {type === "officer" ? "case_reference · kodi i zyratarit" : type === "institution" ? "case_reference · kodi i institucionit" : "case_reference · kodi i qytetit"}
+                  </div>
+                </div>
+                <Download size={14} className="text-gray-400 group-hover:text-brand-500 shrink-0 transition-colors" />
+              </button>
+              <p className="text-[11px] text-gray-400 mt-2.5 leading-relaxed">
+                Hapeni në Excel, plotësoni të dhënat tuaja duke ndjekur shembujt, pastaj ngarkojeni.
+              </p>
             </div>
 
             {/* Right: upload */}
             <div className="flex flex-col gap-3">
-              <div className="mb-3">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                  Ngarko Dokumentin Excel
-                </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  Ngarkoni dokumentin me ndryshimet e përgatitura
-                </p>
-              </div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Ngarko Template të Plotësuar
+              </p>
 
               {result ? (
                 <div className="space-y-3">
@@ -703,7 +678,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
                   </div>
                   {result.errors.length > 0 && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1">
-                      {result.errors.map((e, i) => (
+                      {result.errors.map((e: string, i: number) => (
                         <p key={i} className="text-[11px] text-red-700">{e}</p>
                       ))}
                     </div>
@@ -724,7 +699,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
                       <Upload size={18} className="text-gray-300" />
                       <p className="text-[12px] text-gray-500">Tërhiq ose kliko për të zgjedhur</p>
-                      <p className="text-[11px] text-gray-400">Kolona A: numri i klientit · Kolona B: kodi</p>
+                      <p className="text-[11px] text-gray-400">Excel ose CSV</p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 border border-brand-200 bg-brand-50 rounded-xl">
@@ -771,6 +746,7 @@ export default function ImportPage() {
   const [error, setError]         = useState("");
   const [jobs, setJobs]           = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [showAllJobs, setShowAllJobs] = useState(false);
   const [officers, setOfficers]         = useState<any[]>([]);
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [cities, setCities]             = useState<any[]>([]);
@@ -831,15 +807,15 @@ export default function ImportPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <div>
-              <h2 className="text-[14px] font-semibold text-gray-900 mb-1">Modeli i importit</h2>
+              <h2 className="text-[14px] font-semibold text-gray-900 mb-1">Import Template</h2>
               <p className="text-[12px] text-gray-500 leading-relaxed">
-                Shkarkoni modelin, hapeni në Excel, dhe kopjoni të dhënat nga dokumenti i bankës në kolonat përkatëse. Mund të lini bosh kolonat që banka nuk i ka.
+                Shkarkoni template-in, hapeni në Excel, dhe kopjoni të dhënat nga dokumenti i bankës në kolonat përkatëse. Mund të lini bosh kolonat që banka nuk i ka.
               </p>
             </div>
 
             <a href={importApi.templateUrl()} target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-[13px] font-medium transition-colors">
-              <Download size={14} /> Shkarko Modelin Excel
+              <Download size={14} /> Shkarko Template Excel
             </a>
 
             <div className="border-t border-gray-100 pt-3 space-y-2">
@@ -875,15 +851,15 @@ export default function ImportPage() {
           </div>
 
           {/* Right: Upload */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5"
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <h2 className="text-[14px] font-semibold text-gray-900 mb-1">Ngarko dokumentin</h2>
-            <p className="text-[12px] text-gray-500 mb-4">Ngarkoni modelin e plotësuar me të dhënat e klientëve.</p>
+            <p className="text-[12px] text-gray-500 mb-4">Ngarkoni template-in e plotësuar me të dhënat e klientëve.</p>
 
             {result ? (
               <ResultPanel result={result} onReset={reset} />
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-col flex-1 gap-3">
                 {!file ? (
                   <UploadZone onFile={handleFile} />
                 ) : (
@@ -948,17 +924,33 @@ export default function ImportPage() {
               <FileSpreadsheet size={26} className="text-gray-200 mb-2" />
               <p className="text-[13px] text-gray-400">Ende nuk ka importe të kryera</p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {jobs.map(j => (
-                <HistoryRow
-                  key={j.id}
-                  job={j}
-                  onRollback={() => importApi.jobs().then(setJobs).catch(() => {})}
-                />
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const LIMIT = 5;
+            const visible = showAllJobs ? jobs : jobs.slice(0, LIMIT);
+            return (
+              <>
+                <div className="space-y-2">
+                  {visible.map(j => (
+                    <HistoryRow
+                      key={j.id}
+                      job={j}
+                      onRollback={() => importApi.jobs().then(setJobs).catch(() => {})}
+                    />
+                  ))}
+                </div>
+                {jobs.length > LIMIT && (
+                  <button
+                    onClick={() => setShowAllJobs(v => !v)}
+                    className="mt-3 flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showAllJobs
+                      ? <><ChevronUp size={13} /> Shfaq më pak</>
+                      : <><ChevronDown size={13} /> Shfaq të gjitha ({jobs.length})</>}
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
 
       </div>

@@ -281,6 +281,22 @@ body:has(.modal-backdrop) {
   }
 }
 
+/* Modal close button — rounded-square gray hover */
+.modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  color: #9ca3af;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.modal-close-btn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
 /* Mobile: tables inside overflow-x-auto containers get a minimum width */
 @media (max-width: 767px) {
   table {

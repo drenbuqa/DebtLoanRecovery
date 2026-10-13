@@ -58,7 +58,7 @@ function AddOfficeModal({ onClose, onCreated }: { onClose: () => void; onCreated
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Zyrë e Re</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="p-6 space-y-4">
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}

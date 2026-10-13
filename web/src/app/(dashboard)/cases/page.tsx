@@ -268,7 +268,7 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <h2 className="text-[15px] font-semibold text-gray-900">Klient i Ri</h2>
             <p className="text-[12px] text-gray-400 mt-0.5">Plotëso të dhënat kryesore për të regjistruar klientin</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={18} /></button>
         </div>
 
         {/* Body */}
@@ -407,8 +407,8 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex items-center justify-between shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-[13px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Anulo</button>
           <button onClick={submit} disabled={loading}
             className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
             {loading ? "Duke regjistruar…" : "Regjistro Klientin"}
@@ -563,7 +563,7 @@ function CasesPageInner() {
         return {
           "Ref. Klientit": c.caseReference,
           "Emri i Plotë": b?.fullName ?? "",
-          "Nr. Personal": b?.personalId ?? "",
+          "Nr. Personal": b?.personalId?.startsWith("NOID-") ? "" : (b?.personalId ?? ""),
           "Statusi": statusLabel[c.status] ?? c.status ?? "",
           "Telefon": b?.phones?.[0]?.phoneNumber ?? "",
           "Adresa": b?.address ?? "",
@@ -848,7 +848,7 @@ function CasesPageInner() {
                       <td className="px-3 py-2 min-w-[160px]">
                         <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[150px]">{b?.fullName ?? "—"}</div>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] text-gray-400 font-mono">{b?.personalId ?? c.caseReference}</span>
+                          <span className="text-[10px] text-gray-400 font-mono">{b?.personalId?.startsWith("NOID-") ? "—" : (b?.personalId ?? c.caseReference)}</span>
                           {c.status && c.status !== "ACTIVE" && (() => {
                             const cfg: Record<string, { label: string; color: string }> = {
                               LEGAL:      { label: "Juridike",  color: "bg-red-100 text-red-700" },

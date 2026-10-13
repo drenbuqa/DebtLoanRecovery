@@ -63,7 +63,7 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
@@ -164,7 +164,7 @@ function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () =
             <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
             <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">

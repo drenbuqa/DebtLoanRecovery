@@ -244,7 +244,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto flex-1">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
@@ -401,7 +401,7 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
@@ -473,7 +473,7 @@ function CreateAgreementModal({ caseId, onClose, onSuccess }: { caseId: string; 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-gray-900">Krijo Marrëveshje</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
@@ -538,7 +538,7 @@ function CaseVoidModal({ payment, onClose, onVoided }: { payment: any; onClose: 
             <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
             <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
@@ -860,7 +860,7 @@ export default function CaseDetailPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Statusin</h2>
-              <button onClick={() => setShowStatusUpdate(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+              <button onClick={() => setShowStatusUpdate(false)} className="modal-close-btn"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -899,7 +899,7 @@ export default function CaseDetailPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Detajet e Klientit</h2>
-              <button onClick={() => setShowEditCase(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+              <button onClick={() => setShowEditCase(false)} className="modal-close-btn"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
@@ -1022,7 +1022,7 @@ export default function CaseDetailPage() {
               })()}
             </div>
             <div className="flex items-center gap-3 text-[12.5px] text-gray-400 flex-wrap">
-              <span className="font-mono">{caseData?.loan?.borrower?.personalId ?? "—"}</span>
+              <span className="font-mono">{(() => { const pid = caseData?.loan?.borrower?.personalId; return (!pid || pid.startsWith("NOID-")) ? "—" : pid; })()}</span>
               <span className="text-gray-200">·</span>
               <span>{institution}</span>
               <span className="font-mono text-gray-500">{loanNumber}</span>
@@ -1413,7 +1413,7 @@ export default function CaseDetailPage() {
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
                   <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-[15px] font-semibold text-gray-900">Ngarko Dokument</h2>
-                    <button onClick={() => setShowUpload(false)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+                    <button onClick={() => setShowUpload(false)} className="modal-close-btn"><X size={16} /></button>
                   </div>
                   <div className="p-6 space-y-4">
                     {uploadError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{uploadError}</div>}

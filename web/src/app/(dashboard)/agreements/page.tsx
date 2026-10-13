@@ -106,7 +106,7 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
             <h2 className="text-[15px] font-semibold text-gray-900">Marrëveshje e Re Ripagimi</h2>
             <p className="text-[12px] text-gray-400 mt-0.5">Krijoni një plan këstesh me debitorin</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
 
         <div className="p-4 md:p-6 space-y-4">

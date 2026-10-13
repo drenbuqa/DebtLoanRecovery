@@ -60,7 +60,7 @@ export function ConfirmModal({
               <h2 className="text-[15px] font-semibold text-gray-900 leading-snug">{title}</h2>
               <p className="mt-1 text-[13px] text-gray-500 leading-relaxed">{message}</p>
             </div>
-            <button onClick={onClose} className="text-gray-300 hover:text-gray-500 shrink-0 -mt-0.5">
+            <button onClick={onClose} className="modal-close-btn shrink-0 -mt-0.5">
               <X size={16} />
             </button>
           </div>
