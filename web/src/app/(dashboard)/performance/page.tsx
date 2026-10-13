@@ -282,17 +282,11 @@ function PerformancePageInner() {
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
               <div>
                 <h3 className="text-[13px] font-semibold text-gray-900">Aktivitet — {trendLabel}</h3>
-                <p className="text-[11.5px] text-gray-400 mt-0.5">Telefonata dhe vizita sipas periudhës</p>
+                <p className="text-[11.5px] text-gray-400 mt-0.5">Gjithsej aktivitete sipas periudhës</p>
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-brand-500 inline-block" />
-                  Telefonata
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-gray-400 inline-block" />
-                  Vizita
-                </span>
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                <span className="w-2.5 h-2.5 rounded-full bg-brand-500 inline-block" />
+                <span>Aktivitete totale</span>
               </div>
             </div>
             <div className="px-3 pb-3 flex-1" style={{ minHeight: 200 }}>

@@ -42,7 +42,7 @@
     width: 100% !important;
     border-radius: 20px 20px 0 0 !important;
     max-height: 88vh !important;
-    animation: sheet-in 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+    animation: sheet-in 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
     margin: 0 !important;
     padding-bottom: 0 !important;
     display: flex !important;

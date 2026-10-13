@@ -56,9 +56,9 @@ const CASE_LIST_SELECT = {
     take: 1,
     select: { id: true, nextActionDate: true, promiseAmount: true, occurredAt: true },
   },
-  // Next upcoming installment from an active agreement
+  // Next upcoming installment from an active or broken agreement
   agreements: {
-    where: { status: 'ACTIVE' as any },
+    where: { status: { in: ['ACTIVE', 'BROKEN'] as any[] } },
     orderBy: { createdAt: 'desc' as const },
     take: 1,
     select: {
@@ -199,23 +199,25 @@ export class CasesService {
     const tomorrow = new Date(today);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
+    const AGR_ACTIVE = { in: ['ACTIVE', 'BROKEN'] as any[] };
+
     if (query.view === 'promises_today') {
       where.OR = [
         { promises: { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } } },
         { activities: { some: { outcome: 'PROMISE_RECEIVED', nextActionDate: { gte: today, lt: tomorrow } } } },
-        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
+        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
       ];
     } else if (query.view === 'all_promises') {
       where.OR = [
         { promises: { some: { status: 'PENDING' } } },
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any } } },
-        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
+        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ];
     } else if (query.view === 'vonesa') {
       where.OR = [
         { promises: { some: { promiseDate: { lt: today }, status: 'PENDING' } } },
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: today } } } },
-        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: today } } } } } },
+        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: today } } } } } },
       ];
     } else if (query.view === 'premtime_thyera') {
       const thirtyDaysAgo = new Date(today);
@@ -223,7 +225,7 @@ export class CasesService {
       where.OR = [
         { promises: { some: { promiseDate: { lt: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
-        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
+        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
       ];
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
@@ -258,6 +260,11 @@ export class CasesService {
     ]);
 
     // Merge PromiseToPay records + PROMISE_RECEIVED activities + agreement installments into latestPromise
+    const nowForStatus = new Date();
+    nowForStatus.setHours(0, 0, 0, 0);
+    const thirtyDaysAgoForStatus = new Date(nowForStatus);
+    thirtyDaysAgoForStatus.setDate(thirtyDaysAgoForStatus.getDate() - 30);
+
     const data = items.map((c: any) => {
       const fromRecord = c.promises?.[0]
         ? { promiseDate: c.promises[0].promiseDate, promisedAmount: c.promises[0].promisedAmount, status: c.promises[0].status }
@@ -266,14 +273,21 @@ export class CasesService {
         ? { promiseDate: c.activities[0].nextActionDate ?? c.activities[0].occurredAt, promisedAmount: c.activities[0].promiseAmount, status: 'PENDING' }
         : null;
       const nextInstallment = c.agreements?.[0]?.installments?.[0];
-      const fromAgreement = nextInstallment
-        ? { promiseDate: nextInstallment.dueDate, promisedAmount: nextInstallment.amount, status: 'PENDING' }
-        : null;
-      // Pick the most relevant: prefer closest upcoming date among all three sources
+      const fromAgreement = nextInstallment ? (() => {
+        // Derive effective status from the due date if DB hasn't been reconciled yet
+        const dueDate = new Date(nextInstallment.dueDate);
+        let effectiveStatus = nextInstallment.status as string;
+        if (effectiveStatus === 'PENDING' && dueDate < nowForStatus) {
+          effectiveStatus = dueDate < thirtyDaysAgoForStatus ? 'BROKEN' : 'OVERDUE';
+        }
+        return { promiseDate: nextInstallment.dueDate, promisedAmount: nextInstallment.amount, status: effectiveStatus };
+      })() : null;
+
+      // Pick the most urgent: the candidate with the EARLIEST date (closest overdue or soonest upcoming)
       const candidates = [fromRecord, fromActivity, fromAgreement].filter(Boolean) as NonNullable<typeof fromRecord>[];
       const latestPromise = candidates.reduce<typeof fromRecord>((best, cur) => {
         if (!best) return cur;
-        return new Date(cur.promiseDate) > new Date(best.promiseDate) ? cur : best;
+        return new Date(cur.promiseDate) < new Date(best.promiseDate) ? cur : best;
       }, null);
       const { activities: _acts, agreements: _agr, ...rest } = c;
       return { ...rest, latestPromise };
@@ -702,11 +716,14 @@ export class CasesService {
         where: { paymentDate: { gte: startOfMonth }, ...(officeId ? { case: { officeId } } : {}) },
         _sum: { amount: true },
       }),
-      this.prisma.activity.count({
+      this.prisma.case.count({
         where: {
-          activityType: 'PROMISE_TO_PAY',
-          nextActionDate: { gte: today, lt: tomorrow },
-          ...(officeId ? { case: { officeId } } : {}),
+          ...caseFilter,
+          OR: [
+            { promises: { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } } },
+            { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { gte: today, lt: tomorrow } } } },
+            { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
+          ],
         },
       }),
       this.prisma.agreement.count({ where: { case: { ...caseScope } } }),

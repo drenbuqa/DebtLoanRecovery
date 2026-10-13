@@ -546,12 +546,12 @@ export default function ActivitiesPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Kërko aktivitete…"
-                  className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400"
+                  className="w-full pl-9 pr-3 py-2 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400"
                 />
               </div>
               {can("field-visit:create") && (
                 <button onClick={openLogModal}
-                  className="flex items-center gap-1.5 px-3 py-2.5 bg-brand-600 text-white rounded-xl text-[12px] font-medium shrink-0 whitespace-nowrap">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 text-white rounded-xl text-[12px] font-medium shrink-0 whitespace-nowrap">
                   <Plus size={13} /> Regjistro
                 </button>
               )}

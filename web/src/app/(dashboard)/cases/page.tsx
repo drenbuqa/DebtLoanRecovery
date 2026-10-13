@@ -606,7 +606,7 @@ function CasesPageInner() {
             <div className="relative flex-1">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
-                className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400"
+                className="w-full pl-9 pr-3 py-2 text-[14px] border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-brand-400"
                 placeholder="Kërko debitor, klient…"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -614,7 +614,7 @@ function CasesPageInner() {
             </div>
             {can("case:create") && (
               <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-1.5 px-3 py-2.5 bg-brand-600 text-white rounded-xl text-[12px] font-medium shrink-0 whitespace-nowrap">
+                className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 text-white rounded-xl text-[12px] font-medium shrink-0 whitespace-nowrap">
                 <Plus size={13} /> Regjistro
               </button>
             )}

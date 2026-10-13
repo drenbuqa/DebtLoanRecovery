@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useState } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
@@ -9,12 +9,12 @@ import { formatCurrency } from "@/lib/utils";
 import { cases as casesApi, payments as paymentsApi, performance as perfApi, activities as activitiesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatEnum } from "@/lib/utils";
-import { CollectionsChart } from "@/components/charts/CollectionsChart";
+import { downloadExcel } from "@/lib/exportExcel";
 import {
   ArrowUpRight, FolderOpen, ChevronRight,
   BarChart3, CheckSquare, AlertCircle, FileCheck,
-  Phone, Calendar, Banknote, AlertTriangle, Target,
-  TrendingUp, Scale, Clock,
+  Phone, Calendar, Banknote, AlertTriangle,
+  TrendingUp, Scale, FileSpreadsheet, Download, Users, Clock,
 } from "lucide-react";
 
 const MONTHS = ["Janar","Shkurt","Mars","Prill","Maj","Qershor","Korrik","Gusht","Shtator","Tetor","Nëntor","Dhjetor"];
@@ -28,19 +28,24 @@ function fmtShort(v: number) {
 
 function timeAgo(date: string | Date) {
   const diff = Date.now() - new Date(date).getTime();
+  if (diff < 0) return "tani";
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "tani";
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h`;
   return `${Math.floor(hrs / 24)}d`;
 }
 
-const STAGE_COLOR: Record<string, string> = {
-  D1: "bg-gray-100 text-gray-600",
-  D2: "bg-gray-200 text-gray-700",
-  D3: "bg-gray-200 text-gray-800",
-  D4: "bg-gray-300 text-gray-800",
-  LEGAL: "bg-brand-50 text-brand-700",
+const FAZA_LABEL: Record<string, string> = {
+  KLIENT_I_RI:           "Klienti i Ri",
+  PAKONTAKTUAR:          "I Pakontaktuar",
+  ZOTIM_PAGESE:          "Zotim Pagese",
+  ME_MARREVESHJE:        "Me Marrëveshje",
+  KONTESTIM_BORGJI:      "Kontestim Borgji",
+  NUK_PRANON_MARREVESHJE:"Nuk Pranon",
+  JURIDIKE:              "Juridike",
+  TJERA:                 "Të Tjera",
 };
 
 const ACT_LABEL: Record<string, string> = {
@@ -134,11 +139,81 @@ function RowSkeleton({ n = 4 }: { n?: number }) {
   );
 }
 
+// ── Reports section ───────────────────────────────────────────────────────────
+
+const FAZA_LABEL_FULL: Record<string, string> = {
+  KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar",
+  ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje",
+  KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje",
+  JURIDIKE: "Juridike", TJERA: "Të Tjera",
+};
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: "Aktive", LEGAL: "Juridike", SUSPENDED: "Pezulluar",
+  CLOSED: "Mbyllur", ANKES: "Ankesë", AKTGJYKIM: "Aktgjykim",
+};
+
+type ReportDef = {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  run: () => Promise<void>;
+};
+
+function ReportsSection({ reports }: { reports: ReportDef[] }) {
+  const [loading, setLoading] = React.useState<string | null>(null);
+
+  async function run(r: ReportDef) {
+    if (loading) return;
+    setLoading(r.id);
+    try { await r.run(); } finally { setLoading(null); }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h3 className="text-[13px] font-semibold text-gray-900">Raporte</h3>
+          <p className="text-[11.5px] text-gray-400 mt-0.5">Shkarkoni të dhëna si Excel</p>
+        </div>
+        <FileSpreadsheet size={16} className="text-gray-300" />
+      </div>
+      <div className="divide-y divide-gray-50">
+        {reports.map((r) => {
+          const isRunning = loading === r.id;
+          return (
+            <div key={r.id} className="flex items-center gap-4 px-5 py-3.5">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                <r.icon size={14} className="text-gray-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium text-gray-900">{r.title}</div>
+                <div className="text-[11.5px] text-gray-400 mt-0.5">{r.desc}</div>
+              </div>
+              <button
+                onClick={() => run(r)}
+                disabled={!!loading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50 shrink-0">
+                {isRunning
+                  ? <><span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />Duke gjeneruar…</>
+                  : <><Download size={12} />Shkarko</>}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Case row (reused in multiple sections) ────────────────────────────────────
 
 function CaseRow({ c, note, onClick }: { c: any; note?: string; onClick: () => void }) {
   const name  = c.loan?.borrower?.fullName ?? "—";
-  const stage = c.collectionStage ?? "—";
+  const faza  = c.collectionStatus ?? "";
+  const fazaText = FAZA_LABEL[faza] ?? faza;
+  const isLegal  = faza === "JURIDIKE";
   return (
     <div onClick={onClick}
       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
@@ -152,9 +227,11 @@ function CaseRow({ c, note, onClick }: { c: any; note?: string; onClick: () => v
         <div className="text-[11px] text-gray-400">{c.caseReference}{note ? ` · ${note}` : ""}</div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className={`text-[10.5px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[stage] ?? "bg-gray-100 text-gray-500"}`}>
-          {formatEnum(stage)}
-        </span>
+        {fazaText && (
+          <span className={`text-[10.5px] font-medium px-1.5 py-0.5 rounded ${isLegal ? "bg-brand-50 text-brand-700" : "bg-gray-100 text-gray-600"}`}>
+            {fazaText}
+          </span>
+        )}
         <ChevronRight size={13} className="text-gray-300" />
       </div>
     </div>
@@ -294,6 +371,76 @@ function OfficerDashboard({ user }: { user: any }) {
           </Section>
 
         </div>
+
+        {/* Reports */}
+        <ReportsSection reports={[
+          {
+            id: "my-clients",
+            icon: FolderOpen,
+            title: "Klientët e Mi",
+            desc: "Të gjithë klientët aktive të caktuar tek ju — me borxhin, fazën dhe oficerin",
+            run: async () => {
+              const all: any[] = [];
+              let p = 1;
+              while (true) {
+                const r = await casesApi.list({ officerId: user.id, page: p, limit: 500 });
+                all.push(...r.data);
+                if (p >= r.meta.pages) break; p++;
+              }
+              const today = new Date().toISOString().slice(0, 10);
+              downloadExcel(all.map((c: any) => ({
+                "Ref. Klientit":      c.caseReference ?? "",
+                "Emri i Plotë":       c.loan?.borrower?.fullName ?? "",
+                "Nr. Personal":       c.loan?.borrower?.personalId ?? "",
+                "Telefon":            c.loan?.borrower?.phones?.[0]?.phoneNumber ?? "",
+                "Banka":              c.loan?.institution?.name ?? "",
+                "Nr. Kredie":         c.loan?.loanNumber ?? "",
+                "Borxhi Aktual (€)":  Number(c.loan?.currentOutstandingBalance ?? 0),
+                "Faza":               FAZA_LABEL_FULL[c.collectionStatus] ?? c.collectionStatus ?? "",
+                "Statusi":            STATUS_LABEL[c.status] ?? c.status ?? "",
+                "Data Premtimit":     c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
+                "Shuma Premtimit (€)":c.latestPromise?.promisedAmount ? Number(c.latestPromise.promisedAmount) : "",
+                "Data Veprimit":      c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL") : "",
+              })), `klientet-e-mi-${today}`);
+            },
+          },
+          {
+            id: "my-activities",
+            icon: Clock,
+            title: "Aktivitetet e Muajit",
+            desc: `Të gjitha aktivitetet tuaja në ${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`,
+            run: async () => {
+              const now2 = new Date();
+              const mo2 = now2.getMonth(); const yr2 = now2.getFullYear();
+              const from = `${yr2}-${String(mo2 + 1).padStart(2, "0")}-01`;
+              const to   = new Date(yr2, mo2 + 1, 0).toISOString().slice(0, 10);
+              const all: any[] = [];
+              let p = 1;
+              while (true) {
+                const r = await activitiesApi.listAll({ officerId: user.id, from, to, page: p, limit: 500 });
+                all.push(...r.data);
+                if (p >= r.meta.pages) break; p++;
+              }
+              const actLabel: Record<string, string> = {
+                CALL: "Telefonatë", CALL_BORROWER: "Telefonatë", CALL_GUARANTOR: "Telefonatë",
+                VISIT: "Vizitë", FIELD_VISIT: "Vizitë", VISIT_BORROWER: "Vizitë",
+                MEETING_BORROWER: "Takim", PROMISE_TO_PAY: "Premtim", PAYMENT_RECEIVED: "Pagesë",
+                SMS: "SMS", WARNING_LETTER: "Letër", LEGAL_ACTION: "Juridike",
+              };
+              const today = new Date().toISOString().slice(0, 10);
+              downloadExcel(all.map((a: any) => ({
+                "Data":          a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
+                "Ora":           a.occurredAt ? new Date(a.occurredAt).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" }) : "",
+                "Lloji":         actLabel[a.activityType] ?? formatEnum(a.activityType ?? ""),
+                "Debitori":      a.case?.loan?.borrower?.fullName ?? "",
+                "Ref. Klientit": a.case?.caseReference ?? "",
+                "Shënime":       a.notes ?? "",
+                "Oficeri":       a.officer?.fullName ?? "",
+              })), `aktivitetet-${MONTHS[mo2].toLowerCase()}-${yr2}-${today}`);
+            },
+          },
+        ]} />
+
       </div>
     </div>
   );
@@ -335,16 +482,6 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
   const activities     = recentActs?.data ?? [];
   const overdueCases   = overdueRes?.data ?? [];
 
-  const allMonths = useMemo(() =>
-    Array.from({ length: 12 }, (_, i) => `${yr}-${String(i + 1).padStart(2, "0")}`), [yr]);
-
-  const monthlyData = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const x of (stats?.monthlyCollections ?? [])) m[x.month] = x.total;
-    return allMonths.map((month) => ({ month, total: m[month] ?? 0 }));
-  }, [stats?.monthlyCollections, allMonths]);
-
-  const currentMonth = `${yr}-${String(mo + 1).padStart(2, "0")}`;
   const subtitle = `Pasqyrë ${isAdmin ? "Administrator" : "Menaxher"} · ${MONTHS[mo]} ${yr}`;
 
   const isFirstRun = !loading && stats && stats.activeCases === 0 && stats.totalOutstanding === 0;
@@ -401,84 +538,58 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
           <KpiCard label="Këste me Vonesë"    value={loading ? "—" : (stats?.overdueInstallments ?? 0).toLocaleString()} icon={AlertTriangle}  urgent={(stats?.overdueInstallments ?? 0) > 0} href="/agreements" loading={loading} />
         </div>
 
-        {/* Chart + Alerts side by side */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 md:items-stretch">
-
-          <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div className="flex items-start justify-between px-5 pt-4 pb-2">
-              <div>
-                <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore {yr}</h3>
-                <p className="text-[11.5px] text-gray-400 mt-0.5">Para të arkëtuara — EUR</p>
-              </div>
-              {!loading && stats && (
-                <div className="text-right">
-                  <div className="text-[10.5px] text-gray-400 uppercase tracking-wide">Këtë muaj</div>
-                  <div className="text-[17px] font-bold text-gray-900 tabular leading-tight">
-                    {fmtShort(monthlyData[mo]?.total ?? 0)}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="px-3 pt-1 pb-3 flex-1">
-              {loading
-                ? <div className="aspect-[5/3] animate-pulse bg-gray-50 rounded-lg flex items-end justify-around px-4 pb-4 gap-1.5">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="flex-1 bg-gray-200 rounded-t"
-                        style={{ height: `${25 + (i % 5) * 12}%`, opacity: 0.4 + (i % 3) * 0.2 }} />
-                    ))}
-                  </div>
-                : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
-            </div>
+        {/* Quick stats */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          <div className="px-5 pt-4 pb-3 border-b border-gray-100">
+            <h3 className="text-[13px] font-semibold text-gray-900">Treguesit Kryesorë</h3>
           </div>
-
-          {/* Alerts panel */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 flex-1"
-              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Statistika</p>
-              <div className="space-y-1">
-                {loading || !stats ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-2.5 py-1">
-                    <div className="w-6 h-6 rounded-md bg-gray-100 animate-pulse shrink-0" />
-                    <div className="flex-1 h-2.5 bg-gray-100 animate-pulse rounded" />
-                    <div className="w-7 h-2.5 bg-gray-100 animate-pulse rounded" />
-                  </div>
-                )) : [
-                  { icon: CheckSquare, label: "Premtime pagese sot",   val: stats.promisesToday,       href: "/cases?view=promises_today" },
-                  { icon: AlertCircle, label: "Këste me vonesë",       val: stats.overdueInstallments, href: "/agreements" },
-                  { icon: Target,      label: "Premtime aktive",       val: stats.activeCases,         href: "/cases?view=all_promises" },
-                  { icon: Scale,       label: "Klient juridike",       val: stats.legalCases,          href: "/legal" },
-                  { icon: FileCheck,   label: "Marrëveshje aktive",    val: stats.activeAgreements,    href: "/agreements" },
-                ].map((a) => (
-                  <button key={a.label} onClick={() => router.push(a.href)}
-                    className="flex items-center gap-2.5 py-0.5 w-full hover:opacity-75 transition-opacity text-left">
-                    <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-                      <a.icon size={11} className="text-gray-500" />
-                    </div>
-                    <span className="flex-1 text-[12px] text-gray-600">{a.label}</span>
-                    <span className="text-[13px] font-bold tabular text-gray-900">{a.val}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {isAdmin && (stats?.officeStats?.length ?? 0) > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Sipas Zyrës</p>
-                <div className="space-y-1.5">
-                  {(stats?.officeStats ?? []).map((o: any) => (
-                    <div key={o.id} className="flex items-center justify-between text-[12px]">
-                      <span className="text-gray-600">{o.name}</span>
-                      <span className={`font-semibold tabular ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
-                    </div>
-                  ))}
+          {loading || !stats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-gray-100">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="px-5 py-5 space-y-3">
+                  <div className="h-2.5 bg-gray-100 animate-pulse rounded w-24" />
+                  <div className="h-7 bg-gray-100 animate-pulse rounded w-16" />
                 </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-gray-100">
+              {[
+                { icon: TrendingUp,   label: "Borxhi Total",       val: fmtShort(stats.totalOutstanding ?? 0),            href: "/cases",                    urgent: false },
+                { icon: FileCheck,    label: "Marrëveshje Aktive", val: (stats.activeAgreements ?? 0).toLocaleString(),   href: "/agreements",               urgent: false },
+                { icon: Scale,        label: "Klient Juridike",    val: (stats.legalCases ?? 0).toLocaleString(),         href: "/legal",                    urgent: false },
+                { icon: AlertTriangle,label: "Këste me Vonesë",    val: (stats.overdueInstallments ?? 0).toLocaleString(), href: "/agreements",              urgent: (stats.overdueInstallments ?? 0) > 0 },
+              ].map((a) => (
+                <button key={a.label} onClick={() => router.push(a.href)}
+                  className="flex flex-col gap-2.5 px-5 py-5 text-left hover:bg-gray-50 transition-colors w-full">
+                  <div className="flex items-center gap-1.5">
+                    <a.icon size={12} className={a.urgent ? "text-red-400" : "text-gray-400"} />
+                    <span className="text-[11.5px] text-gray-500 leading-tight">{a.label}</span>
+                  </div>
+                  <span className={`text-[26px] font-bold tabular leading-none ${a.urgent ? "text-red-600" : "text-gray-900"}`}>
+                    {a.val}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {isAdmin && (stats?.officeStats?.length ?? 0) > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4"
+            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Sipas Zyrës</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5">
+              {(stats?.officeStats ?? []).map((o: any) => (
+                <div key={o.id} className="flex items-center justify-between text-[12px]">
+                  <span className="text-gray-600 truncate">{o.name}</span>
+                  <span className={`font-semibold tabular ml-2 ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Team activity + overdue promises */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
@@ -555,7 +666,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                 {recentPayments.map((p: any) => (
                   <Tr key={p.id} onClick={() => router.push(`/cases/${p.case?.id}`)}>
                     <Td><span className="font-medium text-gray-900">{p.case?.loan?.borrower?.fullName ?? "—"}</span></Td>
-                    <Td><span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span></Td>
+                    <Td><span className="font-semibold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span></Td>
                     <Td><span className="tabular text-gray-500">{new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" })}</span></Td>
                     <Td><span className="text-gray-500">{p.officer?.fullName ?? "—"}</span></Td>
                   </Tr>
@@ -564,6 +675,146 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
             </Table>
           )}
         </Section>
+
+        {/* Reports */}
+        {(() => {
+          const now2 = new Date();
+          const mo2 = now2.getMonth(); const yr2 = now2.getFullYear();
+          const monthFrom2 = `${yr2}-${String(mo2 + 1).padStart(2, "0")}-01`;
+          const monthTo2   = new Date(yr2, mo2 + 1, 0).toISOString().slice(0, 10);
+          const today2     = now2.toISOString().slice(0, 10);
+          const officeParam = officeId ? { officeId } : {};
+          const actLabel: Record<string, string> = {
+            CALL: "Telefonatë", CALL_BORROWER: "Telefonatë", CALL_GUARANTOR: "Telefonatë",
+            VISIT: "Vizitë", FIELD_VISIT: "Vizitë", VISIT_BORROWER: "Vizitë",
+            MEETING_BORROWER: "Takim", PROMISE_TO_PAY: "Premtim", PAYMENT_RECEIVED: "Pagesë",
+            SMS: "SMS", WARNING_LETTER: "Letër", LEGAL_ACTION: "Juridike",
+          };
+          return (
+            <ReportsSection reports={[
+              {
+                id: "clients-all",
+                icon: FolderOpen,
+                title: isAdmin ? "Të gjithë Klientët Aktive" : "Klientët e Zyrës",
+                desc: isAdmin
+                  ? "Portofoli i plotë — borxhi, faza, oficeri dhe kontaktet"
+                  : "Klientët aktive të zyrës suaj me borxhin, fazën dhe oficerin",
+                run: async () => {
+                  const all: any[] = [];
+                  let p = 1;
+                  while (true) {
+                    const r = await casesApi.list({ ...officeParam, page: p, limit: 500 });
+                    all.push(...r.data);
+                    if (p >= r.meta.pages) break; p++;
+                  }
+                  downloadExcel(all.map((c: any) => {
+                    const b = c.loan?.borrower;
+                    const parties = c.loan?.relatedParties ?? [];
+                    const guarantors = parties.filter((x: any) => x.role === "GUARANTOR");
+                    const coborrower = parties.find((x: any) => x.role === "CO_BORROWER");
+                    return {
+                      "Ref. Klientit":      c.caseReference ?? "",
+                      "Emri i Plotë":       b?.fullName ?? "",
+                      "Nr. Personal":       b?.personalId ?? "",
+                      "Telefon":            b?.phones?.[0]?.phoneNumber ?? "",
+                      "Adresa":             b?.address ?? "",
+                      "Qyteti":             b?.city ?? "",
+                      "Banka":              c.loan?.institution?.name ?? "",
+                      "Nr. Kredie":         c.loan?.loanNumber ?? "",
+                      "Borxhi Aktual (€)":  Number(c.loan?.currentOutstandingBalance ?? 0),
+                      "Faza":               FAZA_LABEL_FULL[c.collectionStatus] ?? c.collectionStatus ?? "",
+                      "Statusi":            STATUS_LABEL[c.status] ?? c.status ?? "",
+                      "Zyrtari Kryesor":    c.assignedOfficer?.fullName ?? "",
+                      "Zyrtari Dytësor":    c.secondaryOfficer?.fullName ?? "",
+                      "Garant 1":           guarantors[0]?.person?.fullName ?? "",
+                      "Garant 2":           guarantors[1]?.person?.fullName ?? "",
+                      "Bashkëkreditues":    coborrower?.person?.fullName ?? "",
+                      "Data Premtimit":     c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
+                      "Data Veprimit":      c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL") : "",
+                    };
+                  }), `klientet-${today2}`);
+                },
+              },
+              {
+                id: "payments-month",
+                icon: Banknote,
+                title: `Pagesat — ${MONTHS[mo2]} ${yr2}`,
+                desc: "Të gjitha pagesat e regjistruara këtë muaj",
+                run: async () => {
+                  const all: any[] = [];
+                  let p = 1;
+                  while (true) {
+                    const r = await paymentsApi.listAll({ ...officeParam, dateFrom: monthFrom2, dateTo: monthTo2, page: p, limit: 500 });
+                    all.push(...r.data);
+                    if (p >= r.meta.pages) break; p++;
+                  }
+                  downloadExcel(all.map((pay: any) => ({
+                    "Referenca":       pay.paymentReference ?? "",
+                    "Data":            pay.paymentDate ? new Date(pay.paymentDate).toLocaleDateString("sq-AL") : "",
+                    "Debitori":        pay.case?.loan?.borrower?.fullName ?? "",
+                    "Ref. Klientit":   pay.case?.caseReference ?? "",
+                    "Nr. Kredie":      pay.case?.loan?.loanNumber ?? "",
+                    "Institucioni":    pay.case?.loan?.institution?.shortName ?? "",
+                    "Shuma (€)":       pay.amount ? Number(pay.amount) : "",
+                    "Oficeri":         pay.officer?.fullName ?? "",
+                    "Shënime":         pay.notes ?? "",
+                  })), `pagesat-${MONTHS[mo2].toLowerCase()}-${yr2}`);
+                },
+              },
+              {
+                id: "overdue-clients",
+                icon: AlertTriangle,
+                title: "Klientët me Vonesë",
+                desc: "Klientët me premtim të kaluar pa pagesë — kërkojnë vëmendje urgjente",
+                run: async () => {
+                  const all: any[] = [];
+                  let p = 1;
+                  while (true) {
+                    const r = await casesApi.list({ ...officeParam, view: "vonesa", page: p, limit: 500 });
+                    all.push(...r.data);
+                    if (p >= r.meta.pages) break; p++;
+                  }
+                  downloadExcel(all.map((c: any) => ({
+                    "Ref. Klientit":       c.caseReference ?? "",
+                    "Emri i Plotë":        c.loan?.borrower?.fullName ?? "",
+                    "Telefon":             c.loan?.borrower?.phones?.[0]?.phoneNumber ?? "",
+                    "Borxhi Aktual (€)":   Number(c.loan?.currentOutstandingBalance ?? 0),
+                    "Faza":                FAZA_LABEL_FULL[c.collectionStatus] ?? c.collectionStatus ?? "",
+                    "Data Premtimit":      c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
+                    "Shuma Premtimit (€)": c.latestPromise?.promisedAmount ? Number(c.latestPromise.promisedAmount) : "",
+                    "Ditë Vonesë":         c.latestPromise?.promiseDate ? Math.floor((Date.now() - new Date(c.latestPromise.promiseDate).getTime()) / 86400000) : "",
+                    "Zyrtari Kryesor":     c.assignedOfficer?.fullName ?? "",
+                  })), `vonesa-${today2}`);
+                },
+              },
+              {
+                id: "activities-month",
+                icon: Clock,
+                title: `Aktivitetet — ${MONTHS[mo2]} ${yr2}`,
+                desc: isAdmin ? "Të gjitha aktivitetet e regjistruara këtë muaj" : "Aktivitetet e ekipit tuaj këtë muaj",
+                run: async () => {
+                  const all: any[] = [];
+                  let p = 1;
+                  while (true) {
+                    const r = await activitiesApi.listAll({ ...officeParam, from: monthFrom2, to: monthTo2, page: p, limit: 500 });
+                    all.push(...r.data);
+                    if (p >= r.meta.pages) break; p++;
+                  }
+                  downloadExcel(all.map((a: any) => ({
+                    "Data":          a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL") : "",
+                    "Ora":           a.occurredAt ? new Date(a.occurredAt).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" }) : "",
+                    "Lloji":         actLabel[a.activityType] ?? formatEnum(a.activityType ?? ""),
+                    "Debitori":      a.case?.loan?.borrower?.fullName ?? "",
+                    "Ref. Klientit": a.case?.caseReference ?? "",
+                    "Oficeri":       a.officer?.fullName ?? "",
+                    "Zyra":          a.officer?.office?.name ?? "",
+                    "Shënime":       a.notes ?? "",
+                  })), `aktivitetet-${MONTHS[mo2].toLowerCase()}-${yr2}`);
+                },
+              },
+            ]} />
+          );
+        })()}
 
       </div>
     </div>
@@ -582,18 +833,6 @@ function ViewerDashboard() {
     () => casesApi.dashboardStats(),
     { revalidateOnFocus: true },
   );
-
-  const allMonths = Array.from({ length: 12 }, (_, i) =>
-    `${yr}-${String(i + 1).padStart(2, "0")}`
-  );
-
-  const monthlyData = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const x of (stats?.monthlyCollections ?? [])) m[x.month] = x.total;
-    return allMonths.map((month) => ({ month, total: m[month] ?? 0 }));
-  }, [stats?.monthlyCollections]);
-
-  const currentMonth = `${yr}-${String(mo + 1).padStart(2, "0")}`;
 
   if (error) return (
     <div className="flex flex-col">
@@ -617,52 +856,25 @@ function ViewerDashboard() {
           <KpiCard label="Klient Juridike"     value={loading ? "—" : (stats?.legalCases ?? 0).toLocaleString()}  icon={Scale}        href="/legal"      loading={loading} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:items-stretch">
-          <div className="md:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div className="flex items-start justify-between px-5 pt-4 pb-2">
-              <div>
-                <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore {yr}</h3>
-                <p className="text-[11.5px] text-gray-400 mt-0.5">Para të arkëtuara — EUR</p>
-              </div>
-              {!loading && stats && (
-                <div className="text-right">
-                  <div className="text-[10.5px] text-gray-400 uppercase tracking-wide">Këtë muaj</div>
-                  <div className="text-[17px] font-bold text-gray-900 tabular leading-tight">
-                    {fmtShort(monthlyData[mo]?.total ?? 0)}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="px-3 pt-1 pb-3 flex-1">
-              {loading
-                ? <div className="aspect-[5/3] animate-pulse bg-gray-50 rounded-lg flex items-end justify-around px-4 pb-4 gap-1.5">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="flex-1 bg-gray-200 rounded-t"
-                        style={{ height: `${25 + (i % 5) * 12}%`, opacity: 0.4 + (i % 3) * 0.2 }} />
-                    ))}
-                  </div>
-                : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
-            </div>
-          </div>
+        {(stats?.officeStats?.length ?? 0) > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-4"
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Sipas Zyrës</p>
-            <div className="space-y-1.5">
-              {loading ? Array.from({ length: 6 }).map((_, i) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5">
+              {loading ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex items-center justify-between py-0.5">
                   <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
                   <div className="h-2.5 w-6 bg-gray-100 animate-pulse rounded" />
                 </div>
               )) : (stats?.officeStats ?? []).map((o: any) => (
                 <div key={o.id} className="flex items-center justify-between text-[12px]">
-                  <span className="text-gray-600">{o.name}</span>
-                  <span className={`font-semibold tabular ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
+                  <span className="text-gray-600 truncate">{o.name}</span>
+                  <span className={`font-semibold tabular ml-2 ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
