@@ -36,7 +36,7 @@
     padding: 0 !important;
     z-index: 110 !important;
   }
-  /* Modal panel becomes a full-width bottom sheet, extends to screen edge */
+  /* Modal panel becomes a full-width bottom sheet */
   .modal-panel {
     max-width: 100% !important;
     width: 100% !important;
@@ -47,14 +47,27 @@
     padding-bottom: 0 !important;
     display: flex !important;
     flex-direction: column !important;
+    /* Disable browser touch handling so JS can control the drag */
+    touch-action: none !important;
   }
-  /* Drag handle is injected as a real element by SheetDragProvider */
-  /* Scrollable body inside modal fills remaining space */
+  /* Drag handle pill */
+  .modal-panel::before {
+    content: "";
+    display: block;
+    flex-shrink: 0;
+    width: 40px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+    margin: 12px auto 4px;
+  }
+  /* Scrollable content — re-enable vertical pan so form content scrolls */
   .modal-panel > div:not(:first-child):not(:last-child) {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
   }
   /* Footer always visible — clears the nav bar + safe area */
   .modal-panel > div:last-child {
@@ -68,9 +81,6 @@ body:has(.modal-backdrop) {
   overflow: hidden;
 }
 .modal-backdrop {
-  touch-action: none;
-}
-.sheet-drag-handle {
   touch-action: none;
 }
 
