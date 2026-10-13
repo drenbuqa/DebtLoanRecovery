@@ -456,10 +456,8 @@ export default function LegalPage() {
                               ? `${lp.case.loan.borrower.fullName}`
                               : "—"}
                           </span>
-                          {lp.case?.loan?.borrower?.personalId && (
-                            {!lp.case.loan.borrower.personalId.startsWith("NOID-") && (
-                              <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
-                            )}
+                          {lp.case?.loan?.borrower?.personalId && !lp.case.loan.borrower.personalId.startsWith("NOID-") && (
+                            <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
                           )}
                           {lp.notes && (
                             <div className="text-[11px] text-gray-400 italic mt-0.5 line-clamp-1">{lp.notes}</div>
