@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const MONTH_SHORT = ['Jan','Shk','Mar','Pri','Maj','Qer','Kor','Gus','Sht','Tet','Nën','Dhj'];
+
 @Injectable()
 export class PerformanceService {
   constructor(private prisma: PrismaService) {}
@@ -295,5 +297,74 @@ export class PerformanceService {
       totalOutstanding: outstandMap.get(inst.id)?.outstanding ?? 0,
       totalOriginal: outstandMap.get(inst.id)?.original ?? 0,
     }));
+  }
+
+  async activityTrend(query: { from?: string; to?: string; officeId?: string; officerId?: string }) {
+    const CALL_TYPES  = ['CALL', 'CALL_BORROWER', 'CALL_GUARANTOR', 'SMS', 'WARNING_LETTER'];
+    const VISIT_TYPES = ['VISIT', 'FIELD_VISIT', 'VISIT_BORROWER', 'VISIT_GUARANTOR', 'MEETING_BORROWER', 'MEETING_GUARANTOR'];
+
+    const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const to   = query.to   ? new Date(query.to)   : new Date();
+
+    const diffDays = (to.getTime() - from.getTime()) / 86_400_000;
+    const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 90 ? 'week' : 'month';
+
+    const actWhere: any = { occurredAt: { gte: from, lte: to } };
+    if (query.officerId) actWhere.officerId = query.officerId;
+    if (query.officeId)  actWhere.case = { officeId: query.officeId };
+
+    const activities = await this.prisma.activity.findMany({
+      where: actWhere,
+      select: { activityType: true, occurredAt: true },
+      orderBy: { occurredAt: 'asc' },
+    });
+
+    type Bucket = { label: string; key: string; calls: number; visits: number; other: number };
+    const buckets: Bucket[] = [];
+
+    if (mode === 'day') {
+      const d = new Date(from); d.setHours(0, 0, 0, 0);
+      const end = new Date(to); end.setHours(23, 59, 59, 999);
+      while (d <= end) {
+        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: d.toISOString().slice(0, 10), calls: 0, visits: 0, other: 0 });
+        d.setDate(d.getDate() + 1);
+      }
+    } else if (mode === 'week') {
+      const d = new Date(from); d.setHours(0, 0, 0, 0);
+      const day = d.getDay();
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // rewind to Monday
+      while (d <= to) {
+        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: d.toISOString().slice(0, 10), calls: 0, visits: 0, other: 0 });
+        d.setDate(d.getDate() + 7);
+      }
+    } else {
+      const d = new Date(from.getFullYear(), from.getMonth(), 1);
+      while (d <= to) {
+        buckets.push({ label: MONTH_SHORT[d.getMonth()], key: d.toISOString().slice(0, 7), calls: 0, visits: 0, other: 0 });
+        d.setMonth(d.getMonth() + 1);
+      }
+    }
+
+    for (const act of activities) {
+      const d = new Date(act.occurredAt);
+      let key: string;
+      if (mode === 'day') {
+        key = d.toISOString().slice(0, 10);
+      } else if (mode === 'week') {
+        const dow = d.getDay();
+        const mon = new Date(d); mon.setHours(0, 0, 0, 0);
+        mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+        key = mon.toISOString().slice(0, 10);
+      } else {
+        key = d.toISOString().slice(0, 7);
+      }
+      const bucket = buckets.find((b) => b.key === key);
+      if (!bucket) continue;
+      if (CALL_TYPES.includes(act.activityType))  bucket.calls++;
+      else if (VISIT_TYPES.includes(act.activityType)) bucket.visits++;
+      else bucket.other++;
+    }
+
+    return { mode, buckets };
   }
 }

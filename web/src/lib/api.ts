@@ -252,6 +252,10 @@ export const performance = {
     const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
     return req<any[]>(`/performance/institutions${qs ? `?${qs}` : ''}`);
   },
+  activityTrend: (params?: { from?: string; to?: string; officeId?: string; officerId?: string }) => {
+    const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
+    return req<{ mode: 'day' | 'week' | 'month'; buckets: { label: string; key: string; calls: number; visits: number; other: number }[] }>(`/performance/activity-trend${qs ? `?${qs}` : ''}`);
+  },
 };
 
 // Import

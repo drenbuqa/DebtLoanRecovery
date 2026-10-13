@@ -34,6 +34,8 @@ export function SheetDragProvider() {
       startTime = Date.now();
       dragging  = false;
 
+      // Cancel the sheet-in animation so JS can own the transform property
+      p.style.animation  = 'none';
       p.style.transition = 'none';
       p.style.willChange = 'transform';
     }
@@ -56,6 +58,8 @@ export function SheetDragProvider() {
       // Apply resistance: full movement up to 80px, then dampen
       const travel = dy < 80 ? dy : 80 + (dy - 80) * 0.45;
       panel.style.transform = `translateY(${travel}px)`;
+      // Subtle opacity fade as the sheet slides away
+      panel.style.opacity = String(Math.max(0.65, 1 - travel / (panel.offsetHeight * 1.4)));
     }
 
     function onTouchEnd() {
@@ -75,16 +79,18 @@ export function SheetDragProvider() {
 
       if (currentY > threshold || velocity > CLOSE_VELOCITY) {
         // Slide off-screen, then fire the backdrop click to call React's onClose
-        p.style.transition = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)';
+        p.style.transition = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.28s ease';
         p.style.transform  = 'translateY(110%)';
+        p.style.opacity    = '0';
         setTimeout(() => {
           (p.closest('.modal-backdrop') as HTMLElement | null)?.click();
           p.style.cssText = '';
         }, 270);
       } else {
         // Snap back with a springy overshoot
-        p.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        p.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease';
         p.style.transform  = 'translateY(0)';
+        p.style.opacity    = '1';
         setTimeout(() => {
           p.style.transition = '';
           p.style.willChange = '';
