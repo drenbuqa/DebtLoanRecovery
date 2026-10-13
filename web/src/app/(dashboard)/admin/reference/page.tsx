@@ -65,7 +65,7 @@ function AddOfficeModal({ onClose, onCreated }: { onClose: () => void; onCreated
           <OF label="Emri i Zyrës" required error={nameError}>
             <input value={name} onChange={(e) => setName(e.target.value)}
               onBlur={() => touch("name")}
-              placeholder="p.sh. Zyra Prishtinë" autoFocus
+              placeholder="p.sh. Zyra Prishtinë"
               className={inp(!!nameError)} />
           </OF>
           <OF label="Kodi i Shkurtër" required error={codeError}>

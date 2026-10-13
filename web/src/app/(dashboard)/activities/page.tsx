@@ -60,7 +60,6 @@ const ACTIVITY_FILTER_GROUPS = [
   { key: "CALL_BORROWER,CALL_GUARANTOR,PROMISE_TO_PAY,SMS,WARNING_LETTER",          label: "Kontakte" },
   { key: "VISIT,VISIT_BORROWER,VISIT_GUARANTOR,FIELD_VISIT,MEETING_BORROWER,MEETING_GUARANTOR", label: "Vizita & Takime" },
   { key: "PROMISE_TO_PAY",                                                         label: "Premtime" },
-  { key: "PAYMENT_RECEIVED",                                                       label: "Pagesa" },
 ];
 
 const ACT_TYPE_OPTIONS = [

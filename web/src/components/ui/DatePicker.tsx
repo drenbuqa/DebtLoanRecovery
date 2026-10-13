@@ -92,6 +92,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date", class
 
   function openCalendar() {
     if (disabled) return;
+    if (open) { close(); return; }
     const s = parseDate(value);
     setViewYear(s?.getFullYear() ?? today.getFullYear());
     setViewMonth(s?.getMonth() ?? today.getMonth());

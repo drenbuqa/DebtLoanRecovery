@@ -108,13 +108,13 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
           <TextInput hasError={!!E.username} value={form.username}
             onChange={(e) => set("username", e.target.value)}
             onBlur={() => touch("username")}
-            placeholder="p.sh. Jon.Gjokaj" autoFocus={!isEdit} />
+            placeholder="p.sh. Jon.Gjokaj" />
         </Field>
         <Field label="Emri i Plotë" required error={E.fullName}>
           <TextInput hasError={!!E.fullName} value={form.fullName}
             onChange={(e) => set("fullName", e.target.value)}
             onBlur={() => touch("fullName")}
-            placeholder="Jon Gjokaj" autoFocus={isEdit} />
+            placeholder="Jon Gjokaj" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Roli" required>
@@ -196,7 +196,7 @@ function ResetPasswordModal({ user, onClose, onSaved }: { user: any; onClose: ()
               <TextInput hasError={!!pwError} type="password" value={newPw}
                 onChange={(e) => setNewPw(e.target.value)}
                 onBlur={() => touch("newPw")}
-                placeholder="Min. 8 karaktere" autoFocus />
+                placeholder="Min. 8 karaktere" />
             </Field>
             <Field label="Konfirmo Fjalëkalimin" required error={confirmError}>
               <TextInput hasError={!!confirmError} type="password" value={confirm}

@@ -43,10 +43,12 @@ export function SheetDragProvider() {
       if (!panel) return;
       const dy = e.touches[0].clientY - startY;
       if (dy <= 0) {
-        // Allow upward scroll inside panel
         currentY = 0;
         return;
       }
+      // Require a meaningful movement before committing to drag.
+      // Below this threshold we do nothing — the touch can still resolve as a click.
+      if (dy < 10 && !dragging) return;
       dragging = true;
       currentY = dy;
       e.preventDefault();

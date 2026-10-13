@@ -407,7 +407,7 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
           <div>
             <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" autoFocus
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
               className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
           </div>
           <div>
@@ -479,7 +479,7 @@ function CreateAgreementModal({ caseId, onClose, onSuccess }: { caseId: string; 
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
           <div>
             <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma Totale (€) *</label>
-            <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" autoFocus
+            <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00"
               className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
           </div>
           <div className="grid grid-cols-2 gap-3">

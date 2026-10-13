@@ -74,6 +74,17 @@
   }
 }
 
+/* Prevent the page behind a modal from scrolling on touch devices */
+body:has(.modal-backdrop) {
+  overflow: hidden;
+}
+.modal-backdrop {
+  touch-action: none;
+}
+.modal-panel {
+  touch-action: pan-y;
+}
+
 @keyframes backdrop-in {
   from { opacity: 0; }
   to   { opacity: 1; }

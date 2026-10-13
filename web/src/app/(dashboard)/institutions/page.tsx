@@ -55,7 +55,7 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
         <div>
           <FieldLabel label="Emri i Plotë" required />
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ProCredit Bank Kosovo" autoFocus
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ProCredit Bank Kosovo"
             className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
         </div>
         <div>
@@ -94,7 +94,7 @@ function EditModal({ inst, onClose, onSaved }: { inst: any; onClose: () => void;
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
         <div>
           <FieldLabel label="Emri i Plotë" required />
-          <input value={name} onChange={(e) => setName(e.target.value)} autoFocus
+          <input value={name} onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
         </div>
         <div>
@@ -151,12 +151,12 @@ function InstitutionsPageInner() {
 
   const swrKey = useMemo(() => ['institutions-stats', dateFrom, dateTo], [dateFrom, dateTo]);
 
-  const { data = [], error, isLoading: loading, isValidating: refreshing, mutate } = useSWR(
+  const { data = [], error, isLoading: loading, mutate } = useSWR(
     swrKey,
     () => instApi.stats({ from: dateFrom, to: dateTo }),
     { keepPreviousData: true },
   );
-  const [, triggerRefresh] = useRefreshing();
+  const [refreshIcon, triggerRefresh] = useRefreshing();
 
   function deleteInst(inst: any) {
     openConfirm({
@@ -294,7 +294,7 @@ function InstitutionsPageInner() {
                       <th className="bg-gray-50 border-b border-gray-100 w-12 pr-2">
                         <div className="flex justify-end">
                           <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+                            <RefreshCw size={12} className={refreshIcon ? "animate-spin" : ""} />
                           </button>
                         </div>
                       </th>
