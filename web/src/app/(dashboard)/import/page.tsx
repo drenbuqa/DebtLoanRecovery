@@ -824,39 +824,6 @@ export default function ImportPage() {
 
       <div className="p-4 md:p-6 space-y-5">
 
-        {/* ── How it works ─────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[
-            {
-              n: "1", icon: Download, color: "bg-blue-50 text-blue-600",
-              title: "Shkarkoni modelin",
-              desc: "Merrni dokumentin Excel me kolonat e sakta.",
-            },
-            {
-              n: "2", icon: FileSpreadsheet, color: "bg-amber-50 text-amber-600",
-              title: "Kopjoni të dhënat",
-              desc: "Kopjoni të dhënat e bankës në kolonat përkatëse të modelit.",
-            },
-            {
-              n: "3", icon: Upload, color: "bg-emerald-50 text-emerald-600",
-              title: "Ngarkoni dhe importoni",
-              desc: "Ngarkoni modelin e plotësuar. Sistemi shton klientët automatikisht.",
-            },
-          ].map(({ n, icon: Icon, color, title, desc }) => (
-            <div key={n} className="bg-white rounded-xl border border-gray-200 p-4 flex gap-3"
-              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-                <Icon size={17} />
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Hapi {n}</div>
-                <div className="text-[13px] font-semibold text-gray-900 mb-0.5">{title}</div>
-                <div className="text-[12px] text-gray-500 leading-relaxed">{desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* ── Main card ─────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
 
@@ -876,15 +843,34 @@ export default function ImportPage() {
             </a>
 
             <div className="border-t border-gray-100 pt-3 space-y-2">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Fusha të detyrueshme</p>
-              <div className="flex flex-wrap gap-1.5">
-                {["full_name", "loan_number", "institution_name", "current_outstanding_balance"].map(c => (
-                  <span key={c} className="text-[11px] font-mono bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 text-gray-700">{c}</span>
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Fushat e dokumentit</p>
+              <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden text-[12px]">
+                {[
+                  { col: "full_name",                    req: true,  desc: "Emri i plotë i huamarrësit" },
+                  { col: "loan_number",                  req: true,  desc: "Numri unik i kredisë (duhet të jetë unik)" },
+                  { col: "institution_name",             req: true,  desc: "Kodi numerik i bankës (shih Vlerat e Referencës)" },
+                  { col: "current_outstanding_balance",  req: true,  desc: "Borxhi aktual i mbetur — numër decimal (p.sh. 4500.00)" },
+                  { col: "personal_id",                  req: false, desc: "Numri personal i huamarrësit (p.sh. 1234567890)" },
+                  { col: "phone1",                       req: false, desc: "Numri kryesor i telefonit" },
+                  { col: "phone2",                       req: false, desc: "Numri alternativ i telefonit" },
+                  { col: "address",                      req: false, desc: "Adresa e plotë e banimit" },
+                  { col: "city",                         req: false, desc: "Kodi numerik i qytetit (shih Vlerat e Referencës)" },
+                  { col: "original_loan_amount",         req: false, desc: "Shuma origjinale e aprovuar e kredisë" },
+                  { col: "disbursement_date",            req: false, desc: "Data e disbursimit — formati YYYY-MM-DD" },
+                  { col: "last_payment_date",            req: false, desc: "Data e pagesës së fundit — formati YYYY-MM-DD" },
+                  { col: "collection_officer",           req: false, desc: "Kodi numerik i zyratarit primar (shih Vlerat e Referencës)" },
+                  { col: "second_collection_officer",    req: false, desc: "Kodi numerik i zyratarit sekondar (opsional)" },
+                  { col: "guarantor_personal_id",        req: false, desc: "Numri personal i garantorit të parë" },
+                  { col: "guarantor_phone",              req: false, desc: "Telefoni i garantorit të parë" },
+                ].map(({ col, req, desc }) => (
+                  <div key={col} className="flex items-start gap-2 px-3 py-2 hover:bg-gray-50">
+                    <span className="font-mono text-[11px] text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded shrink-0 mt-0.5">{col}</span>
+                    {req && <span className="text-[9px] font-bold text-red-500 uppercase tracking-wide shrink-0 mt-1">req</span>}
+                    <span className="text-gray-500 leading-relaxed">{desc}</span>
+                  </div>
                 ))}
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Kreditë që ekzistojnë tashmë anashkalohen automatikisht pa gabim.
-              </p>
+              <p className="text-[11px] text-gray-400">Kreditë që ekzistojnë tashmë anashkalohen automatikisht pa gabim.</p>
             </div>
           </div>
 
