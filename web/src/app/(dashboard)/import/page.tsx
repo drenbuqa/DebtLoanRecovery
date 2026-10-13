@@ -844,7 +844,7 @@ export default function ImportPage() {
 
             <div className="border-t border-gray-100 pt-3 space-y-2">
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Fushat e dokumentit</p>
-              <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden text-[12px]">
+              <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden text-[12px] max-h-56 overflow-y-auto">
                 {[
                   { col: "full_name",                    req: true,  desc: "Emri i plotë i huamarrësit" },
                   { col: "loan_number",                  req: true,  desc: "Numri unik i kredisë (duhet të jetë unik)" },
