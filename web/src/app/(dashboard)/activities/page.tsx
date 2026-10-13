@@ -188,12 +188,15 @@ export default function ActivitiesPage() {
     }
   }, [scopedToSelf]);
 
+  // When no type filter is active, exclude PAYMENT_RECEIVED (payments are tracked separately)
+  const effectiveTypeFilter = typeFilter || "CALL,CALL_BORROWER,CALL_GUARANTOR,VISIT,VISIT_BORROWER,VISIT_GUARANTOR,FIELD_VISIT,MEETING_BORROWER,MEETING_GUARANTOR,SMS,EMAIL,LETTER,WARNING_LETTER,PROMISE_TO_PAY,LEGAL_ACTION,NOTE";
+
   const swrKey = useMemo(() => ['activities-list', {
-    page, activityType: typeFilter || undefined,
+    page, activityType: effectiveTypeFilter,
     from: actDateFrom || undefined, to: actDateTo || undefined,
     officerId: scopedToSelf && user?.id ? user.id : (!scopedToSelf && officerFilter ? officerFilter : undefined),
     officeId: scopedToOffice && user?.officeId ? user.officeId : undefined,
-  }], [page, typeFilter, officerFilter, actDateFrom, actDateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
+  }], [page, effectiveTypeFilter, officerFilter, actDateFrom, actDateTo, scopedToSelf, scopedToOffice, user?.id, user?.officeId]);
 
   const { data: result, error, isLoading, isValidating, mutate } = useSWR(
     swrKey,

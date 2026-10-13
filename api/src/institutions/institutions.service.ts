@@ -108,7 +108,7 @@ export class InstitutionsService {
     // 3. Batch: activities in period
     const periodActivities = await this.prisma.activity.findMany({
       where: { caseId: { in: allCaseIds }, occurredAt: { gte: from, lte: to } },
-      select: { caseId: true, activityType: true, promiseAmount: true },
+      select: { caseId: true, activityType: true, promiseAmount: true, outcome: true },
     });
 
     // 4. Aggregate per institution
@@ -120,7 +120,7 @@ export class InstitutionsService {
 
       const pyms = periodPayments.filter((p) => caseIds.has(p.caseId));
       const acts = periodActivities.filter((a) => caseIds.has(a.caseId));
-      const promises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY');
+      const promises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY' || a.outcome === 'PROMISE_RECEIVED');
 
       return {
         id: inst.id, name: inst.name, shortName: inst.shortName,
