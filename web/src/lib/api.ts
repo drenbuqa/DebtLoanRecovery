@@ -240,7 +240,7 @@ export const documents = {
 
 // Performance
 export const performance = {
-  officers: (params?: { from?: string; to?: string; officeId?: string }) => {
+  officers: (params?: { from?: string; to?: string; officeId?: string; officerId?: string }) => {
     const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined) as any).toString() : '';
     return req<any[]>(`/performance/officers${qs ? `?${qs}` : ''}`);
   },

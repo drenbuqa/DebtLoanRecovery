@@ -5,12 +5,13 @@ import useSWR from "swr";
 import Topbar from "@/components/layout/Topbar";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
-import { performance as perfApi, offices as officesApi } from "@/lib/api";
+import { performance as perfApi, offices as officesApi, cases as casesApi } from "@/lib/api";
 import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AccessGuard } from "@/components/AccessGuard";
 import { Select } from "@/components/ui/Select";
 import { DatePresetPicker, DatePreset, presetToRange, PERFORMANCE_PRESETS } from "@/components/ui/DatePresetPicker";
+import { CollectionsChart } from "@/components/charts/CollectionsChart";
 
 
 function OfficerTable({ officers, role }: { officers: any[]; role: "primary" | "secondary" }) {
@@ -98,6 +99,10 @@ function PerformancePageInner() {
   const isManager = user?.role === "MANAGER";
   const isAdmin = user?.role === "ADMIN";
 
+  const now = new Date();
+  const yr  = now.getFullYear();
+  const mo  = now.getMonth();
+
   const [datePreset, setDatePreset] = useState<DatePreset>("month");
   const [dateFrom, setDateFrom] = useState(() => presetToRange("month").from);
   const [dateTo,   setDateTo]   = useState(() => presetToRange("month").to);
@@ -120,6 +125,24 @@ function PerformancePageInner() {
     { keepPreviousData: true },
   );
 
+  // Monthly chart data — always the current year, regardless of date filter
+  const { data: chartStats } = useSWR(
+    (isAdmin || isManager) ? ['perf-chart', isAdmin ? undefined : user?.officeId] : null,
+    () => casesApi.dashboardStats(isAdmin ? undefined : user?.officeId),
+  );
+
+  const allMonths = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => `${yr}-${String(i + 1).padStart(2, "0")}`),
+  [yr]);
+
+  const monthlyData = useMemo(() => {
+    const apiMonthly: Record<string, number> = {};
+    for (const m of (chartStats?.monthlyCollections ?? [])) apiMonthly[m.month] = m.total;
+    return allMonths.map((month) => ({ month, total: apiMonthly[month] ?? 0 }));
+  }, [chartStats?.monthlyCollections, allMonths]);
+
+  const currentMonth = `${yr}-${String(mo + 1).padStart(2, "0")}`;
+
   const officers = perfData?.officers ?? [];
   const offices  = perfData?.offices  ?? [];
 
@@ -131,6 +154,41 @@ function PerformancePageInner() {
     <div className="flex flex-col">
       <Topbar title="Performanca" subtitle="KPI-të e oficerëve dhe zyrave" />
       <div className="p-4 md:p-6 space-y-5">
+
+        {/* Monthly collections chart — only for managers/admins */}
+        {(isAdmin || isManager) && (
+          <div className="bg-white rounded-xl border border-gray-200 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div className="flex items-start justify-between px-5 pt-4 pb-2">
+              <div>
+                <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore {yr}</h3>
+                <p className="text-[11.5px] text-gray-400 mt-0.5">Para të arkëtuara — EUR</p>
+              </div>
+              {chartStats && (
+                <div className="text-right">
+                  <div className="text-[10.5px] text-gray-400 uppercase tracking-wide">Këtë muaj</div>
+                  <div className="text-[18px] font-bold text-brand-700 tabular leading-tight">
+                    {(() => {
+                      const v = monthlyData[mo]?.total ?? 0;
+                      if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`;
+                      if (v >= 10_000) return `€${(v / 1_000).toFixed(0)}k`;
+                      if (v >= 1_000) return `€${(v / 1_000).toFixed(1)}k`;
+                      return `€${v}`;
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-3 pt-1 pb-3">
+              {!chartStats
+                ? <div className="aspect-[6/2] animate-pulse bg-gray-50 rounded-lg flex items-end justify-around px-4 pb-4 gap-2">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <div key={i} className="flex-1 bg-gray-200 rounded-t" style={{ height: `${30 + (i % 4) * 15}%`, opacity: 0.4 + (i % 3) * 0.2 }} />
+                    ))}
+                  </div>
+                : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -190,8 +248,15 @@ function PerformancePageInner() {
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error?.message ?? String(error)}</div>}
 
         {loading ? (
-          <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
-            <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-50 last:border-0">
+                <div className="w-7 h-7 rounded-full bg-gray-100 animate-pulse shrink-0" />
+                <div className="flex-1 h-3 bg-gray-100 animate-pulse rounded" style={{ width: `${50 + (i % 3) * 15}%` }} />
+                <div className="w-12 h-3 bg-gray-100 animate-pulse rounded" />
+                <div className="w-16 h-3 bg-gray-100 animate-pulse rounded" />
+              </div>
+            ))}
           </div>
         ) : (
           <OfficerTable officers={officers} role={roleTab} />

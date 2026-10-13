@@ -111,6 +111,16 @@ export class InstitutionsService {
       select: { caseId: true, activityType: true, promiseAmount: true, outcome: true },
     });
 
+    // 3b. Batch: agreement installments due in period (count as promises)
+    const periodInstallments = await this.prisma.agreementInstallment.findMany({
+      where: {
+        dueDate: { gte: from, lte: to },
+        status: { in: ['PENDING', 'OVERDUE'] },
+        agreement: { status: 'ACTIVE', caseId: { in: allCaseIds } },
+      },
+      select: { amount: true, agreement: { select: { caseId: true } } },
+    });
+
     // 4. Aggregate per institution
     return institutions.map((inst) => {
       const caseIds = instCaseIds.get(inst.id) ?? new Set<string>();
@@ -120,7 +130,9 @@ export class InstitutionsService {
 
       const pyms = periodPayments.filter((p) => caseIds.has(p.caseId));
       const acts = periodActivities.filter((a) => caseIds.has(a.caseId));
-      const promises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY' || a.outcome === 'PROMISE_RECEIVED');
+      const actPromises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY' || a.outcome === 'PROMISE_RECEIVED');
+      const instmntPromises = periodInstallments.filter((i) => caseIds.has(i.agreement.caseId));
+      const promises = [...actPromises.map((a) => ({ amount: a.promiseAmount })), ...instmntPromises];
 
       return {
         id: inst.id, name: inst.name, shortName: inst.shortName,
@@ -131,7 +143,7 @@ export class InstitutionsService {
         totalOriginal,
         periodPaymentsValue: pyms.reduce((s, p) => s + Number(p.amount), 0),
         periodPaymentsCount: pyms.length,
-        periodPromisesValue: promises.reduce((s, a) => s + Number(a.promiseAmount ?? 0), 0),
+        periodPromisesValue: promises.reduce((s, a) => s + Number(a.amount ?? 0), 0),
         periodPromisesCount: promises.length,
         periodCalls:  acts.filter((a) => CALL_TYPES.includes(a.activityType)).length,
         periodVisits: acts.filter((a) => VISIT_TYPES.includes(a.activityType)).length,

@@ -92,26 +92,46 @@ export class PerformanceService {
           AND p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
         GROUP BY c.secondary_officer_id
       `,
-      // Promises on PRIMARY cases (scoped to the case's primary officer)
+      // Promises on PRIMARY cases: activities + agreement installments
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
         SELECT c.assigned_officer_id AS officer_id,
-               COUNT(a.id)::text AS cnt,
-               COALESCE(SUM(a.promise_amount), 0)::text AS amount
-        FROM activities a JOIN cases c ON c.id = a.case_id
-        WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
-          AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-          AND c.assigned_officer_id IS NOT NULL
+               COUNT(*)::text AS cnt,
+               COALESCE(SUM(amount), 0)::text AS amount
+        FROM (
+          SELECT a.case_id, a.promise_amount AS amount
+          FROM activities a
+          WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
+            AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+          UNION ALL
+          SELECT ag.case_id, ai.amount
+          FROM agreement_installments ai
+          JOIN agreements ag ON ag.id = ai.agreement_id AND ag.status = 'ACTIVE'
+          WHERE ai.status IN ('PENDING','OVERDUE')
+            AND ai.due_date >= ${from} AND ai.due_date <= ${to}
+        ) src
+        JOIN cases c ON c.id = src.case_id
+        WHERE c.assigned_officer_id IS NOT NULL
         GROUP BY c.assigned_officer_id
       `,
-      // Promises on SECONDARY cases (scoped to the case's secondary officer)
+      // Promises on SECONDARY cases: activities + agreement installments
       this.prisma.$queryRaw<{ officer_id: string; cnt: string; amount: string }[]>`
         SELECT c.secondary_officer_id AS officer_id,
-               COUNT(a.id)::text AS cnt,
-               COALESCE(SUM(a.promise_amount), 0)::text AS amount
-        FROM activities a JOIN cases c ON c.id = a.case_id
-        WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
-          AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-          AND c.secondary_officer_id IS NOT NULL
+               COUNT(*)::text AS cnt,
+               COALESCE(SUM(amount), 0)::text AS amount
+        FROM (
+          SELECT a.case_id, a.promise_amount AS amount
+          FROM activities a
+          WHERE (a.activity_type = 'PROMISE_TO_PAY' OR a.outcome = 'PROMISE_RECEIVED')
+            AND a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+          UNION ALL
+          SELECT ag.case_id, ai.amount
+          FROM agreement_installments ai
+          JOIN agreements ag ON ag.id = ai.agreement_id AND ag.status = 'ACTIVE'
+          WHERE ai.status IN ('PENDING','OVERDUE')
+            AND ai.due_date >= ${from} AND ai.due_date <= ${to}
+        ) src
+        JOIN cases c ON c.id = src.case_id
+        WHERE c.secondary_officer_id IS NOT NULL
         GROUP BY c.secondary_officer_id
       `,
     ]);
