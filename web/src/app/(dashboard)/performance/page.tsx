@@ -289,7 +289,7 @@ function PerformancePageInner() {
                 <span>Aktivitete totale</span>
               </div>
             </div>
-            <div className="px-3 pb-3" style={{ height: 260 }}>
+            <div className="px-3 pb-3 flex-1" style={{ minHeight: 240 }}>
               {trendLoading
                 ? <ChartSkeleton bars={trendBuckets.length || 8} />
                 : <ActivityTrendChart buckets={trendBuckets} mode={trendMode} />}

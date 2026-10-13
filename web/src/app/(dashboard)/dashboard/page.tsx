@@ -538,58 +538,30 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
           <KpiCard label="Këste me Vonesë"    value={loading ? "—" : (stats?.overdueInstallments ?? 0).toLocaleString()} icon={AlertTriangle}  urgent={(stats?.overdueInstallments ?? 0) > 0} href="/agreements" loading={loading} />
         </div>
 
-        {/* Quick stats */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div className="px-5 pt-4 pb-3 border-b border-gray-100">
-            <h3 className="text-[13px] font-semibold text-gray-900">Treguesit Kryesorë</h3>
-          </div>
-          {loading || !stats ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-gray-100">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="px-5 py-5 space-y-3">
-                  <div className="h-2.5 bg-gray-100 animate-pulse rounded w-24" />
-                  <div className="h-7 bg-gray-100 animate-pulse rounded w-16" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-gray-100">
-              {[
-                { icon: TrendingUp,   label: "Borxhi Total",       val: fmtShort(stats.totalOutstanding ?? 0),            href: "/cases",                    urgent: false },
-                { icon: FileCheck,    label: "Marrëveshje Aktive", val: (stats.activeAgreements ?? 0).toLocaleString(),   href: "/agreements",               urgent: false },
-                { icon: Scale,        label: "Klient Juridike",    val: (stats.legalCases ?? 0).toLocaleString(),         href: "/legal",                    urgent: false },
-                { icon: AlertTriangle,label: "Këste me Vonesë",    val: (stats.overdueInstallments ?? 0).toLocaleString(), href: "/agreements",              urgent: (stats.overdueInstallments ?? 0) > 0 },
-              ].map((a) => (
-                <button key={a.label} onClick={() => router.push(a.href)}
-                  className="flex flex-col gap-2.5 px-5 py-5 text-left hover:bg-gray-50 transition-colors w-full">
-                  <div className="flex items-center gap-1.5">
-                    <a.icon size={12} className={a.urgent ? "text-red-400" : "text-gray-400"} />
-                    <span className="text-[11.5px] text-gray-500 leading-tight">{a.label}</span>
+        {isAdmin && (stats?.officeStats?.length ?? 0) > 0 && (() => {
+          const offices: any[] = stats?.officeStats ?? [];
+          const maxCases = Math.max(...offices.map((o: any) => o.activeCases), 1);
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-4">Sipas Zyrës</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                {offices.map((o: any) => (
+                  <div key={o.id} className="flex items-center gap-3">
+                    <span className="text-[12px] text-gray-600 w-28 shrink-0 truncate">{o.name}</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-400 rounded-full transition-all"
+                        style={{ width: `${(o.activeCases / maxCases) * 100}%` }} />
+                    </div>
+                    <span className={`text-[12px] font-semibold tabular w-7 text-right shrink-0 ${o.activeCases > 0 ? "text-gray-800" : "text-gray-300"}`}>
+                      {o.activeCases}
+                    </span>
                   </div>
-                  <span className={`text-[26px] font-bold tabular leading-none ${a.urgent ? "text-red-600" : "text-gray-900"}`}>
-                    {a.val}
-                  </span>
-                </button>
-              ))}
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-
-        {isAdmin && (stats?.officeStats?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Sipas Zyrës</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5">
-              {(stats?.officeStats ?? []).map((o: any) => (
-                <div key={o.id} className="flex items-center justify-between text-[12px]">
-                  <span className="text-gray-600 truncate">{o.name}</span>
-                  <span className={`font-semibold tabular ml-2 ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Team activity + overdue promises */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
@@ -856,25 +828,42 @@ function ViewerDashboard() {
           <KpiCard label="Klient Juridike"     value={loading ? "—" : (stats?.legalCases ?? 0).toLocaleString()}  icon={Scale}        href="/legal"      loading={loading} />
         </div>
 
-        {(stats?.officeStats?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Sipas Zyrës</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1.5">
-              {loading ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-0.5">
-                  <div className="h-2.5 bg-gray-100 animate-pulse rounded" style={{ width: `${55 + (i % 3) * 15}%` }} />
-                  <div className="h-2.5 w-6 bg-gray-100 animate-pulse rounded" />
+        {(stats?.officeStats?.length ?? 0) > 0 && (() => {
+          const offices: any[] = stats?.officeStats ?? [];
+          const maxCases = Math.max(...offices.map((o: any) => o.activeCases), 1);
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-4">Sipas Zyrës</p>
+              {loading ? (
+                <div className="space-y-3">
+                  {[80, 55, 70, 40].map((w, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="h-2.5 bg-gray-100 animate-pulse rounded w-24 shrink-0" />
+                      <div className="flex-1 h-1.5 bg-gray-100 animate-pulse rounded-full" />
+                      <div className="h-2.5 w-6 bg-gray-100 animate-pulse rounded shrink-0" />
+                    </div>
+                  ))}
                 </div>
-              )) : (stats?.officeStats ?? []).map((o: any) => (
-                <div key={o.id} className="flex items-center justify-between text-[12px]">
-                  <span className="text-gray-600 truncate">{o.name}</span>
-                  <span className={`font-semibold tabular ml-2 ${o.activeCases > 0 ? "text-gray-900" : "text-gray-300"}`}>{o.activeCases}</span>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                  {offices.map((o: any) => (
+                    <div key={o.id} className="flex items-center gap-3">
+                      <span className="text-[12px] text-gray-600 w-28 shrink-0 truncate">{o.name}</span>
+                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-400 rounded-full transition-all"
+                          style={{ width: `${(o.activeCases / maxCases) * 100}%` }} />
+                      </div>
+                      <span className={`text-[12px] font-semibold tabular w-7 text-right shrink-0 ${o.activeCases > 0 ? "text-gray-800" : "text-gray-300"}`}>
+                        {o.activeCases}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

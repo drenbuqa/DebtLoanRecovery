@@ -47,8 +47,8 @@ export function ActivityTrendChart({
   const [hovered, setHovered] = useState<number | null>(null);
 
   // Dimensions
-  const W = 560; const H = 220;
-  const PL = 40; const PR = 16; const PT = 20; const PB = 32;
+  const W = 560; const H = 260;
+  const PL = 26; const PR = 22; const PT = 8; const PB = 18;
   const chartW = W - PL - PR;
   const chartH = H - PT - PB;
   const baseY = PT + chartH;
@@ -67,15 +67,15 @@ export function ActivityTrendChart({
   const totals = buckets.map((b) => b.calls + b.visits);
   const rawMax = Math.max(...totals, 1);
 
-  // Nice Y axis
-  const roughStep = rawMax / 4;
-  const mag = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, 1))));
+  // Always 4 ticks with a tight ceiling (~20% headroom)
+  const N_TICKS = 4;
+  const roughStep = (rawMax * 1.2) / N_TICKS;
+  const mag = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, 0.1))));
   const norm = roughStep / mag;
-  const niceMult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
-  const step = niceMult * mag;
-  const nTicks = Math.max(Math.ceil((rawMax * 1.15) / step), 2);
-  const yMax = nTicks * step;
-  const yTicks = Array.from({ length: nTicks }, (_, i) => step * (i + 1));
+  const niceMult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  const step = Math.max(niceMult * mag, 1); // minimum step of 1 for integer data
+  const yMax = N_TICKS * step;
+  const yTicks = Array.from({ length: N_TICKS }, (_, i) => step * (i + 1));
 
   const xPos = (i: number) => PL + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
   const yPos = (v: number) => PT + chartH - (v / yMax) * chartH;
@@ -87,13 +87,14 @@ export function ActivityTrendChart({
 
   return (
     <div
-      className="relative w-full select-none"
-      style={{ userSelect: "none", height: "100%" }}
+      className="select-none"
+      style={{ userSelect: "none", width: "100%", height: "100%", minHeight: 240, display: "flex", flexDirection: "column" }}
       onMouseLeave={onMouseLeave}
     >
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ display: "block", width: "100%", height: "100%", overflow: "visible" }}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ display: "block", width: "100%", flex: 1, minHeight: 0, overflow: "visible" }}
       >
         <defs>
           <linearGradient id="actFill" x1="0" y1="0" x2="0" y2="1">
