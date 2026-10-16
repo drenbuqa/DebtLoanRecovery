@@ -45,17 +45,12 @@ const CASE_LIST_SELECT = {
   assignedOfficer: { select: { id: true, fullName: true } },
   secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
+  // Oldest PENDING promise — this is the most overdue active promise
   promises: {
-    orderBy: { createdAt: 'desc' as const },
+    where: { status: 'PENDING' as any },
+    orderBy: { promiseDate: 'asc' as const },
     take: 1,
     select: { id: true, promiseDate: true, promisedAmount: true, status: true, createdAt: true },
-  },
-  // Latest PROMISE_RECEIVED activity for cases that haven't created a PromiseToPay record yet
-  activities: {
-    where: { outcome: 'PROMISE_RECEIVED' as any },
-    orderBy: { occurredAt: 'desc' as const },
-    take: 1,
-    select: { id: true, nextActionDate: true, promiseAmount: true, occurredAt: true },
   },
   // Next upcoming installment from an active or broken agreement
   agreements: {
@@ -214,28 +209,50 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
       ];
     } else if (query.view === 'all_promises') {
-      // On-time: has a PENDING promise due today or in the future, AND no PENDING promise that is overdue
+      // On-time: has a PENDING promise/installment due today or future, AND none overdue
       if (!where.AND) where.AND = [];
-      where.AND.push({ promises: { some: { status: 'PENDING', promiseDate: { gte: today } } } });
-      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
+      where.AND.push({ OR: [
+        { promises: { some: { status: 'PENDING', promiseDate: { gte: today } } } },
+        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { dueDate: { gte: today }, status: 'PENDING' as any } } } } },
+      ]});
+      where.AND.push({ NOT: { OR: [
+        { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
+      ]}});
     } else if (query.view === 'vonesa') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 1–30 days overdue: has PENDING promise in that window, AND no PENDING promise older than 30 days
+      // 1–30 days overdue: worst overdue commitment is 1–30 days old
       if (!where.AND) where.AND = [];
-      where.AND.push({ promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } });
-      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } } });
+      where.AND.push({ OR: [
+        { promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { gte: thirtyOneDaysAgo, lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
+      ]});
+      where.AND.push({ NOT: { OR: [
+        { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
+      ]}});
     } else if (query.view === 'premtime_thyera') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 31+ days overdue: has any PENDING or BROKEN promise older than 30 days (worst bucket)
+      // 31+ days overdue: has any overdue commitment older than 30 days
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
-        { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: thirtyOneDaysAgo } } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyOneDaysAgo } } } },
+        { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
       ]});
     } else if (query.view === 'ndjekja_radhes') {
-      where.activities = { some: { nextActionDate: { gte: today } } };
+      // Only non-promise activities — promise activities store the promise due date, not a follow-up date
+      if (!where.AND) where.AND = [];
+      where.AND.push({
+        activities: {
+          some: {
+            nextActionDate: { gte: today },
+            activityType: { not: 'PROMISE_TO_PAY' as any },
+            OR: [{ outcome: { not: 'PROMISE_RECEIVED' as any } }, { outcome: null }],
+          },
+        },
+      });
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
@@ -272,22 +289,20 @@ export class CasesService {
       }),
     ]);
 
-    // Merge PromiseToPay records + PROMISE_RECEIVED activities + agreement installments into latestPromise
+    // Merge PromiseToPay records + agreement installments into latestPromise
     const nowForStatus = new Date();
     nowForStatus.setHours(0, 0, 0, 0);
     const thirtyDaysAgoForStatus = new Date(nowForStatus);
     thirtyDaysAgoForStatus.setDate(thirtyDaysAgoForStatus.getDate() - 30);
 
     const data = items.map((c: any) => {
+      // Oldest PENDING PromiseToPay record
       const fromRecord = c.promises?.[0]
         ? { promiseDate: c.promises[0].promiseDate, promisedAmount: c.promises[0].promisedAmount, status: c.promises[0].status }
         : null;
-      const fromActivity = c.activities?.[0]
-        ? { promiseDate: c.activities[0].nextActionDate ?? c.activities[0].occurredAt, promisedAmount: c.activities[0].promiseAmount, status: 'PENDING' }
-        : null;
+      // Earliest unpaid installment from an active/broken agreement
       const nextInstallment = c.agreements?.[0]?.installments?.[0];
       const fromAgreement = nextInstallment ? (() => {
-        // Derive effective status from the due date if DB hasn't been reconciled yet
         const dueDate = new Date(nextInstallment.dueDate);
         let effectiveStatus = nextInstallment.status as string;
         if (effectiveStatus === 'PENDING' && dueDate < nowForStatus) {
@@ -296,13 +311,13 @@ export class CasesService {
         return { promiseDate: nextInstallment.dueDate, promisedAmount: nextInstallment.amount, status: effectiveStatus };
       })() : null;
 
-      // Pick the most urgent: the candidate with the EARLIEST date (closest overdue or soonest upcoming)
-      const candidates = [fromRecord, fromActivity, fromAgreement].filter(Boolean) as NonNullable<typeof fromRecord>[];
+      // Pick whichever has the earliest (most overdue) date
+      const candidates = [fromRecord, fromAgreement].filter(Boolean) as NonNullable<typeof fromRecord>[];
       const latestPromise = candidates.reduce<typeof fromRecord>((best, cur) => {
         if (!best) return cur;
         return new Date(cur.promiseDate) < new Date(best.promiseDate) ? cur : best;
       }, null);
-      const { activities: _acts, agreements: _agr, ...rest } = c;
+      const { agreements: _agr, ...rest } = c;
       return { ...rest, latestPromise };
     });
 

@@ -436,10 +436,14 @@ const VIEWS = [
 // ── Mobile case card ─────────────────────────────────────────
 function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
   const debtor = c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—";
-  const nextAction = c.nextActionDate
+  // Only show follow-up date if it's different from the promise date (avoid showing promise date in follow-up column)
+  const nextActionDateStr = c.nextActionDate ? new Date(c.nextActionDate).toISOString().slice(0, 10) : null;
+  const promiseDateStr = c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toISOString().slice(0, 10) : null;
+  const showFollowUp = nextActionDateStr && nextActionDateStr !== promiseDateStr;
+  const nextAction = showFollowUp
     ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" })
     : null;
-  const isOverdue = c.nextActionDate && new Date(c.nextActionDate) < new Date();
+  const isOverdue = showFollowUp && new Date(c.nextActionDate) < new Date();
 
   return (
     <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-4 active:bg-gray-50 transition-colors cursor-pointer"
@@ -467,7 +471,7 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
         </div>
         <div>
           <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Ndjekja e Radhës</div>
-          <div className={`text-[13px] font-bold ${isOverdue ? "text-amber-600" : nextAction ? "text-brand-600" : "text-gray-300"}`}>
+          <div className={`text-[13px] font-bold ${nextAction ? "text-gray-700" : "text-gray-300"}`}>
             {nextAction ?? "—"}
           </div>
         </div>
@@ -841,9 +845,18 @@ function CasesPageInner() {
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
                   const latestPromise = c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0];
-                  const promiseDaysOverdue = latestPromise
-                    ? Math.floor((Date.now() - new Date(latestPromise.promiseDate).getTime()) / 86400000)
-                    : 0;
+                  // Don't show nextActionDate when it equals the promise date — that means it was
+                  // set from a promise activity (old data bug), not from a real follow-up activity.
+                  const nextActionDateStr = c.nextActionDate ? new Date(c.nextActionDate).toISOString().slice(0, 10) : null;
+                  const promiseDateStr = latestPromise?.promiseDate ? new Date(latestPromise.promiseDate).toISOString().slice(0, 10) : null;
+                  const showFollowUp = nextActionDateStr && nextActionDateStr !== promiseDateStr;
+                  const promiseDaysOverdue = (() => {
+                    if (!latestPromise) return 0;
+                    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
+                    const promiseStr = new Date(latestPromise.promiseDate).toISOString().slice(0, 10);
+                    if (promiseStr >= todayStr) return 0;
+                    return Math.round((new Date(todayStr).getTime() - new Date(promiseStr).getTime()) / 86400000);
+                  })();
                   return (
                     <tr key={c.id} onClick={() => router.push(`/cases/${c.id}`)} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors group">
                       <td className="px-3 py-2 min-w-[160px]">
@@ -915,9 +928,9 @@ function CasesPageInner() {
                         ) : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {c.nextActionDate ? (
+                        {showFollowUp ? (
                           <div>
-                            <div className={`text-[11px] font-medium ${new Date(c.nextActionDate) < new Date() ? "text-amber-600" : "text-brand-600"}`}>
+                            <div className="text-[11px] font-medium text-gray-700">
                               {new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
                             </div>
                             {c.nextActionNote && (

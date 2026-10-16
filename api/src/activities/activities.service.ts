@@ -46,14 +46,16 @@ export class ActivitiesService {
       },
     });
 
-    if (dto.nextActionDate) {
+    const isPromise = dto.activityType === 'PROMISE_TO_PAY' || dto.outcome === 'PROMISE_RECEIVED';
+
+    // Only update the case's follow-up date for non-promise activities.
+    // For promises, nextActionDate is the promise due date — that belongs on PromiseToPay, not the follow-up field.
+    if (dto.nextActionDate && !isPromise) {
       await this.prisma.case.update({
         where: { id: dto.caseId },
         data: { nextActionDate: new Date(dto.nextActionDate), nextActionNote: dto.notes },
       });
     }
-
-    const isPromise = dto.activityType === 'PROMISE_TO_PAY' || dto.outcome === 'PROMISE_RECEIVED';
 
     // Derive collectionStatus from outcome when not explicitly set
     const outcomeStatusMap: Record<string, string> = {

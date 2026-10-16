@@ -726,7 +726,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     "Faza":                FAZA_LABEL_FULL[c.collectionStatus] ?? c.collectionStatus ?? "",
                     "Data Premtimit":      c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
                     "Shuma Premtimit (€)": c.latestPromise?.promisedAmount ? Number(c.latestPromise.promisedAmount) : "",
-                    "Ditë Vonesë":         c.latestPromise?.promiseDate ? Math.floor((Date.now() - new Date(c.latestPromise.promiseDate).getTime()) / 86400000) : "",
+                    "Ditë Vonesë":         c.latestPromise?.promiseDate ? (() => { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date()); const p = new Date(c.latestPromise.promiseDate).toISOString().slice(0,10); return p >= t ? 0 : Math.round((new Date(t).getTime() - new Date(p).getTime()) / 86400000); })() : "",
                     "Zyrtari Kryesor":     c.assignedOfficer?.fullName ?? "",
                   })), `vonesa-${today2}`);
                 },
