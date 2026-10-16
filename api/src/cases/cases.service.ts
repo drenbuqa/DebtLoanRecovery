@@ -217,7 +217,7 @@ export class CasesService {
       ]});
       // NOT (A OR B) = NOT A AND NOT B
       where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
-      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } } });
+      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'vonesa') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
@@ -225,11 +225,11 @@ export class CasesService {
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
         { promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } },
-        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { gte: thirtyOneDaysAgo, lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { gte: thirtyOneDaysAgo, lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ]});
       // NOT (A OR B) = NOT A AND NOT B
       where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } } });
-      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } } });
+      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'premtime_thyera') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
@@ -237,7 +237,7 @@ export class CasesService {
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
         { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
-        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
+        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ]});
     } else if (query.view === 'ndjekja_radhes') {
       // Only non-promise activities — promise activities store the promise due date, not a follow-up date
