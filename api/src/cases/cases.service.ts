@@ -215,10 +215,9 @@ export class CasesService {
         { promises: { some: { status: 'PENDING', promiseDate: { gte: today } } } },
         { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { dueDate: { gte: today }, status: 'PENDING' as any } } } } },
       ]});
-      where.AND.push({ NOT: { OR: [
-        { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } },
-        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
-      ]}});
+      // NOT (A OR B) = NOT A AND NOT B
+      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
+      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } } });
     } else if (query.view === 'vonesa') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
@@ -228,10 +227,9 @@ export class CasesService {
         { promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } },
         { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { gte: thirtyOneDaysAgo, lt: today }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
       ]});
-      where.AND.push({ NOT: { OR: [
-        { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
-        { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } },
-      ]}});
+      // NOT (A OR B) = NOT A AND NOT B
+      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } } });
+      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { notIn: ['PAID', 'CANCELLED'] as any[] } } } } } } });
     } else if (query.view === 'premtime_thyera') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
