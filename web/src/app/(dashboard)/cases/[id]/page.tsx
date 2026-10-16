@@ -293,7 +293,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                 {showFollowup && (
                   <div>
                     <label className={lbl}>Ndjekja e Radhës</label>
-                    <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" />
+                    <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" minDate={new Date().toISOString().slice(0, 10)} />
                   </div>
                 )}
 

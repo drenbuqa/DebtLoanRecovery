@@ -322,10 +322,12 @@ export const reports = {
     if (!res.ok) throw new Error('Report generation failed');
     return res.blob();
   },
-  downloadCaseStatusXlsx: async (params?: { officerId?: string; officeId?: string }) => {
+  downloadCaseStatusXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);
     if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
     const res = await fetch(`${API_BASE}/reports/case-status/xlsx?${qs}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
@@ -340,27 +342,33 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
-  downloadLegalCasesXlsx: async (params?: { officerId?: string; officeId?: string }) => {
+  downloadLegalCasesXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);
     if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
     const res = await fetch(`${API_BASE}/reports/legal-cases/xlsx?${qs}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
-  downloadOverdueInstallmentsXlsx: async (params?: { officerId?: string; officeId?: string }) => {
+  downloadOverdueInstallmentsXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);
     if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
     const res = await fetch(`${API_BASE}/reports/overdue-installments/xlsx?${qs}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
-  downloadAgreementStatusXlsx: async (params?: { officerId?: string; officeId?: string; status?: string }) => {
+  downloadAgreementStatusXlsx: async (params?: { officerId?: string; officeId?: string; status?: string; dateFrom?: string; dateTo?: string }) => {
     const qs = new URLSearchParams();
     if (params?.officerId) qs.set('officerId', params.officerId);
     if (params?.officeId) qs.set('officeId', params.officeId);
     if (params?.status) qs.set('status', params.status);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
     const res = await fetch(`${API_BASE}/reports/agreement-status/xlsx?${qs}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();

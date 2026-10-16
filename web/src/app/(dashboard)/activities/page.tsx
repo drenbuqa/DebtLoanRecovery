@@ -468,7 +468,7 @@ export default function ActivitiesPage() {
                       {showFollowup && (
                         <div>
                           <label className={lbl}>Ndjekja e Radhës</label>
-                          <DatePicker value={logNextDate} onChange={setLogNextDate} placeholder="Zgjidhni datën" />
+                          <DatePicker value={logNextDate} onChange={setLogNextDate} placeholder="Zgjidhni datën" minDate={new Date().toISOString().slice(0, 10)} />
                         </div>
                       )}
                       <div>

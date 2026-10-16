@@ -293,10 +293,15 @@ export class ReportsService {
 
   // ─── Case Status Excel ───────────────────────────────────────────────────────
 
-  async caseStatusXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+  async caseStatusXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = { deletedAt: null };
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.officeId)  where.officeId = query.officeId;
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo)   where.createdAt.lte = new Date(query.dateTo + 'T23:59:59.999Z');
+    }
 
     const cases = await this.prisma.case.findMany({
       where,
@@ -532,11 +537,16 @@ export class ReportsService {
 
   // ─── Agreement Status Excel ──────────────────────────────────────────────────
 
-  async agreementStatusXlsx(query: { officerId?: string; officeId?: string; status?: string }, res: Response) {
+  async agreementStatusXlsx(query: { officerId?: string; officeId?: string; status?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = {};
     if (query.status)   where.status = query.status;
     if (query.officerId) where.case = { assignedOfficerId: query.officerId };
     if (query.officeId)  where.case = { ...(where.case ?? {}), officeId: query.officeId };
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo)   where.createdAt.lte = new Date(query.dateTo + 'T23:59:59.999Z');
+    }
 
     const agreements = await this.prisma.agreement.findMany({
       where,
@@ -667,15 +677,22 @@ export class ReportsService {
 
   // ─── Overdue Installments Excel ──────────────────────────────────────────────
 
-  async overdueInstallmentsXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+  async overdueInstallmentsXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const agreementWhere: any = { status: { in: ['ACTIVE', 'BROKEN'] } };
     if (query.officerId) agreementWhere.case = { assignedOfficerId: query.officerId };
     if (query.officeId)  agreementWhere.case = { ...(agreementWhere.case ?? {}), officeId: query.officeId };
 
+    const installmentWhere: any = { status: 'OVERDUE' };
+    if (query.dateFrom || query.dateTo) {
+      installmentWhere.dueDate = {};
+      if (query.dateFrom) installmentWhere.dueDate.gte = new Date(query.dateFrom);
+      if (query.dateTo)   installmentWhere.dueDate.lte = new Date(query.dateTo + 'T23:59:59.999Z');
+    }
+
     const agreements = await this.prisma.agreement.findMany({
-      where: { ...agreementWhere, installments: { some: { status: 'OVERDUE' } } },
+      where: { ...agreementWhere, installments: { some: installmentWhere } },
       include: {
-        installments: { where: { status: 'OVERDUE' }, orderBy: { dueDate: 'asc' } },
+        installments: { where: installmentWhere, orderBy: { dueDate: 'asc' } },
         case: {
           include: {
             loan: {
@@ -799,10 +816,15 @@ export class ReportsService {
 
   // ─── Legal Cases Excel ───────────────────────────────────────────────────────
 
-  async legalCasesXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+  async legalCasesXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = {};
     if (query.officerId) where.case = { assignedOfficerId: query.officerId };
     if (query.officeId)  where.case = { ...(where.case ?? {}), officeId: query.officeId };
+    if (query.dateFrom || query.dateTo) {
+      where.createdAt = {};
+      if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
+      if (query.dateTo)   where.createdAt.lte = new Date(query.dateTo + 'T23:59:59.999Z');
+    }
 
     const proceedings = await this.prisma.legalProceeding.findMany({
       where,

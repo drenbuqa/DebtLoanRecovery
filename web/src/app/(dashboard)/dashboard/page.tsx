@@ -484,7 +484,6 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
 
   const subtitle = `Pasqyrë ${isAdmin ? "Administrator" : "Menaxher"} · ${MONTHS[mo]} ${yr}`;
 
-  const isFirstRun = !loading && stats && stats.activeCases === 0 && stats.totalOutstanding === 0;
 
   if (error) return (
     <div className="flex flex-col">
@@ -502,33 +501,6 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Onboarding */}
-        {isFirstRun && (
-          <div className="bg-brand-50 border border-brand-200 rounded-xl p-5">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shrink-0">
-                <BarChart3 size={18} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-[14px] font-semibold text-brand-900 mb-1">Mirësevini në Platformën DLR</h3>
-                <p className="text-[13px] text-brand-700 mb-3">Filloni duke konfiguruar platformën tuaj.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { step: "1", label: "Shto Institucione",  desc: "Regjistroni institucionet financiare.", href: "/institutions" },
-                    { step: "2", label: "Konfiguro Zyret",    desc: "Krijoni zyra dhe shtoni oficerët.",    href: "/admin/reference" },
-                    { step: "3", label: "Importo Klientët",   desc: "Ngarkoni portofolio fillestar.",       href: "/reports" },
-                  ].map((s) => (
-                    <button key={s.step} onClick={() => router.push(s.href)}
-                      className="bg-white border border-brand-200 rounded-lg p-3.5 text-left hover:border-brand-400 transition-all">
-                      <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-[11px] font-bold flex items-center justify-center mb-2">{s.step}</div>
-                      <div className="text-[12.5px] font-semibold text-gray-900 mb-0.5">{s.label}</div>
-                      <div className="text-[11px] text-gray-500">{s.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">

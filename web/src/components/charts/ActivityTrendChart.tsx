@@ -88,7 +88,7 @@ export function ActivityTrendChart({
   return (
     <div
       className="select-none"
-      style={{ userSelect: "none", width: "100%", height: "100%", minHeight: 240, display: "flex", flexDirection: "column" }}
+      style={{ userSelect: "none", width: "100%", height: "100%", minHeight: 240, display: "flex", flexDirection: "column", position: "relative" }}
       onMouseLeave={onMouseLeave}
     >
       <svg

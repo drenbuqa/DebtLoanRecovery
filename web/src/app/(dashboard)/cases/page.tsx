@@ -429,7 +429,7 @@ const VIEWS = [
   { key: "ndjekja_radhes",  label: "Ndjekja e Radhës" },
   { key: "all_promises",    label: "Premtimet" },
   { key: "vonesa",          label: "Vonesat" },
-  { key: "premtime_thyera", label: "Premtime të Thyera" },
+  { key: "premtime_thyera", label: "Dështimet" },
   { key: "inactive",        label: "Joaktive" },
 ];
 

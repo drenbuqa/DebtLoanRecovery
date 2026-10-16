@@ -46,7 +46,7 @@ export class ReportsController {
     let { officerId, officeId } = q;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
-    return this.svc.caseStatusXlsx({ officerId, officeId }, res);
+    return this.svc.caseStatusXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
   @Get('collections/xlsx')
@@ -64,7 +64,7 @@ export class ReportsController {
     let { officerId, officeId } = q;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
-    return this.svc.agreementStatusXlsx({ officerId, officeId, status: q.status }, res);
+    return this.svc.agreementStatusXlsx({ officerId, officeId, status: q.status, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
   @Get('overdue-installments/xlsx')
@@ -73,7 +73,7 @@ export class ReportsController {
     let { officerId, officeId } = q;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
-    return this.svc.overdueInstallmentsXlsx({ officerId, officeId }, res);
+    return this.svc.overdueInstallmentsXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
   @Get('legal-cases/xlsx')
@@ -82,7 +82,7 @@ export class ReportsController {
     let { officerId, officeId } = q;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
-    return this.svc.legalCasesXlsx({ officerId, officeId }, res);
+    return this.svc.legalCasesXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
   @Get('activity-log/xlsx')

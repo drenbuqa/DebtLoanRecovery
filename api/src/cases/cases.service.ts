@@ -213,25 +213,20 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
       ];
     } else if (query.view === 'all_promises') {
-      where.OR = [
-        { promises: { some: { status: 'PENDING' } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any } } },
-        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
-      ];
+      // On-time promises: has a pending promise due today or in the future, no overdue ones
+      where.promises = { some: { status: 'PENDING', promiseDate: { gte: today } } };
+      where.NOT = { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } };
     } else if (query.view === 'vonesa') {
-      where.OR = [
-        { promises: { some: { promiseDate: { lt: today }, status: 'PENDING' } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: today } } } },
-        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: today } } } } } },
-      ];
+      const thirtyOneDaysAgo = new Date(today);
+      thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
+      // 1–30 days late: has a promise in that range, no promise older than 30 days
+      where.promises = { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } };
+      where.NOT = { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } };
     } else if (query.view === 'premtime_thyera') {
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
-      where.OR = [
-        { promises: { some: { promiseDate: { lt: thirtyDaysAgo }, status: { in: ['PENDING', 'BROKEN'] } } } },
-        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
-        { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
-      ];
+      const thirtyOneDaysAgo = new Date(today);
+      thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
+      // 31+ days late: has any pending promise older than 30 days (worst bucket, no exclusion needed)
+      where.promises = { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } };
     } else if (query.view === 'ndjekja_radhes') {
       where.activities = { some: { nextActionDate: { gte: today } } };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {

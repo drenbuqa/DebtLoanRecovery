@@ -86,8 +86,10 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
     try {
       // PORTFOLIO_SUMMARY: server generates full XLSX in migration format, download directly
       if (report.code === "PORTFOLIO_SUMMARY") {
-        const params: { officerId?: string } = {};
+        const params: any = {};
         if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
         const blob = await reportsApi.downloadCaseStatusXlsx(params);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -118,6 +120,8 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
       } else if (report.code === "AGREEMENT_STATUS") {
         const params: any = {};
         if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
         const blob = await reportsApi.downloadAgreementStatusXlsx(params);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -130,6 +134,8 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
       } else if (report.code === "OVERDUE_INSTALLMENTS") {
         const params: any = {};
         if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
         const blob = await reportsApi.downloadOverdueInstallmentsXlsx(params);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -142,6 +148,8 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
       } else if (report.code === "LEGAL_CASES") {
         const params: any = {};
         if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
         const blob = await reportsApi.downloadLegalCasesXlsx(params);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -175,7 +183,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
     }
   }
 
-  const hasDateRange = ["COLLECTIONS", "ACTIVITY_LOG"].includes(report.code);
+  const hasDateRange = true;
   const Icon = report.icon;
 
   return (
