@@ -233,7 +233,7 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
       ];
     } else if (query.view === 'ndjekja_radhes') {
-      where.nextActionDate = { lte: today };
+      where.nextActionDate = { gte: today };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
@@ -260,7 +260,9 @@ export class CasesService {
       this.prisma.case.findMany({
         where,
         select: CASE_LIST_SELECT,
-        orderBy: [{ priorityScore: 'desc' }, { updatedAt: 'desc' }],
+        orderBy: query.view === 'ndjekja_radhes'
+          ? [{ nextActionDate: 'asc' as const }]
+          : [{ priorityScore: 'desc' }, { updatedAt: 'desc' }],
         skip,
         take: limit,
       }),
