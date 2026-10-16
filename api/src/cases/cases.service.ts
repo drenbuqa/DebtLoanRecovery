@@ -188,7 +188,12 @@ export class CasesService {
       if (query.from) where.createdAt.gte = new Date(query.from);
       if (query.to) { const d = new Date(query.to); d.setHours(23, 59, 59, 999); where.createdAt.lte = d; }
     }
-    if (query.officeId) where.officeId = query.officeId;
+    if (query.officeId) {
+      where.OR = [
+        { officeId: query.officeId },
+        { assignedOfficer: { officeId: query.officeId } },
+      ];
+    }
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.institutionId) where.loan = { institutionId: query.institutionId };
 
@@ -227,6 +232,8 @@ export class CasesService {
         { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyDaysAgo } } } },
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
       ];
+    } else if (query.view === 'ndjekja_radhes') {
+      where.nextActionDate = { lte: today };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
@@ -686,15 +693,15 @@ export class CasesService {
     });
   }
 
-  async getDashboardStats(officeId?: string) {
+  async getDashboardStats(officeId?: string, officerId?: string) {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // All case-scoped queries filter by office when provided
-    const caseScope = officeId ? { officeId } : {};
+    // All case-scoped queries filter by office or officer when provided
+    const caseScope = officerId ? { assignedOfficerId: officerId } : officeId ? { officeId } : {};
     const caseFilter = { status: 'ACTIVE' as const, ...caseScope };
 
     const [
@@ -713,7 +720,7 @@ export class CasesService {
         _sum: { currentOutstandingBalance: true },
       }),
       this.prisma.payment.aggregate({
-        where: { paymentDate: { gte: startOfMonth }, ...(officeId ? { case: { officeId } } : {}) },
+        where: { paymentDate: { gte: startOfMonth }, ...(officerId ? { case: { assignedOfficerId: officerId } } : officeId ? { case: { officeId } } : {}) },
         _sum: { amount: true },
       }),
       this.prisma.case.count({
@@ -746,7 +753,7 @@ export class CasesService {
     const rawPayments = await this.prisma.payment.findMany({
       where: {
         paymentDate: { gte: sixMonthsAgo },
-        ...(officeId ? { case: { officeId } } : {}),
+        ...(officerId ? { case: { assignedOfficerId: officerId } } : officeId ? { case: { officeId } } : {}),
       },
       select: { paymentDate: true, amount: true },
     });

@@ -19,10 +19,10 @@ export class LegalController {
   findOne(@Param('id') id: string) { return this.svc.findOne(id); }
 
   @Post()
-  @RequireRoles('ADMIN', 'MANAGER')
+  @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
   create(@Body() dto: any) { return this.svc.create(dto); }
 
   @Patch(':id')
-  @RequireRoles('ADMIN', 'MANAGER')
+  @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
   update(@Param('id') id: string, @Body() dto: any) { return this.svc.update(id, dto); }
 }

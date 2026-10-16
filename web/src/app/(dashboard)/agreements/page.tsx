@@ -235,8 +235,8 @@ export default function AgreementsPage() {
   const filterOptions = [
     { key: "", label: "Të gjitha" },
     { key: "ACTIVE",    label: "Aktive" },
-    { key: "COMPLETED", label: "E Përfunduar" },
     { key: "BROKEN",    label: "E Dështuar" },
+    { key: "COMPLETED", label: "E Përfunduar" },
   ];
 
   const q = searchQuery.trim().toLowerCase();

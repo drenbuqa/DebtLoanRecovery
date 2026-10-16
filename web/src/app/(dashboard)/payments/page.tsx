@@ -40,6 +40,7 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
     if (!selectedCase) { setError("Ju lutem zgjidhni një klient"); return; }
     if (!amount || parseFloat(amount) <= 0) { setError("Vendosni një shumë të vlefshme"); return; }
     if (nextDate && (!nextAmount || parseFloat(nextAmount) <= 0)) { setError("Vendosni shumën për pagesën e ardhshme"); return; }
+    if (nextDate && date && nextDate <= date) { setError("Data e pagesës së ardhshme duhet të jetë pas datës së pagesës"); return; }
     setLoading(true); setError("");
     try {
       await paymentsApi.register({
@@ -120,7 +121,7 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
-                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" />
+                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" minDate={date || undefined} />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>

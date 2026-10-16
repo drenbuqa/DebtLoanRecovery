@@ -183,10 +183,12 @@ function PerformancePageInner() {
     { keepPreviousData: true },
   );
 
-  // ── Monthly chart (managers/admins only) ──
+  // ── Monthly chart (all roles, scoped appropriately) ──
   const { data: chartStats, isLoading: chartLoading } = useSWR(
-    (isAdmin || isManager) ? ["perf-monthly-chart", isAdmin ? undefined : user?.officeId] : null,
-    () => casesApi.dashboardStats(isAdmin ? undefined : user?.officeId),
+    ["perf-monthly-chart", isOfficer ? user?.id : isAdmin ? undefined : user?.officeId],
+    () => isOfficer
+      ? casesApi.dashboardStats(undefined, user?.id)
+      : casesApi.dashboardStats(isAdmin ? undefined : user?.officeId),
   );
 
   const allMonths = useMemo(() =>
@@ -274,7 +276,7 @@ function PerformancePageInner() {
         </div>
 
         {/* 3. Charts */}
-        <div className={`grid gap-4 ${(isAdmin || isManager) ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
 
           {/* Activity trend line (all roles) */}
           <div className="bg-white rounded-xl border border-gray-200 flex flex-col"
@@ -296,14 +298,13 @@ function PerformancePageInner() {
             </div>
           </div>
 
-          {/* Monthly collections — managers/admins only */}
-          {(isAdmin || isManager) && (
-            <div className="bg-white rounded-xl border border-gray-200 flex flex-col"
+          {/* Monthly collections — all roles, scoped to own data for officers */}
+          <div className="bg-white rounded-xl border border-gray-200 flex flex-col"
               style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
               <div className="flex items-start justify-between px-5 pt-4 pb-2">
                 <div>
                   <h3 className="text-[13px] font-semibold text-gray-900">Arkëtime Mujore {yr}</h3>
-                  <p className="text-[11.5px] text-gray-400 mt-0.5">Para të arkëtuara — EUR</p>
+                  <p className="text-[11.5px] text-gray-400 mt-0.5">{isOfficer ? "Portofoli juaj — EUR" : "Para të arkëtuara — EUR"}</p>
                 </div>
                 {chartStats && (
                   <div className="text-right">
@@ -320,7 +321,7 @@ function PerformancePageInner() {
                   : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {error && (
@@ -329,19 +330,22 @@ function PerformancePageInner() {
           </div>
         )}
 
-        {/* 4. Role tabs + table */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-          {(["primary", "secondary"] as const).map((r) => (
-            <button key={r} onClick={() => setRoleTab(r)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
-                roleTab === r ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}>
-              {r === "primary" ? "Primar" : "Sekondar"}
-            </button>
-          ))}
-        </div>
-
-        {loading ? <TableSkeleton /> : <OfficerTable officers={officers} role={roleTab} />}
+        {/* 4. Role tabs + table — hidden for officers */}
+        {!isOfficer && (
+          <>
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+              {(["primary", "secondary"] as const).map((r) => (
+                <button key={r} onClick={() => setRoleTab(r)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
+                    roleTab === r ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}>
+                  {r === "primary" ? "Primar" : "Sekondar"}
+                </button>
+              ))}
+            </div>
+            {loading ? <TableSkeleton /> : <OfficerTable officers={officers} role={roleTab} />}
+          </>
+        )}
 
       </div>
     </div>

@@ -119,7 +119,13 @@ export const cases = {
   delete: (id: string) => req(`/cases/${id}`, { method: 'DELETE' }),
   updateStatus: (id: string, data: any) => req(`/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
   history: (id: string) => req<any[]>(`/cases/${id}/history`),
-  dashboardStats: (officeId?: string) => req<any>(`/cases/dashboard-stats${officeId ? `?officeId=${officeId}` : ''}`),
+  dashboardStats: (officeId?: string, officerId?: string) => {
+    const qs = new URLSearchParams();
+    if (officeId) qs.set('officeId', officeId);
+    if (officerId) qs.set('officerId', officerId);
+    const q = qs.toString();
+    return req<any>(`/cases/dashboard-stats${q ? `?${q}` : ''}`);
+  },
   updateNextAction: (id: string, data: any) =>
     req(`/cases/${id}/next-action`, { method: 'PATCH', body: JSON.stringify(data) }),
   assign: (id: string, officerId: string) =>

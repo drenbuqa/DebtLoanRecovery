@@ -9,7 +9,7 @@ export class CasesController {
   constructor(private svc: CasesService) {}
 
   @Get('dashboard-stats')
-  dashboardStats(@Query('officeId') officeId?: string) { return this.svc.getDashboardStats(officeId); }
+  dashboardStats(@Query('officeId') officeId?: string, @Query('officerId') officerId?: string) { return this.svc.getDashboardStats(officeId, officerId); }
 
   @Get('search-person')
   searchPerson(@Query('personalId') personalId: string) {

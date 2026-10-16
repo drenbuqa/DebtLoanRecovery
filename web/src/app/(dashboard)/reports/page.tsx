@@ -211,6 +211,30 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           {hasDateRange && (
             <div>
               <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">Filtro sipas periudhës (opsionale)</div>
+              {/* Quick presets */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {[
+                  { label: "Ky muaj", from: () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-01`; }, to: () => new Date().toISOString().slice(0,10) },
+                  { label: "Muaji i kaluar", from: () => { const n = new Date(); n.setDate(1); n.setMonth(n.getMonth()-1); return n.toISOString().slice(0,10); }, to: () => { const n = new Date(); n.setDate(0); return n.toISOString().slice(0,10); } },
+                  { label: "Ky vit", from: () => `${new Date().getFullYear()}-01-01`, to: () => new Date().toISOString().slice(0,10) },
+                  { label: "Viti i kaluar", from: () => `${new Date().getFullYear()-1}-01-01`, to: () => `${new Date().getFullYear()-1}-12-31` },
+                  { label: "2 vitet e fundit", from: () => `${new Date().getFullYear()-2}-01-01`, to: () => new Date().toISOString().slice(0,10) },
+                ].map((p) => {
+                  const f = p.from(); const t = p.to();
+                  const active = dateFrom === f && dateTo === t;
+                  return (
+                    <button key={p.label} type="button"
+                      onClick={() => { setDateFrom(f); setDateTo(t); setResult(null); }}
+                      className={`px-2.5 py-1 rounded-lg text-[11.5px] font-medium border transition-colors ${
+                        active
+                          ? "bg-brand-600 text-white border-brand-600"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }`}>
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <label className="text-[11px] text-gray-400 mb-1 block">Nga</label>

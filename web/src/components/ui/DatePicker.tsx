@@ -10,6 +10,7 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  minDate?: string; // "YYYY-MM-DD" — dates before this are disabled
 }
 
 const MONTHS_SHORT = ["Jan","Shk","Mar","Pri","Maj","Qer","Kor","Gus","Sht","Tet","Nën","Dhj"];
@@ -38,7 +39,7 @@ function toValue(y: number, m: number, d: number): string {
 // Build a decade block starting from a rounded base
 function decadeStart(year: number) { return Math.floor(year / 10) * 10; }
 
-export function DatePicker({ value, onChange, placeholder = "Select date", className = "", disabled = false }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "Select date", className = "", disabled = false, minDate }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("day");
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
@@ -114,6 +115,7 @@ export function DatePicker({ value, onChange, placeholder = "Select date", class
   }
 
   function pickDay(day: number) {
+    if (isBeforeMin(day)) return;
     onChange(toValue(viewYear, viewMonth, day));
     close();
   }
@@ -131,6 +133,12 @@ export function DatePicker({ value, onChange, placeholder = "Select date", class
     d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
   const isSelected = (d: number) =>
     !!selected && d === selected.getDate() && viewMonth === selected.getMonth() && viewYear === selected.getFullYear();
+  const minParsed = parseDate(minDate ?? "");
+  const isBeforeMin = (d: number) => {
+    if (!minParsed) return false;
+    const cell = new Date(viewYear, viewMonth, d);
+    return cell < minParsed;
+  };
 
   // ── Month view ──────────────────────────────────────────────
   function pickMonth(m: number) {
@@ -225,10 +233,13 @@ export function DatePicker({ value, onChange, placeholder = "Select date", class
                   if (!day) return <div key={i} />;
                   const sel = isSelected(day);
                   const tod = isToday(day);
+                  const dis = isBeforeMin(day);
                   return (
-                    <button key={i} type="button" onClick={() => pickDay(day)}
+                    <button key={i} type="button" onClick={() => pickDay(day)} disabled={dis}
                       className={`w-full aspect-square flex items-center justify-center text-[12px] rounded-lg transition-colors
-                        ${sel
+                        ${dis
+                          ? "text-gray-300 cursor-not-allowed"
+                          : sel
                           ? "bg-brand-600 text-white font-semibold"
                           : tod
                           ? "text-brand-700 font-semibold bg-brand-50 hover:bg-brand-100"
