@@ -10,6 +10,7 @@ const CASE_LIST_SELECT = {
   collectionStatus: true,
   priorityScore: true,
   nextActionDate: true,
+  nextActionNote: true,
   createdAt: true,
   updatedAt: true,
   loan: {
@@ -213,20 +214,26 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
       ];
     } else if (query.view === 'all_promises') {
-      // On-time promises: has a pending promise due today or in the future, no overdue ones
-      where.promises = { some: { status: 'PENDING', promiseDate: { gte: today } } };
-      where.NOT = { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } };
+      // On-time: has a PENDING promise due today or in the future, AND no PENDING promise that is overdue
+      if (!where.AND) where.AND = [];
+      where.AND.push({ promises: { some: { status: 'PENDING', promiseDate: { gte: today } } } });
+      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
     } else if (query.view === 'vonesa') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 1–30 days late: has a promise in that range, no promise older than 30 days
-      where.promises = { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } };
-      where.NOT = { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } };
+      // 1–30 days overdue: has PENDING promise in that window, AND no PENDING promise older than 30 days
+      if (!where.AND) where.AND = [];
+      where.AND.push({ promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } });
+      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } } });
     } else if (query.view === 'premtime_thyera') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 31+ days late: has any pending promise older than 30 days (worst bucket, no exclusion needed)
-      where.promises = { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } };
+      // 31+ days overdue: has any PENDING or BROKEN promise older than 30 days (worst bucket)
+      if (!where.AND) where.AND = [];
+      where.AND.push({ OR: [
+        { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: thirtyOneDaysAgo } } } },
+        { activities: { some: { outcome: 'PROMISE_RECEIVED' as any, nextActionDate: { lt: thirtyOneDaysAgo } } } },
+      ]});
     } else if (query.view === 'ndjekja_radhes') {
       where.activities = { some: { nextActionDate: { gte: today } } };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
@@ -243,7 +250,9 @@ export class CasesService {
         { loan: { borrower: { personalId: { contains: query.search, mode: 'insensitive' } } } },
       ];
       if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        if (!where.AND) where.AND = [];
+        where.AND.push({ OR: where.OR });
+        where.AND.push({ OR: searchOr });
         delete where.OR;
       } else {
         where.OR = searchOr;

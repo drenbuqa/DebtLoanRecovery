@@ -466,9 +466,9 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
           </div>
         </div>
         <div>
-          <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Veprim</div>
-          <div className={`text-[13px] font-bold ${isOverdue ? "text-red-600" : nextAction ? "text-gray-700" : "text-gray-300"}`}>
-            {isOverdue ? "Vonuar" : nextAction ?? "—"}
+          <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Ndjekja e Radhës</div>
+          <div className={`text-[13px] font-bold ${isOverdue ? "text-amber-600" : nextAction ? "text-brand-600" : "text-gray-300"}`}>
+            {nextAction ?? "—"}
           </div>
         </div>
       </div>
@@ -826,7 +826,7 @@ function CasesPageInner() {
             <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi"].map((h, i) => (
+                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi", "Ndjekja e Radhës"].map((h, i) => (
                     <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
                   ))}
                   {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
@@ -910,6 +910,18 @@ function CasesPageInner() {
                               <div className={`text-[10px] font-semibold ${promiseDaysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
                                 {promiseDaysOverdue} ditë vonesë
                               </div>
+                            )}
+                          </div>
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {c.nextActionDate ? (
+                          <div>
+                            <div className={`text-[11px] font-medium ${new Date(c.nextActionDate) < new Date() ? "text-amber-600" : "text-brand-600"}`}>
+                              {new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                            </div>
+                            {c.nextActionNote && (
+                              <div className="text-[10px] text-gray-400 truncate max-w-[120px]">{c.nextActionNote}</div>
                             )}
                           </div>
                         ) : <span className="text-gray-300">—</span>}
