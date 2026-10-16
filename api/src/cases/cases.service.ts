@@ -233,7 +233,7 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] as any[] }, dueDate: { lt: thirtyDaysAgo } } } } } },
       ];
     } else if (query.view === 'ndjekja_radhes') {
-      where.nextActionDate = { gte: today };
+      where.activities = { some: { nextActionDate: { gte: today } } };
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
