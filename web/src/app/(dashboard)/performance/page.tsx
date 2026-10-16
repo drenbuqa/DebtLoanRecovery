@@ -320,7 +320,6 @@ function PerformancePageInner() {
                   ? <ChartSkeleton bars={12} />
                   : <CollectionsChart data={monthlyData} currentMonth={currentMonth} />}
               </div>
-            </div>
           </div>
         </div>
 
