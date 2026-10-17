@@ -239,9 +239,10 @@ export class PerformanceService {
     }));
   }
 
-  async institutionStats(query: { from?: string; to?: string; institutionId?: string }) {
+  async institutionStats(query: { from?: string; to?: string; institutionId?: string; officerId?: string }) {
     const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const to = query.to ? new Date(query.to) : new Date();
+    const oid = query.officerId ?? null;
 
     const instWhere: any = { isActive: true };
     if (query.institutionId) instWhere.id = query.institutionId;
@@ -252,34 +253,67 @@ export class PerformanceService {
         select: { id: true, name: true, shortName: true },
         orderBy: { name: 'asc' },
       }),
-      this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
-        SELECT
-          l.institution_id,
-          COUNT(l.id)::text AS total,
-          COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
-          COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding,
-          COALESCE(SUM(l.original_loan_amount), 0)::text AS original
-        FROM loans l
-        LEFT JOIN cases c ON c.loan_id = l.id
-        GROUP BY l.institution_id
-      `,
-      this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
-        SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
-        FROM payments p
-        JOIN cases c ON c.id = p.case_id
-        JOIN loans l ON l.id = c.loan_id
-        WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
-          AND p.voided_at IS NULL
-        GROUP BY l.institution_id
-      `,
-      this.prisma.$queryRaw<{ institution_id: string; cnt: string }[]>`
-        SELECT l.institution_id, COUNT(a.id)::text AS cnt
-        FROM activities a
-        JOIN cases c ON c.id = a.case_id
-        JOIN loans l ON l.id = c.loan_id
-        WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-        GROUP BY l.institution_id
-      `,
+      oid
+        ? this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
+            SELECT
+              l.institution_id,
+              COUNT(l.id)::text AS total,
+              COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
+              COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding,
+              COALESCE(SUM(l.original_loan_amount), 0)::text AS original
+            FROM loans l
+            LEFT JOIN cases c ON c.loan_id = l.id AND c.assigned_officer_id = ${oid}
+            WHERE c.id IS NOT NULL
+            GROUP BY l.institution_id
+          `
+        : this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
+            SELECT
+              l.institution_id,
+              COUNT(l.id)::text AS total,
+              COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
+              COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding,
+              COALESCE(SUM(l.original_loan_amount), 0)::text AS original
+            FROM loans l
+            LEFT JOIN cases c ON c.loan_id = l.id
+            GROUP BY l.institution_id
+          `,
+      oid
+        ? this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
+            SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
+            FROM payments p
+            JOIN cases c ON c.id = p.case_id
+            JOIN loans l ON l.id = c.loan_id
+            WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
+              AND p.voided_at IS NULL AND p.officer_id = ${oid}
+            GROUP BY l.institution_id
+          `
+        : this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
+            SELECT l.institution_id, COALESCE(SUM(p.amount), 0)::text AS total
+            FROM payments p
+            JOIN cases c ON c.id = p.case_id
+            JOIN loans l ON l.id = c.loan_id
+            WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
+              AND p.voided_at IS NULL
+            GROUP BY l.institution_id
+          `,
+      oid
+        ? this.prisma.$queryRaw<{ institution_id: string; cnt: string }[]>`
+            SELECT l.institution_id, COUNT(a.id)::text AS cnt
+            FROM activities a
+            JOIN cases c ON c.id = a.case_id
+            JOIN loans l ON l.id = c.loan_id
+            WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+              AND a.officer_id = ${oid}
+            GROUP BY l.institution_id
+          `
+        : this.prisma.$queryRaw<{ institution_id: string; cnt: string }[]>`
+            SELECT l.institution_id, COUNT(a.id)::text AS cnt
+            FROM activities a
+            JOIN cases c ON c.id = a.case_id
+            JOIN loans l ON l.id = c.loan_id
+            WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
+            GROUP BY l.institution_id
+          `,
     ]);
 
     const totalMap    = new Map(caseAgg.map((r) => [r.institution_id, Number(r.total)]));
