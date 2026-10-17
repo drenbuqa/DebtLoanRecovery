@@ -28,11 +28,12 @@ function smoothPath(pts: [number, number][]): string {
 function smoothArea(pts: [number, number][], baseY: number): string {
   if (pts.length === 0) return "";
   const line = smoothPath(pts);
-  // Walk from first point down to baseline, across, back up to start
+  // Strip only "M x,y" from the start of the line path, keeping the C commands intact
+  const curves = line.replace(/^M\s*\S+\s*/, "");
   return (
     `M ${pts[0][0].toFixed(1)},${baseY.toFixed(1)} ` +
     `L ${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} ` +
-    line.replace(/^M [^ ]+ [^ ]+/, "") +   // strip the M from line, use L
+    curves +
     ` L ${pts[pts.length - 1][0].toFixed(1)},${baseY.toFixed(1)} Z`
   );
 }
@@ -67,13 +68,13 @@ export function ActivityTrendChart({
   const totals = buckets.map((b) => b.calls + b.visits);
   const rawMax = Math.max(...totals, 1);
 
-  // Always 4 ticks with a tight ceiling (~20% headroom)
+  // Always 4 ticks with a tight ceiling (~20% headroom) — steps must be whole numbers
   const N_TICKS = 4;
   const roughStep = (rawMax * 1.2) / N_TICKS;
   const mag = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, 0.1))));
   const norm = roughStep / mag;
-  const niceMult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
-  const step = Math.max(niceMult * mag, 1); // minimum step of 1 for integer data
+  const niceMult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  const step = Math.max(Math.ceil(niceMult * mag), 1); // ceil ensures whole number steps
   const yMax = N_TICKS * step;
   const yTicks = Array.from({ length: N_TICKS }, (_, i) => step * (i + 1));
 
@@ -179,7 +180,7 @@ export function ActivityTrendChart({
                 width={segW} height={chartH + PB}
                 fill="transparent"
               />
-              {i % labelEvery === 0 && (
+              {(i % labelEvery === 0 || i === n - 1) && (
                 <text
                   x={cx} y={baseY + 18}
                   textAnchor="middle" fontSize={9.5}

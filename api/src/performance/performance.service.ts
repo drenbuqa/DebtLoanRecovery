@@ -257,13 +257,13 @@ export class PerformanceService {
         ? this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
             SELECT
               l.institution_id,
-              COUNT(l.id)::text AS total,
+              COUNT(c.id)::text AS total,
               COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
               COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding,
               COALESCE(SUM(l.original_loan_amount), 0)::text AS original
-            FROM loans l
-            LEFT JOIN cases c ON c.loan_id = l.id AND c.assigned_officer_id = ${oid}
-            WHERE c.id IS NOT NULL
+            FROM cases c
+            JOIN loans l ON l.id = c.loan_id
+            WHERE c.assigned_officer_id = ${oid}
             GROUP BY l.institution_id
           `
         : this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
