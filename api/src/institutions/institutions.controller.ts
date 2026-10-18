@@ -9,7 +9,7 @@ export class InstitutionsController {
 
   @Get() findAll() { return this.svc.findAll(); }
   @Get('stats')
-  stats(@Query('from') from?: string, @Query('to') to?: string, @Req() req: any) {
+  stats(@Req() req: any, @Query('from') from?: string, @Query('to') to?: string) {
     const user = req.user;
     let officeId: string | undefined;
     if (user?.role === 'MANAGER') { officeId = user.officeId; }

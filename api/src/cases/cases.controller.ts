@@ -9,7 +9,7 @@ export class CasesController {
   constructor(private svc: CasesService) {}
 
   @Get('dashboard-stats')
-  dashboardStats(@Query('officeId') officeId?: string, @Query('officerId') officerId?: string, @Request() req: any) {
+  dashboardStats(@Request() req: any, @Query('officeId') officeId?: string, @Query('officerId') officerId?: string) {
     const user = req.user;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER') { officeId = user.officeId; officerId = undefined; }

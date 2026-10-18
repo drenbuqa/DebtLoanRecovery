@@ -15,8 +15,9 @@ export class ReportsController {
   }
 
   @Get('portfolio/pdf')
-  portfolio(@Query('officeId') officeId: string, @Query('status') status: string, @Req() req: Request, @Res() res: Response) {
+  portfolio(@Query('officeId') rawOfficeId: string, @Query('status') status: string, @Req() req: Request, @Res() res: Response) {
     const user = (req as any).user;
+    let officeId: string | undefined = rawOfficeId;
     let officerId: string | undefined;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER') { officeId = user.officeId; }
@@ -27,11 +28,12 @@ export class ReportsController {
   paymentsCsv(
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
-    @Query('officeId') officeId: string,
+    @Query('officeId') rawOfficeId: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
     const user = (req as any).user;
+    let officeId: string | undefined = rawOfficeId;
     let officerId: string | undefined;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER') { officeId = user.officeId; }
@@ -42,12 +44,14 @@ export class ReportsController {
   activitiesCsv(
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
-    @Query('officeId') officeId: string,
-    @Query('officerId') officerId: string,
+    @Query('officeId') rawOfficeId: string,
+    @Query('officerId') rawOfficerId: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
     const user = (req as any).user;
+    let officeId: string | undefined = rawOfficeId;
+    let officerId: string | undefined = rawOfficerId;
     if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
     else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
     return this.svc.activitiesCsv({ dateFrom, dateTo, officeId, officerId }, res);
