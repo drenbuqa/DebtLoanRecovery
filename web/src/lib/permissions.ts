@@ -89,7 +89,7 @@ const MANAGER_PERMS: Permission[] = [
 const OFFICER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal",
-  "page:performance",
+  "page:institutions", "page:performance",
   "page:settings",
   "activity:create",
   "payment:create",
