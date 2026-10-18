@@ -298,7 +298,7 @@ export class PerformanceService {
             JOIN cases c ON c.id = p.case_id
             JOIN loans l ON l.id = c.loan_id
             WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
-              AND p.voided_at IS NULL AND p.officer_id = ${oid}::uuid
+              AND p.voided_at IS NULL AND c.assigned_officer_id = ${oid}::uuid
             GROUP BY l.institution_id
           `
         : offid
@@ -328,7 +328,7 @@ export class PerformanceService {
             JOIN cases c ON c.id = a.case_id
             JOIN loans l ON l.id = c.loan_id
             WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-              AND a.officer_id = ${oid}::uuid
+              AND c.assigned_officer_id = ${oid}::uuid
             GROUP BY l.institution_id
           `
         : offid

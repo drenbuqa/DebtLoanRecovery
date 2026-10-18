@@ -731,8 +731,20 @@ export class CasesService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // All case-scoped queries filter by office or officer when provided
-    const caseScope = officerId ? { assignedOfficerId: officerId } : officeId ? { officeId } : {};
+    // Resolve office scope: officer → by assignedOfficerId; manager → resolve all officer IDs in office
+    let caseScope: any = {};
+    if (officerId) {
+      caseScope = { assignedOfficerId: officerId };
+    } else if (officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      caseScope = officerIds.length > 0
+        ? { OR: [{ officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+        : { officeId };
+    }
     const caseFilter = { status: 'ACTIVE' as const, ...caseScope };
 
     const [
@@ -751,7 +763,7 @@ export class CasesService {
         _sum: { currentOutstandingBalance: true },
       }),
       this.prisma.payment.aggregate({
-        where: { paymentDate: { gte: startOfMonth }, ...(officerId ? { case: { assignedOfficerId: officerId } } : officeId ? { case: { officeId } } : {}) },
+        where: { paymentDate: { gte: startOfMonth }, voidedAt: null, ...(Object.keys(caseScope).length ? { case: caseScope } : {}) },
         _sum: { amount: true },
       }),
       this.prisma.case.count({
@@ -784,7 +796,8 @@ export class CasesService {
     const rawPayments = await this.prisma.payment.findMany({
       where: {
         paymentDate: { gte: sixMonthsAgo },
-        ...(officerId ? { case: { assignedOfficerId: officerId } } : officeId ? { case: { officeId } } : {}),
+        voidedAt: null,
+        ...(Object.keys(caseScope).length ? { case: caseScope } : {}),
       },
       select: { paymentDate: true, amount: true },
     });
