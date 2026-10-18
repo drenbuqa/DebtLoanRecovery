@@ -185,12 +185,23 @@ export class CasesService {
       if (query.to) { const d = new Date(query.to); d.setHours(23, 59, 59, 999); where.createdAt.lte = d; }
     }
     if (query.officeId) {
-      // Use AND so this condition is never overwritten by view-filter OR assignments
+      // Resolve officer IDs in this office so we can use a simple IN filter
+      // (avoids unreliable nested relation filter inside OR inside AND)
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
       if (!where.AND) where.AND = [];
-      where.AND.push({ OR: [
-        { officeId: query.officeId },
-        { assignedOfficer: { officeId: query.officeId } },
-      ]});
+      if (officerIds.length > 0) {
+        where.AND.push({ OR: [
+          { officeId: query.officeId },
+          { assignedOfficerId: { in: officerIds } },
+          { secondaryOfficerId: { in: officerIds } },
+        ]});
+      } else {
+        where.AND.push({ officeId: query.officeId });
+      }
     }
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.institutionId) where.loan = { institutionId: query.institutionId };

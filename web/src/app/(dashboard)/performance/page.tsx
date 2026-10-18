@@ -18,7 +18,7 @@ import { ActivityTrendChart } from "@/components/charts/ActivityTrendChart";
 
 function InstitutionTable({ institutions }: { institutions: any[] }) {
   const rows = [...institutions]
-    .filter((i) => i.activeCases > 0 || i.collected > 0 || i.activities > 0)
+    .filter((i) => i.totalCases > 0 || i.collected > 0 || i.activities > 0)
     .sort((a, b) => b.collected - a.collected);
 
   return (
