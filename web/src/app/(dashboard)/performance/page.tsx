@@ -14,62 +14,6 @@ import { DatePresetPicker, DatePreset, presetToRange, PERFORMANCE_PRESETS } from
 import { CollectionsChart } from "@/components/charts/CollectionsChart";
 import { ActivityTrendChart } from "@/components/charts/ActivityTrendChart";
 
-// ── Institution table (shown to officers scoped to their own portfolio) ──────
-
-function InstitutionTable({ institutions }: { institutions: any[] }) {
-  const rows = [...institutions]
-    .filter((i) => i.totalCases > 0 || i.collected > 0 || i.activities > 0)
-    .sort((a, b) => b.collected - a.collected);
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-      <Table>
-        <Thead>
-          <tr>
-            <Th>Banka / Institucioni</Th>
-            <Th>Klientë Aktive</Th>
-            <Th>Portofoli Aktiv</Th>
-            <Th>Aktivitete</Th>
-            <Th>I Mbledhur</Th>
-          </tr>
-        </Thead>
-        <Tbody>
-          {rows.length === 0 ? (
-            <tr><td colSpan={5} className="text-center py-8 text-gray-400 text-[13px]">
-              Nuk ka të dhëna për periudhën e zgjedhur
-            </td></tr>
-          ) : rows.map((inst) => (
-            <Tr key={inst.id}>
-              <Td>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <span className="text-blue-600 text-[10px] font-bold">
-                      {(inst.shortName ?? inst.name).slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900 text-[13px]">{inst.name}</div>
-                    {inst.shortName && <div className="text-[11px] text-gray-400">{inst.shortName}</div>}
-                  </div>
-                </div>
-              </Td>
-              <Td><span className="tabular text-gray-700 font-medium">{inst.activeCases}</span></Td>
-              <Td><span className="tabular text-gray-700 font-medium">{formatCurrency(inst.totalOutstanding)}</span></Td>
-              <Td><span className="tabular text-gray-700">{inst.activities}</span></Td>
-              <Td>
-                <span className={`tabular font-semibold ${inst.collected > 0 ? "text-emerald-700" : "text-gray-400"}`}>
-                  {formatCurrency(inst.collected)}
-                </span>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </div>
-  );
-}
-
 // ── Officer table ────────────────────────────────────────────────────────────
 
 function OfficerTable({ officers, role }: { officers: any[]; role: "primary" | "secondary" }) {
@@ -223,23 +167,6 @@ function PerformancePageInner() {
     { keepPreviousData: true },
   );
 
-  // ── Institution stats (officer: own portfolio; manager: own office; admin: all or filtered) ──
-  const instKey = useMemo(
-    () => ["perf-institutions", dateFrom, dateTo, isOfficer ? user?.id : officeFilter || (isManager ? user?.officeId : undefined)],
-    [dateFrom, dateTo, isOfficer, isManager, user?.id, user?.officeId, officeFilter],
-  );
-  const { data: instData, isLoading: instLoading } = useSWR(
-    instKey,
-    () => {
-      const params: any = { from: dateFrom, to: dateTo };
-      if (!isOfficer) {
-        const scope = officeFilter || (isManager ? user?.officeId : undefined);
-        if (scope) params.officeId = scope;
-      }
-      return perfApi.institutions(params);
-    },
-    { keepPreviousData: true },
-  );
 
   // ── Activity trend ──
   const trendKey = useMemo(
@@ -420,14 +347,6 @@ function PerformancePageInner() {
           </>
         )}
 
-        {/* 5. Institution breakdown — all roles (officers see their own portfolio) */}
-        <div>
-          <h3 className="text-[13px] font-semibold text-gray-900 mb-2">
-            Sipas Bankës / Institucionit
-            {isOfficer && <span className="ml-1.5 text-[11px] font-normal text-gray-400">— portofoli juaj</span>}
-          </h3>
-          {instLoading ? <TableSkeleton /> : <InstitutionTable institutions={instData ?? []} />}
-        </div>
 
       </div>
     </div>

@@ -398,7 +398,16 @@ export class CasesService {
     const caseData: any = {};
     if (dto.assignedOfficerId !== undefined) caseData.assignedOfficerId = dto.assignedOfficerId || null;
     if (dto.secondaryOfficerId !== undefined) caseData.secondaryOfficerId = dto.secondaryOfficerId || null;
-    if (dto.officeId !== undefined) caseData.officeId = dto.officeId || null;
+    if (dto.officeId !== undefined) {
+      caseData.officeId = dto.officeId || null;
+    } else if (dto.assignedOfficerId) {
+      // Inherit officeId from the new officer when no explicit officeId given
+      const officer = await this.prisma.user.findUnique({
+        where: { id: dto.assignedOfficerId },
+        select: { officeId: true },
+      });
+      if (officer?.officeId) caseData.officeId = officer.officeId;
+    }
 
     const borrowerData: any = {};
     if (dto.address !== undefined) borrowerData.address = dto.address || null;
@@ -517,10 +526,18 @@ export class CasesService {
   }
 
   async assignOfficer(id: string, officerId: string, assignedById: string) {
+    // Inherit officer's officeId onto the case
+    const officer = await this.prisma.user.findUnique({
+      where: { id: officerId },
+      select: { officeId: true },
+    });
     const [updated] = await this.prisma.$transaction([
       this.prisma.case.update({
         where: { id },
-        data: { assignedOfficerId: officerId },
+        data: {
+          assignedOfficerId: officerId,
+          ...(officer?.officeId ? { officeId: officer.officeId } : {}),
+        },
         select: { id: true, assignedOfficerId: true, assignedOfficer: { select: { id: true, fullName: true } } },
       }),
       this.prisma.caseAssignment.create({
@@ -606,6 +623,15 @@ export class CasesService {
     if (dto.phone2) {
       const exists = await this.prisma.personPhone.findFirst({ where: { personId: person.id, phoneNumber: dto.phone2 } });
       if (!exists) await this.prisma.personPhone.create({ data: { personId: person.id, phoneNumber: dto.phone2, phoneType: 'MOBILE', isPrimary: false } });
+    }
+
+    // If an officer is assigned but no office given, inherit the officer's office
+    if (dto.assignedOfficerId && !dto.officeId) {
+      const officer = await this.prisma.user.findUnique({
+        where: { id: dto.assignedOfficerId },
+        select: { officeId: true },
+      });
+      if (officer?.officeId) dto.officeId = officer.officeId;
     }
 
     // Create loan + case in a transaction

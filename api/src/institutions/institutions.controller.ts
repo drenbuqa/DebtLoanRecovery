@@ -12,8 +12,10 @@ export class InstitutionsController {
   stats(@Req() req: any, @Query('from') from?: string, @Query('to') to?: string) {
     const user = req.user;
     let officeId: string | undefined;
-    if (user?.role === 'MANAGER') { officeId = user.officeId; }
-    return this.svc.stats({ from, to, officeId });
+    let officerId: string | undefined;
+    if (user?.role === 'OFFICER') { officerId = user.id; }
+    else if (user?.role === 'MANAGER') { officeId = user.officeId; }
+    return this.svc.stats({ from, to, officeId, officerId });
   }
   @Get(':id') findOne(@Param('id') id: string) { return this.svc.findOne(id); }
 

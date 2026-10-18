@@ -56,14 +56,20 @@ export class InstitutionsService {
     return { success: true };
   }
 
-  async stats(query: { from?: string; to?: string; officeId?: string } = {}) {
+  async stats(query: { from?: string; to?: string; officeId?: string; officerId?: string } = {}) {
     const now = new Date();
     const from = query.from ? new Date(query.from) : new Date(now.getFullYear(), now.getMonth(), 1);
     const to   = query.to   ? new Date(query.to)   : now;
 
-    // When scoped to an office, resolve the full set of visible case IDs first
+    // Resolve visible case IDs for officer or office scope
     let allowedCaseIds: Set<string> | null = null;
-    if (query.officeId) {
+    if (query.officerId) {
+      const scopedCases = await this.prisma.case.findMany({
+        where: { OR: [{ assignedOfficerId: query.officerId }, { secondaryOfficerId: query.officerId }] },
+        select: { id: true },
+      });
+      allowedCaseIds = new Set(scopedCases.map((c) => c.id));
+    } else if (query.officeId) {
       const officeOfficers = await this.prisma.user.findMany({
         where: { officeId: query.officeId },
         select: { id: true },
