@@ -185,10 +185,12 @@ export class CasesService {
       if (query.to) { const d = new Date(query.to); d.setHours(23, 59, 59, 999); where.createdAt.lte = d; }
     }
     if (query.officeId) {
-      where.OR = [
+      // Use AND so this condition is never overwritten by view-filter OR assignments
+      if (!where.AND) where.AND = [];
+      where.AND.push({ OR: [
         { officeId: query.officeId },
         { assignedOfficer: { officeId: query.officeId } },
-      ];
+      ]});
     }
     if (query.officerId) where.assignedOfficerId = query.officerId;
     if (query.institutionId) where.loan = { institutionId: query.institutionId };
@@ -203,11 +205,12 @@ export class CasesService {
     const AGR_ACTIVE = { in: ['ACTIVE', 'BROKEN'] as any[] };
 
     if (query.view === 'promises_today') {
-      where.OR = [
+      if (!where.AND) where.AND = [];
+      where.AND.push({ OR: [
         { promises: { some: { promiseDate: { gte: today, lt: tomorrow }, status: 'PENDING' } } },
         { activities: { some: { outcome: 'PROMISE_RECEIVED', nextActionDate: { gte: today, lt: tomorrow } } } },
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
-      ];
+      ]});
     } else if (query.view === 'all_promises') {
       // On-time: has a PENDING promise/installment due today or future, AND none overdue
       if (!where.AND) where.AND = [];
@@ -239,6 +242,21 @@ export class CasesService {
         { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
         { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ]});
+    } else if (query.view === 'ndjekja_sot') {
+      // Cases with next action date = today
+      if (!where.AND) where.AND = [];
+      where.AND.push({ nextActionDate: { gte: today, lt: tomorrow } });
+    } else if (query.view === 'promises_soon') {
+      const sevenDaysFromNow = new Date(today);
+      sevenDaysFromNow.setUTCDate(sevenDaysFromNow.getUTCDate() + 7);
+      // Pending promise/installment due today–7 days from now, with no overdue ones
+      if (!where.AND) where.AND = [];
+      where.AND.push({ OR: [
+        { promises: { some: { status: 'PENDING', promiseDate: { gte: today, lte: sevenDaysFromNow } } } },
+        { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { dueDate: { gte: today, lte: sevenDaysFromNow }, status: 'PENDING' as any } } } } },
+      ]});
+      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
+      where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'ndjekja_radhes') {
       // Only non-promise activities — promise activities store the promise due date, not a follow-up date
       if (!where.AND) where.AND = [];
@@ -258,20 +276,12 @@ export class CasesService {
     }
 
     if (query.search) {
-      const searchOr = [
+      where.OR = [
         { caseReference: { contains: query.search, mode: 'insensitive' } },
         { loan: { loanNumber: { contains: query.search, mode: 'insensitive' } } },
         { loan: { borrower: { fullName: { contains: query.search, mode: 'insensitive' } } } },
         { loan: { borrower: { personalId: { contains: query.search, mode: 'insensitive' } } } },
       ];
-      if (where.OR) {
-        if (!where.AND) where.AND = [];
-        where.AND.push({ OR: where.OR });
-        where.AND.push({ OR: searchOr });
-        delete where.OR;
-      } else {
-        where.OR = searchOr;
-      }
     }
 
     const [total, items] = await Promise.all([

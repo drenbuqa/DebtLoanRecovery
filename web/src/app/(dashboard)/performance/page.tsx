@@ -223,16 +223,19 @@ function PerformancePageInner() {
     { keepPreviousData: true },
   );
 
-  // ── Institution stats (for officers: their own portfolio; for others: all) ──
+  // ── Institution stats (officer: own portfolio; manager: own office; admin: all or filtered) ──
   const instKey = useMemo(
-    () => ["perf-institutions", dateFrom, dateTo, isOfficer ? user?.id : officeFilter],
-    [dateFrom, dateTo, isOfficer, user?.id, officeFilter],
+    () => ["perf-institutions", dateFrom, dateTo, isOfficer ? user?.id : officeFilter || (isManager ? user?.officeId : undefined)],
+    [dateFrom, dateTo, isOfficer, isManager, user?.id, user?.officeId, officeFilter],
   );
   const { data: instData, isLoading: instLoading } = useSWR(
     instKey,
     () => {
       const params: any = { from: dateFrom, to: dateTo };
-      if (!isOfficer && officeFilter) params.officeId = officeFilter;
+      if (!isOfficer) {
+        const scope = officeFilter || (isManager ? user?.officeId : undefined);
+        if (scope) params.officeId = scope;
+      }
       return perfApi.institutions(params);
     },
     { keepPreviousData: true },

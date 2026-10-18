@@ -243,14 +243,13 @@ function CaseRow({ c, note, onClick }: { c: any; note?: string; onClick: () => v
 function OfficerDashboard({ user }: { user: any }) {
   const router = useRouter();
   const now    = new Date();
-  const todayISO = now.toISOString().slice(0, 10);
   const yr = now.getFullYear(); const mo = now.getMonth();
   const monthFrom = new Date(yr, mo, 1).toISOString().slice(0, 10);
   const monthTo   = new Date(yr, mo + 1, 0).toISOString().slice(0, 10);
 
   const { data: myCasesRes, isLoading: casesLoading } = useSWR(
     user?.id ? ["officer-cases", user.id] : null,
-    () => casesApi.list({ officerId: user.id, limit: 20, page: 1 }),
+    () => casesApi.list({ officerId: user.id, limit: 1, page: 1 }),
   );
 
   const { data: myPerf, isLoading: perfLoading } = useSWR(
@@ -259,6 +258,11 @@ function OfficerDashboard({ user }: { user: any }) {
       const res = await perfApi.officers({ from: monthFrom, to: monthTo, officerId: user.id });
       return res?.[0] ?? null;
     },
+  );
+
+  const { data: todayRes, isLoading: todayLoading } = useSWR(
+    user?.id ? ["officer-today", user.id] : null,
+    () => casesApi.list({ officerId: user.id, view: "ndjekja_sot", limit: 5, page: 1 }),
   );
 
   const { data: overdueRes, isLoading: overdueLoading } = useSWR(
@@ -271,11 +275,16 @@ function OfficerDashboard({ user }: { user: any }) {
     () => casesApi.list({ officerId: user.id, view: "premtime_thyera", limit: 5, page: 1 }),
   );
 
-  const allCases    = myCasesRes?.data ?? [];
-  const todayCases  = allCases.filter((c: any) => c.nextActionDate?.slice(0, 10) === todayISO);
-  const activeCases = myCasesRes?.meta?.total ?? allCases.length;
-  const overdueCases  = overdueRes?.data ?? [];
-  const brokenCases   = brokenRes?.data  ?? [];
+  const { data: soonRes, isLoading: soonLoading } = useSWR(
+    user?.id ? ["officer-soon", user.id] : null,
+    () => casesApi.list({ officerId: user.id, view: "promises_soon", limit: 5, page: 1 }),
+  );
+
+  const todayCases   = todayRes?.data ?? [];
+  const activeCases  = myCasesRes?.meta?.total ?? 0;
+  const overdueCases = overdueRes?.data ?? [];
+  const brokenCases  = brokenRes?.data  ?? [];
+  const soonCases    = soonRes?.data    ?? [];
 
   const collectedThisMonth = myPerf?.primary?.collectedAmount ?? 0;
   const callsThisMonth     = myPerf?.primary?.calls ?? 0;
@@ -298,16 +307,16 @@ function OfficerDashboard({ user }: { user: any }) {
           <KpiCard label="Klient Aktive"        value={loading ? "—" : activeCases.toLocaleString()}           icon={FolderOpen}  href="/cases"    loading={loading} />
           <KpiCard label="Telefonata Këtë Muaj" value={loading ? "—" : callsThisMonth.toLocaleString()}        icon={Phone}                        loading={loading} />
           <KpiCard label="Arkëtuar Këtë Muaj"   value={loading ? "—" : fmtShort(collectedThisMonth)}           icon={Banknote}                      loading={loading} />
-          <KpiCard label="Ndjekje Sot"          value={loading ? "—" : todayCases.length.toLocaleString()}     icon={Calendar}    href="/cases"    loading={loading} />
+          <KpiCard label="Ndjekje Sot"          value={loading || todayLoading ? "—" : (todayRes?.meta?.total ?? 0).toLocaleString()} icon={Calendar} href="/cases" loading={loading || todayLoading} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
 
           {/* Today's follow-ups */}
           <Section title="Ndjekje Sot" sub="Klientët me datë veprimi sot" action="Shiko të gjitha" onAction={() => router.push("/cases")}>
-            {casesLoading ? <RowSkeleton n={3} /> : todayCases.length === 0 ? (
+            {todayLoading ? <RowSkeleton n={3} /> : todayCases.length === 0 ? (
               <EmptyRow message="Nuk ka ndjekje të planifikuara për sot" />
-            ) : todayCases.slice(0, 5).map((c: any) => (
+            ) : todayCases.map((c: any) => (
               <CaseRow key={c.id} c={c} onClick={() => router.push(`/cases/${c.id}`)} />
             ))}
           </Section>
@@ -344,27 +353,14 @@ function OfficerDashboard({ user }: { user: any }) {
 
           {/* My cases with promises due soon */}
           <Section title="Premtime Afër Skadencës" sub="Premtime aktive që skadojnë brenda 7 ditëve" action="Shiko të gjitha" onAction={() => router.push("/cases?view=all_promises")}>
-            {casesLoading ? <RowSkeleton n={3} /> :
-              allCases.filter((c: any) => {
-                const p = c.latestPromise;
-                if (!p?.promiseDate) return false;
-                const d = new Date(p.promiseDate);
-                const diff = (d.getTime() - now.getTime()) / 86400000;
-                return diff >= 0 && diff <= 7;
-              }).slice(0, 5).length === 0 ? (
+            {soonLoading ? <RowSkeleton n={3} /> : soonCases.length === 0 ? (
               <EmptyRow message="Nuk ka premtime afër skadencës" />
-            ) : allCases.filter((c: any) => {
-                const p = c.latestPromise;
-                if (!p?.promiseDate) return false;
-                const d = new Date(p.promiseDate);
-                const diff = (d.getTime() - now.getTime()) / 86400000;
-                return diff >= 0 && diff <= 7;
-              }).slice(0, 5).map((c: any) => {
+            ) : soonCases.map((c: any) => {
               const p = c.latestPromise;
-              const due = new Date(p.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+              const due = p?.promiseDate ? new Date(p.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" }) : null;
               return (
                 <CaseRow key={c.id} c={c}
-                  note={`${due} · ${p.promisedAmount ? fmtShort(p.promisedAmount) : ""}`}
+                  note={due ? `${due}${p?.promisedAmount ? ` · ${fmtShort(p.promisedAmount)}` : ""}` : undefined}
                   onClick={() => router.push(`/cases/${c.id}`)} />
               );
             })}

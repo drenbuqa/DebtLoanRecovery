@@ -26,8 +26,10 @@ export class PerformanceController {
   institutions(@Query() q: any, @Req() req: any) {
     const user = req.user;
     let officerId: string | undefined;
+    let officeId: string | undefined = q.officeId;
     if (user?.role === 'OFFICER') { officerId = user.id; }
-    return this.svc.institutionStats({ from: q.from, to: q.to, institutionId: q.institutionId, officerId });
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    return this.svc.institutionStats({ from: q.from, to: q.to, institutionId: q.institutionId, officerId, officeId });
   }
 
   @Get('activity-trend')
