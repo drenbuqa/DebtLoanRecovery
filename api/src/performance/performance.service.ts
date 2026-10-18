@@ -264,7 +264,7 @@ export class PerformanceService {
               COALESCE(SUM(l.original_loan_amount), 0)::text AS original
             FROM cases c
             JOIN loans l ON l.id = c.loan_id
-            WHERE c.assigned_officer_id = ${oid}
+            WHERE c.assigned_officer_id = ${oid}::uuid
             GROUP BY l.institution_id
           `
         : offid
@@ -277,7 +277,7 @@ export class PerformanceService {
               COALESCE(SUM(l.original_loan_amount), 0)::text AS original
             FROM cases c
             JOIN loans l ON l.id = c.loan_id
-            WHERE (c.office_id = ${offid} OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}))
+            WHERE (c.office_id = ${offid}::uuid OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}::uuid))
             GROUP BY l.institution_id
           `
         : this.prisma.$queryRaw<{ institution_id: string; total: string; active: string; outstanding: string; original: string }[]>`
@@ -298,7 +298,7 @@ export class PerformanceService {
             JOIN cases c ON c.id = p.case_id
             JOIN loans l ON l.id = c.loan_id
             WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
-              AND p.voided_at IS NULL AND p.officer_id = ${oid}
+              AND p.voided_at IS NULL AND p.officer_id = ${oid}::uuid
             GROUP BY l.institution_id
           `
         : offid
@@ -309,7 +309,7 @@ export class PerformanceService {
             JOIN loans l ON l.id = c.loan_id
             WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
               AND p.voided_at IS NULL
-              AND (c.office_id = ${offid} OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}))
+              AND (c.office_id = ${offid}::uuid OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}::uuid))
             GROUP BY l.institution_id
           `
         : this.prisma.$queryRaw<{ institution_id: string; total: string }[]>`
@@ -328,7 +328,7 @@ export class PerformanceService {
             JOIN cases c ON c.id = a.case_id
             JOIN loans l ON l.id = c.loan_id
             WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-              AND a.officer_id = ${oid}
+              AND a.officer_id = ${oid}::uuid
             GROUP BY l.institution_id
           `
         : offid
@@ -338,7 +338,7 @@ export class PerformanceService {
             JOIN cases c ON c.id = a.case_id
             JOIN loans l ON l.id = c.loan_id
             WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-              AND (c.office_id = ${offid} OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}))
+              AND (c.office_id = ${offid}::uuid OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${offid}::uuid))
             GROUP BY l.institution_id
           `
         : this.prisma.$queryRaw<{ institution_id: string; cnt: string }[]>`
@@ -379,8 +379,18 @@ export class PerformanceService {
     const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 90 ? 'week' : 'month';
 
     const actWhere: any = { occurredAt: { gte: from, lte: to } };
-    if (query.officerId) actWhere.officerId = query.officerId;
-    if (query.officeId)  actWhere.case = { officeId: query.officeId };
+    if (query.officerId) {
+      actWhere.officerId = query.officerId;
+    } else if (query.officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      actWhere.case = officerIds.length > 0
+        ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+        : { officeId: query.officeId };
+    }
 
     const activities = await this.prisma.activity.findMany({
       where: actWhere,

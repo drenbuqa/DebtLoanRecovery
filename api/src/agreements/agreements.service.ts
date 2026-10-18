@@ -75,8 +75,18 @@ export class AgreementsService {
     // Map CANCELLED → BROKEN so legacy records surface under the right filter
     const statusFilter = query.status === 'CANCELLED' ? 'BROKEN' : query.status;
     if (statusFilter)   where.status  = statusFilter;
-    if (query.officerId) where.case = { assignedOfficerId: query.officerId };
-    if (query.officeId)  where.case = { ...where.case, officeId: query.officeId };
+    if (query.officerId) {
+      where.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      where.case = officerIds.length > 0
+        ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+        : { officeId: query.officeId };
+    }
 
     // Date filtering: for COMPLETED use installment paidAt; for others use createdAt
     if (query.dateFrom || query.dateTo) {

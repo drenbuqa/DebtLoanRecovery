@@ -15,8 +15,12 @@ export class ReportsController {
   }
 
   @Get('portfolio/pdf')
-  portfolio(@Query('officeId') officeId: string, @Query('status') status: string, @Res() res: Response) {
-    return this.svc.portfolioPdf({ officeId, status }, res);
+  portfolio(@Query('officeId') officeId: string, @Query('status') status: string, @Req() req: Request, @Res() res: Response) {
+    const user = (req as any).user;
+    let officerId: string | undefined;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER') { officeId = user.officeId; }
+    return this.svc.portfolioPdf({ officeId, officerId, status }, res);
   }
 
   @Get('payments/csv')
@@ -24,9 +28,14 @@ export class ReportsController {
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
     @Query('officeId') officeId: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
-    return this.svc.paymentsCsv({ dateFrom, dateTo, officeId }, res);
+    const user = (req as any).user;
+    let officerId: string | undefined;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER') { officeId = user.officeId; }
+    return this.svc.paymentsCsv({ dateFrom, dateTo, officeId, officerId }, res);
   }
 
   @Get('activities/csv')
@@ -35,8 +44,12 @@ export class ReportsController {
     @Query('dateTo') dateTo: string,
     @Query('officeId') officeId: string,
     @Query('officerId') officerId: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
+    const user = (req as any).user;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
     return this.svc.activitiesCsv({ dateFrom, dateTo, officeId, officerId }, res);
   }
 

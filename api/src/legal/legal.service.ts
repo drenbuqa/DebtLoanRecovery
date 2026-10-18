@@ -25,13 +25,24 @@ const LP_SELECT = {
 export class LegalService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: { page?: number; limit?: number; status?: string; view?: string; officeId?: string }) {
+  async findAll(query: { page?: number; limit?: number; status?: string; view?: string; officeId?: string; officerId?: string }) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 25, 100);
     const skip = (page - 1) * limit;
     const where: any = {};
-    if (query.status)   where.status = query.status;
-    if (query.officeId) where.case   = { officeId: query.officeId };
+    if (query.status)    where.status = query.status;
+    if (query.officerId) {
+      where.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      where.case = officerIds.length > 0
+        ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+        : { officeId: query.officeId };
+    }
     // "initiated" view: INITIATED + IN_PROGRESS (active cases not yet in hearing phase)
     if (query.view === 'initiated') {
       where.status = { in: ['INITIATED', 'IN_PROGRESS'] };

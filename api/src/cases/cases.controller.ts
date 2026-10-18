@@ -9,7 +9,12 @@ export class CasesController {
   constructor(private svc: CasesService) {}
 
   @Get('dashboard-stats')
-  dashboardStats(@Query('officeId') officeId?: string, @Query('officerId') officerId?: string) { return this.svc.getDashboardStats(officeId, officerId); }
+  dashboardStats(@Query('officeId') officeId?: string, @Query('officerId') officerId?: string, @Request() req: any) {
+    const user = req.user;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER') { officeId = user.officeId; officerId = undefined; }
+    return this.svc.getDashboardStats(officeId, officerId);
+  }
 
   @Get('search-person')
   searchPerson(@Query('personalId') personalId: string) {

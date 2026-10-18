@@ -100,7 +100,16 @@ export class ActivitiesService {
     const where: any = {};
     if (query.caseId)    where.caseId = query.caseId;
     if (query.officerId) where.officerId = query.officerId;
-    if (query.officeId)  where.case = { officeId: query.officeId };
+    if (query.officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      where.case = officerIds.length > 0
+        ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+        : { officeId: query.officeId };
+    }
     if (query.activityType) {
       const types = Array.isArray(query.activityType)
         ? query.activityType

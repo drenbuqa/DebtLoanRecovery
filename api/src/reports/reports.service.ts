@@ -30,6 +30,19 @@ function date(d: Date | string | null | undefined): string {
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
+  // ─── Office scope helper ─────────────────────────────────────────────────────
+
+  private async officeCaseWhere(officeId: string) {
+    const officeOfficers = await this.prisma.user.findMany({
+      where: { officeId },
+      select: { id: true },
+    });
+    const officerIds = officeOfficers.map((u) => u.id);
+    return officerIds.length > 0
+      ? { OR: [{ officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+      : { officeId };
+  }
+
   // ─── Case Detail PDF ─────────────────────────────────────────────────────────
 
   async caseDetailPdf(caseId: string, res: Response) {
@@ -137,10 +150,16 @@ export class ReportsService {
 
   // ─── Portfolio Summary PDF ───────────────────────────────────────────────────
 
-  async portfolioPdf(query: { officeId?: string; status?: string }, res: Response) {
+  async portfolioPdf(query: { officeId?: string; officerId?: string; status?: string }, res: Response) {
     const where: any = { deletedAt: null };
-    if (query.officeId) where.officeId = query.officeId;
-    if (query.status)   where.status   = query.status;
+    if (query.officerId) {
+      where.assignedOfficerId = query.officerId;
+    } else if (query.officeId) {
+      const caseFilter = await this.officeCaseWhere(query.officeId);
+      if (!where.AND) where.AND = [];
+      where.AND.push(caseFilter);
+    }
+    if (query.status) where.status = query.status;
 
     const [cases, stats] = await Promise.all([
       this.prisma.case.findMany({
@@ -198,7 +217,7 @@ export class ReportsService {
 
   // ─── CSV Exports ─────────────────────────────────────────────────────────────
 
-  async paymentsCsv(query: { dateFrom?: string; dateTo?: string; officeId?: string }, res: Response) {
+  async paymentsCsv(query: { dateFrom?: string; dateTo?: string; officeId?: string; officerId?: string }, res: Response) {
     const where: any = {};
     if (query.dateFrom || query.dateTo) {
       where.paymentDate = {
@@ -206,7 +225,11 @@ export class ReportsService {
         ...(query.dateTo   && { lte: new Date(query.dateTo) }),
       };
     }
-    if (query.officeId) where.case = { officeId: query.officeId };
+    if (query.officerId) {
+      where.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
 
     const payments = await this.prisma.payment.findMany({
       where,
@@ -252,8 +275,11 @@ export class ReportsService {
         ...(query.dateTo   && { lte: new Date(query.dateTo) }),
       };
     }
-    if (query.officerId) where.officerId = query.officerId;
-    if (query.officeId)  where.case = { officeId: query.officeId };
+    if (query.officerId) {
+      where.officerId = query.officerId;
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
 
     const activities = await this.prisma.activity.findMany({
       where,
@@ -295,8 +321,13 @@ export class ReportsService {
 
   async caseStatusXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = { deletedAt: null };
-    if (query.officerId) where.assignedOfficerId = query.officerId;
-    if (query.officeId)  where.officeId = query.officeId;
+    if (query.officerId) {
+      where.assignedOfficerId = query.officerId;
+    } else if (query.officeId) {
+      const caseFilter = await this.officeCaseWhere(query.officeId);
+      if (!where.AND) where.AND = [];
+      where.AND.push(caseFilter);
+    }
     if (query.dateFrom || query.dateTo) {
       where.createdAt = {};
       if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
@@ -409,8 +440,11 @@ export class ReportsService {
 
   async collectionsXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = { voidedAt: null };
-    if (query.officerId) where.officerId = query.officerId;
-    if (query.officeId)  where.case = { officeId: query.officeId };
+    if (query.officerId) {
+      where.officerId = query.officerId;
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
     if (query.dateFrom || query.dateTo) {
       where.paymentDate = {
         ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
@@ -539,9 +573,12 @@ export class ReportsService {
 
   async agreementStatusXlsx(query: { officerId?: string; officeId?: string; status?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = {};
-    if (query.status)   where.status = query.status;
-    if (query.officerId) where.case = { assignedOfficerId: query.officerId };
-    if (query.officeId)  where.case = { ...(where.case ?? {}), officeId: query.officeId };
+    if (query.status) where.status = query.status;
+    if (query.officerId) {
+      where.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
     if (query.dateFrom || query.dateTo) {
       where.createdAt = {};
       if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
@@ -679,8 +716,11 @@ export class ReportsService {
 
   async overdueInstallmentsXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const agreementWhere: any = { status: { in: ['ACTIVE', 'BROKEN'] } };
-    if (query.officerId) agreementWhere.case = { assignedOfficerId: query.officerId };
-    if (query.officeId)  agreementWhere.case = { ...(agreementWhere.case ?? {}), officeId: query.officeId };
+    if (query.officerId) {
+      agreementWhere.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      agreementWhere.case = await this.officeCaseWhere(query.officeId);
+    }
 
     const installmentWhere: any = { status: 'OVERDUE' };
     if (query.dateFrom || query.dateTo) {
@@ -818,8 +858,11 @@ export class ReportsService {
 
   async legalCasesXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = {};
-    if (query.officerId) where.case = { assignedOfficerId: query.officerId };
-    if (query.officeId)  where.case = { ...(where.case ?? {}), officeId: query.officeId };
+    if (query.officerId) {
+      where.case = { assignedOfficerId: query.officerId };
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
     if (query.dateFrom || query.dateTo) {
       where.createdAt = {};
       if (query.dateFrom) where.createdAt.gte = new Date(query.dateFrom);
@@ -951,8 +994,11 @@ export class ReportsService {
 
   async activityLogXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string }, res: Response) {
     const where: any = {};
-    if (query.officerId) where.officerId = query.officerId;
-    if (query.officeId)  where.case = { officeId: query.officeId };
+    if (query.officerId) {
+      where.officerId = query.officerId;
+    } else if (query.officeId) {
+      where.case = await this.officeCaseWhere(query.officeId);
+    }
     if (query.dateFrom || query.dateTo) {
       where.occurredAt = {
         ...(query.dateFrom && { gte: new Date(query.dateFrom) }),

@@ -269,17 +269,8 @@ export class CasesService {
       where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'ndjekja_radhes') {
-      // Only non-promise activities — promise activities store the promise due date, not a follow-up date
       if (!where.AND) where.AND = [];
-      where.AND.push({
-        activities: {
-          some: {
-            nextActionDate: { gte: today },
-            activityType: { not: 'PROMISE_TO_PAY' as any },
-            OR: [{ outcome: { not: 'PROMISE_RECEIVED' as any } }, { outcome: null }],
-          },
-        },
-      });
+      where.AND.push({ nextActionDate: { gte: today } });
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {

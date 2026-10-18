@@ -56,10 +56,27 @@ export class InstitutionsService {
     return { success: true };
   }
 
-  async stats(query: { from?: string; to?: string } = {}) {
+  async stats(query: { from?: string; to?: string; officeId?: string } = {}) {
     const now = new Date();
     const from = query.from ? new Date(query.from) : new Date(now.getFullYear(), now.getMonth(), 1);
     const to   = query.to   ? new Date(query.to)   : now;
+
+    // When scoped to an office, resolve the full set of visible case IDs first
+    let allowedCaseIds: Set<string> | null = null;
+    if (query.officeId) {
+      const officeOfficers = await this.prisma.user.findMany({
+        where: { officeId: query.officeId },
+        select: { id: true },
+      });
+      const officerIds = officeOfficers.map((u) => u.id);
+      const scopedCases = await this.prisma.case.findMany({
+        where: officerIds.length > 0
+          ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
+          : { officeId: query.officeId },
+        select: { id: true },
+      });
+      allowedCaseIds = new Set(scopedCases.map((c) => c.id));
+    }
 
     // 1. Institutions with all loans
     const institutions = await this.prisma.institution.findMany({
@@ -77,12 +94,14 @@ export class InstitutionsService {
       orderBy: { name: 'asc' },
     });
 
-    // Build a map: institutionId → Set<caseId>
+    // Build a map: institutionId → Set<caseId> (filtered when scoped to an office)
     const instCaseIds = new Map<string, Set<string>>();
     for (const inst of institutions) {
       const ids = new Set<string>();
       for (const loan of inst.loans) {
-        if (loan.case?.id) ids.add(loan.case.id);
+        if (loan.case?.id && (allowedCaseIds === null || allowedCaseIds.has(loan.case.id))) {
+          ids.add(loan.case.id);
+        }
       }
       instCaseIds.set(inst.id, ids);
     }
@@ -124,9 +143,12 @@ export class InstitutionsService {
     // 4. Aggregate per institution
     return institutions.map((inst) => {
       const caseIds = instCaseIds.get(inst.id) ?? new Set<string>();
-      const activeCases   = inst.loans.filter((l) => l.case?.status === 'ACTIVE').length;
-      const totalOutstanding = inst.loans.reduce((s, l) => s + Number(l.currentOutstandingBalance), 0);
-      const totalOriginal    = inst.loans.reduce((s, l) => s + Number(l.originalLoanAmount ?? 0), 0);
+      const scopedLoans = allowedCaseIds
+        ? inst.loans.filter((l) => l.case?.id && allowedCaseIds!.has(l.case.id))
+        : inst.loans;
+      const activeCases   = scopedLoans.filter((l) => l.case?.status === 'ACTIVE').length;
+      const totalOutstanding = scopedLoans.reduce((s, l) => s + Number(l.currentOutstandingBalance), 0);
+      const totalOriginal    = scopedLoans.reduce((s, l) => s + Number(l.originalLoanAmount ?? 0), 0);
 
       const pyms = periodPayments.filter((p) => caseIds.has(p.caseId));
       const acts = periodActivities.filter((a) => caseIds.has(a.caseId));
@@ -136,7 +158,7 @@ export class InstitutionsService {
 
       return {
         id: inst.id, name: inst.name, shortName: inst.shortName,
-        totalLoans: inst.loans.length,
+        totalLoans: scopedLoans.length,
         totalCases: caseIds.size,
         activeCases,
         totalOutstanding,
