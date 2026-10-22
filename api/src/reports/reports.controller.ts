@@ -61,8 +61,7 @@ export class ReportsController {
   caseStatusXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
     const user = (req as any).user;
     let { officerId, officeId } = q;
-    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
-    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.caseStatusXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
@@ -70,8 +69,7 @@ export class ReportsController {
   collectionsXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
     const user = (req as any).user;
     let { officerId, officeId } = q;
-    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
-    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.collectionsXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
   }
 
@@ -106,8 +104,16 @@ export class ReportsController {
   activityLogXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
     const user = (req as any).user;
     let { officerId, officeId } = q;
-    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
-    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.activityLogXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo }, res);
+  }
+
+  @Get('overdue-clients/xlsx')
+  overdueClientsXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
+    const user = (req as any).user;
+    let officerId: string | undefined = q.officerId;
+    let officeId: string | undefined = q.officeId;
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
+    return this.svc.overdueClientsXlsx({ officerId, officeId }, res);
   }
 }

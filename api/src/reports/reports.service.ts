@@ -375,7 +375,7 @@ export class ReportsService {
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
       // DLR status columns (additional, not in import template)
-      'case_reference', 'case_status', 'collection_stage', 'borxhi_aktual_eur',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status', 'borxhi_aktual_eur',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -420,6 +420,7 @@ export class ReportsService {
         c.caseReference,
         c.status,
         c.collectionStage,
+        (c as any).collectionStatus ?? '',
         Number(c.loan.currentOutstandingBalance ?? 0),
       ];
     });
@@ -488,7 +489,7 @@ export class ReportsService {
 
     const headers = [
       // Payment-specific
-      'payment_reference', 'payment_date', 'payment_amount', 'currency', 'payment_method', 'payment_channel', 'payment_notes',
+      'payment_reference', 'payment_date', 'payment_amount', 'currency', 'payment_channel', 'payment_notes',
       'collecting_officer',
       // Borrower & loan (migration format)
       'personal_id', 'full_name',
@@ -501,7 +502,7 @@ export class ReportsService {
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
-      'case_reference', 'case_status', 'collection_stage',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -554,6 +555,7 @@ export class ReportsService {
         c.caseReference,
         c.status,
         c.collectionStage,
+        (c as any).collectionStatus ?? '',
       ];
     });
 
@@ -635,7 +637,7 @@ export class ReportsService {
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
-      'case_reference', 'case_status', 'collection_stage',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -697,6 +699,7 @@ export class ReportsService {
         c.caseReference,
         c.status,
         c.collectionStage,
+        (c as any).collectionStatus ?? '',
       ];
     });
 
@@ -777,7 +780,7 @@ export class ReportsService {
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
-      'case_reference', 'case_status', 'collection_stage',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -835,6 +838,7 @@ export class ReportsService {
           c.caseReference,
           c.status,
           c.collectionStage,
+          (c as any).collectionStatus ?? '',
         ]);
       }
     }
@@ -919,7 +923,7 @@ export class ReportsService {
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
-      'case_reference', 'case_status', 'collection_stage',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -975,6 +979,7 @@ export class ReportsService {
         c.caseReference,
         c.status,
         c.collectionStage,
+        (c as any).collectionStatus ?? '',
       ];
     });
 
@@ -1043,7 +1048,7 @@ export class ReportsService {
     const headers = [
       // Activity-specific
       'activity_date', 'activity_type', 'channel', 'outcome',
-      'promise_amount', 'next_action_date', 'officer', 'notes',
+      'promise_date', 'promise_amount', 'officer', 'notes',
       // Borrower & loan (migration format)
       'personal_id', 'full_name',
       'phone1', 'phone2', 'address', 'city',
@@ -1055,7 +1060,7 @@ export class ReportsService {
       '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
       '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
       'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
-      'case_reference', 'case_status', 'collection_stage',
+      'case_reference', 'case_status', 'collection_stage', 'collection_status',
     ];
 
     const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
@@ -1071,13 +1076,14 @@ export class ReportsService {
       const g2 = guarantors[1]?.person;
       const co = coBorrower?.person;
 
+      const isPromise = act.activityType === 'PROMISE_TO_PAY' || act.outcome === 'PROMISE_RECEIVED';
       return [
         d(act.occurredAt),
         act.activityType,
         act.channel ?? '',
         act.outcome ?? '',
-        act.promiseAmount != null ? Number(act.promiseAmount) : '',
-        d(act.nextActionDate),
+        isPromise ? d(act.nextActionDate) : '',
+        isPromise && act.promiseAmount != null ? Number(act.promiseAmount) : '',
         act.officer.fullName,
         (act.notes ?? '').replace(/"/g, '""'),
         b.personalId ?? '',
@@ -1109,6 +1115,7 @@ export class ReportsService {
         c.caseReference,
         c.status,
         c.collectionStage,
+        (c as any).collectionStatus ?? '',
       ];
     });
 
@@ -1119,6 +1126,129 @@ export class ReportsService {
 
     const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     const filename = `aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
+  }
+
+  // ─── Overdue Clients Excel ───────────────────────────────────────────────────
+
+  async overdueClientsXlsx(query: { officerId?: string; officeId?: string }, res: Response) {
+    const kosovoDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
+    const today = new Date(kosovoDateStr + 'T00:00:00.000Z');
+
+    const where: any = { deletedAt: null, status: { in: ['ACTIVE', 'LEGAL', 'SUSPENDED'] } };
+    if (query.officerId) {
+      where.assignedOfficerId = query.officerId;
+    } else if (query.officeId) {
+      const caseFilter = await this.officeCaseWhere(query.officeId);
+      if (!where.AND) where.AND = [];
+      where.AND.push(caseFilter);
+    }
+    // Only cases with overdue promises or overdue installments
+    where.OR = [
+      { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } },
+      { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] }, installments: { some: { status: { in: ['PENDING', 'OVERDUE'] }, dueDate: { lt: today } } } } } },
+    ];
+
+    const cases = await this.prisma.case.findMany({
+      where,
+      orderBy: [{ priorityScore: 'desc' }, { updatedAt: 'desc' }],
+      include: {
+        loan: {
+          include: {
+            borrower: {
+              include: {
+                phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 2 },
+              },
+            },
+            institution: true,
+            relatedParties: {
+              include: {
+                person: {
+                  include: {
+                    phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        assignedOfficer: { select: { id: true, fullName: true } },
+        secondaryOfficer: { select: { id: true, fullName: true } },
+        office: { select: { code: true, name: true } },
+        promises: { where: { status: 'PENDING', promiseDate: { lt: today } }, orderBy: { promiseDate: 'asc' }, take: 1 },
+      },
+    });
+
+    const headers = [
+      'personal_id', 'full_name',
+      'phone1', 'phone2', 'address', 'city',
+      'loan_number', 'institution_name',
+      'assigned_officer', 'secondary_officer',
+      'original_loan_amount', 'current_outstanding_balance',
+      'last_payment_date', 'collection_stage', 'collection_status',
+      'oldest_overdue_promise_date', 'oldest_overdue_promise_amount',
+      'office_code',
+      '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
+      '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
+      'case_reference', 'case_status',
+    ];
+
+    const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
+
+    const rows = cases.map((c) => {
+      const b = c.loan.borrower;
+      const phones = b.phones ?? [];
+      const parties = c.loan.relatedParties ?? [];
+      const guarantors = parties.filter((p) => p.role === 'GUARANTOR');
+      const coBorrower = parties.find((p) => p.role === 'CO_BORROWER');
+      const g1 = guarantors[0]?.person;
+      const g2 = guarantors[1]?.person;
+      const co = coBorrower?.person;
+      const oldestPromise = (c as any).promises?.[0];
+
+      return [
+        b.personalId ?? '',
+        b.fullName ?? '',
+        phones[0]?.phoneNumber ?? '',
+        phones[1]?.phoneNumber ?? '',
+        b.address ?? '',
+        b.city ?? '',
+        c.loan.loanNumber ?? '',
+        c.loan.institution?.name ?? '',
+        c.assignedOfficer?.fullName ?? '',
+        c.secondaryOfficer?.fullName ?? '',
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.currentOutstandingBalance ?? 0),
+        d(c.loan.lastPaymentDate),
+        c.collectionStage,
+        (c as any).collectionStatus ?? '',
+        oldestPromise ? d(oldestPromise.promiseDate) : '',
+        oldestPromise ? Number(oldestPromise.promisedAmount) : '',
+        (c.office as any)?.code ?? '',
+        g1?.personalId ?? '',
+        g1?.fullName ?? '',
+        g1?.phones?.[0]?.phoneNumber ?? '',
+        g2?.personalId ?? '',
+        g2?.fullName ?? '',
+        g2?.phones?.[0]?.phoneNumber ?? '',
+        co?.personalId ?? '',
+        co?.fullName ?? '',
+        co?.phones?.[0]?.phoneNumber ?? '',
+        c.caseReference,
+        c.status,
+      ];
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 4, 16) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Klientët në Vonesë');
+
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `klientet-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buf);

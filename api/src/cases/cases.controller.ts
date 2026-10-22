@@ -38,14 +38,10 @@ export class CasesController {
     @Query('to') to?: string,
   ) {
     const user = req.user;
-    // Officers can only see their own cases regardless of query params
-    if (user?.role === 'OFFICER') {
+    // Officers and managers can only see their own assigned cases
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') {
       officerId = user.id;
       officeId = undefined;
-    }
-    // Managers can only see their own office
-    if (user?.role === 'MANAGER' && !officeId) {
-      officeId = user.officeId;
     }
     return this.svc.findAll({
       page: page ? +page : undefined,

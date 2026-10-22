@@ -269,8 +269,21 @@ export class CasesService {
       where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'ndjekja_radhes') {
+      // Show only cases where the case-level nextActionDate is in the future (so the column shows a date)
+      // AND a non-promise activity exists with a matching future nextActionDate.
+      // The dual check prevents old promise-set nextActionDate values from leaking in,
+      // and also prevents activity records whose case.nextActionDate was never updated.
       if (!where.AND) where.AND = [];
       where.AND.push({ nextActionDate: { gte: today } });
+      where.AND.push({
+        activities: {
+          some: {
+            nextActionDate: { gte: today },
+            activityType: { notIn: ['PROMISE_TO_PAY'] as any[] },
+            outcome: { not: 'PROMISE_RECEIVED' as any },
+          },
+        },
+      });
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {

@@ -12,8 +12,7 @@ export class LegalController {
     const user = req.user;
     let officerId: string | undefined;
     let { officeId } = q;
-    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
-    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, status: q.status, view: q.view, officeId, officerId });
   }
 

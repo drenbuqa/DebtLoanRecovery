@@ -20,8 +20,7 @@ export class PaymentsController {
     @Query('dateTo') dateTo?: string,
   ) {
     const user = req.user;
-    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
-    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.findAll({ page: page ? +page : undefined, limit: limit ? +limit : undefined, caseId, officerId, officeId, dateFrom, dateTo });
   }
 
