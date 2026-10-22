@@ -383,4 +383,12 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
+  downloadOverdueClientsXlsx: async (params?: { officerId?: string; officeId?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.officerId) qs.set('officerId', params.officerId);
+    if (params?.officeId) qs.set('officeId', params.officeId);
+    const res = await fetch(`${API_BASE}/reports/overdue-clients/xlsx?${qs}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
+    return res.blob();
+  },
 };

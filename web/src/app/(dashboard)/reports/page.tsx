@@ -12,19 +12,19 @@ import { AccessGuard } from "@/components/AccessGuard";
 const REPORTS = [
   {
     code: "PORTFOLIO_SUMMARY",
-    name: "Gjendja e Klientëve",
-    desc: "Të gjitha klientët aktuale me balancën, statusin dhe fazën e arkëtimit",
+    name: "Klientët e Mi",
+    desc: "Klientët aktualë të portofolit personal me balancën, statusin dhe kategorinë",
     icon: BarChart3,
-    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1 (ID)", "Zyrtari 2 (ID)", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
-    info: "Eksporton klientët me format identik me importin — të gjitha fushat e borrowerit, kredisë, garantorëve dhe ko-huamarrësit. Oficeri shikon vetëm klientët e tij/saj; admini shikon të gjitha.",
+    columns: ["NID", "Emri Mbiemri", "Lindja", "Tel 1", "Tel 2", "Email", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1", "Zyrtari 2", "Shuma Origjinale", "Borxhi Aktual", "DPD", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza", "Kategoria", "Data Pagesës së Fundit"],
+    info: "Eksporton klientët e portofolit personal me format të plotë — zyrtarët, kategoria, qyteti, data e pagesës së fundit. Oficeri shikon vetëm klientët e tij/saj; admini shikon të gjitha.",
   },
   {
-    code: "COLLECTIONS",
-    name: "Raporti i Arkëtimeve",
-    desc: "Pagesat e arkëtuara, të ndara sipas periudhës dhe metodës",
+    code: "MY_PAYMENTS",
+    name: "Raporti me Pagesa të Realizuara",
+    desc: "Pagesat e arkëtuara nga portofoli personal, të ndara sipas periudhës",
     icon: CreditCard,
-    columns: ["Ref. Pagesë", "Data", "Shuma", "Metoda", "Kanali", "Zyrtari Arkëtues", "NID", "Emri", "Tel 1", "Tel 2", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza"],
-    info: "Eksporton pagesat me format të plotë — të dhënat e pagesës plus të gjitha fushat e borrowerit, garantorëve dhe ko-huamarrësit nga formati i migrimit. Oficeri shikon vetëm pagesat e tij/saj.",
+    columns: ["Ref. Pagesë", "Data", "Shuma", "Metoda", "Kanali", "Zyrtari Arkëtues", "NID", "Emri", "Tel 1", "Tel 2", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza", "Kategoria"],
+    info: "Eksporton pagesat e realizuara nga portofoli personal me format të plotë. Oficeri shikon vetëm pagesat e tij/saj; admini shikon të gjitha.",
   },
   {
     code: "AGREEMENT_STATUS",
@@ -52,11 +52,19 @@ const REPORTS = [
   },
   {
     code: "ACTIVITY_LOG",
-    name: "Regjistri i Aktiviteteve",
-    desc: "Të gjitha aktivitetet e regjistruara në periudhën e zgjedhur",
+    name: "Raporti me Aktivitete",
+    desc: "Të gjitha aktivitetet e regjistruara në periudhën e zgjedhur me të dhëna të plota",
     icon: Activity,
-    columns: ["Data", "Lloji", "Kanali", "Rezultati", "Shuma Premtimit", "Oficeri", "NID", "Emri", "Tel 1", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Faza"],
-    info: "Eksporton të gjitha aktivitetet e regjistruara me format të plotë — detajet e aktivitetit plus të gjitha fushat e borrowerit nga formati i migrimit. Oficeri shikon vetëm aktivitetet e tij/saj.",
+    columns: ["Data", "Lloji", "Kanali", "Rezultati", "Data Premtimit", "Shuma Premtimit", "Oficeri", "Zyrtari 2", "NID", "Emri", "Tel 1", "Tel 2 (I siguruar)", "Adresa", "Qyteti", "Nr. Kredisë", "Banka/Institucioni", "Borxhi Aktual", "Garant 1", "Garant 2", "Ko-huamarrësi", "Ref. Klient", "Statusi", "Faza", "Kategoria"],
+    info: "Eksporton të gjitha aktivitetet me format të plotë — detajet e aktivitetit, data e premtimit, telefoni i siguruar, adresa, kategoria plus të gjitha fushat e borrowerit. Oficeri shikon vetëm aktivitetet e tij/saj.",
+  },
+  {
+    code: "OVERDUE_CLIENTS",
+    name: "Klientët në Vonesë",
+    desc: "Klientët me premtime ose këste të vonuara, me të dhëna të plota kontakti",
+    icon: AlertCircle,
+    columns: ["NID", "Emri Mbiemri", "Tel 1", "Tel 2", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Data Premtimit", "Shuma Premtuar", "Garant 1 Emri", "Garant 1 Tel", "Garant 2 Emri", "Garant 2 Tel", "Ref. Klient", "Statusi", "Faza", "Kategoria"],
+    info: "Eksporton klientët me premtime të vonuara ose këste të papaguara — me detaje të plota kontakti, garantorët dhe informacionin e kredisë. Oficeri shikon vetëm klientët e tij/saj.",
   },
 ];
 
@@ -169,6 +177,32 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const a = document.createElement("a");
         a.href = url;
         a.download = `aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
+      } else if (report.code === "MY_PAYMENTS") {
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+        const blob = await reportsApi.downloadCollectionsXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `pagesat-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
+      } else if (report.code === "OVERDUE_CLIENTS") {
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        const blob = await reportsApi.downloadOverdueClientsXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `klientet-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();

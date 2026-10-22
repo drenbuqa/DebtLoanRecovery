@@ -103,7 +103,7 @@ const FAZA_DOT: Record<string, string> = {
 };
 
 // ── Tabs ────────────────────────────────────────────────────
-const TABS = ["Pasqyrë", "Financiar", "Pagesa", "Marrëveshjet", "Juridike", "Dokumenta"];
+const TABS = ["Pasqyrë", "Historia", "Financiar", "Pagesa", "Marrëveshjet", "Juridike", "Dokumenta"];
 
 // ── Activity type options ─────────────────────────────────────
 const ACT_TYPE_OPTIONS = [
@@ -623,6 +623,9 @@ export default function CaseDetailPage() {
   const [caseError, setCaseError] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [allActivities, setAllActivities] = useState<any[]>([]);
+  const [allPayments, setAllPayments] = useState<any[]>([]);
+  const [allActivitiesLoading, setAllActivitiesLoading] = useState(false);
 
   // Documents
   const [docs, setDocs] = useState<any[]>([]);
@@ -711,6 +714,41 @@ export default function CaseDetailPage() {
   useEffect(() => {
     if (activeTab === "Dokumenta") loadDocs();
   }, [activeTab, caseId]);
+
+  useEffect(() => {
+    if (activeTab === "Historia" && allActivities.length === 0 && !allActivitiesLoading) {
+      setAllActivitiesLoading(true);
+      Promise.all([
+        activitiesApi.list(caseId),
+        paymentsApi.list({ caseId, limit: 5000 }),
+      ])
+        .then(([acts, pays]: any) => {
+          setAllActivities(acts ?? []);
+          setAllPayments((pays?.data ?? pays) ?? []);
+        })
+        .catch(() => {})
+        .finally(() => setAllActivitiesLoading(false));
+    }
+  }, [activeTab, caseId]);
+
+  async function exportHistoriaToExcel() {
+    const XLSX = await import("xlsx");
+    const fmt = (d: any) => d ? new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+    const actRows = allActivities.map((a: any) => {
+      const isPromise = a.activityType === "PROMISE_TO_PAY" || a.outcome === "PROMISE_RECEIVED";
+      return { _date: new Date(a.occurredAt ?? 0), "Data": fmt(a.occurredAt), "Lloji": ACT_LABEL[a.activityType] ?? a.activityType, "Zyrtari": a.officer?.fullName ?? "", "Shënimet": a.notes ?? "", "Data e Premtimit": isPromise ? fmt(a.nextActionDate) : "", "Shuma e Premtuar (€)": isPromise && a.promiseAmount ? Number(a.promiseAmount) : "", "Pagesa e Realizuar (€)": "" };
+    });
+    const payRows = allPayments.map((p: any) => ({
+      _date: new Date(p.paymentDate ?? 0), "Data": fmt(p.paymentDate), "Lloji": "Pagesë", "Zyrtari": p.officer?.fullName ?? "", "Shënimet": p.paymentReference ?? p.notes ?? "", "Data e Premtimit": "", "Shuma e Premtuar (€)": "", "Pagesa e Realizuar (€)": Number(p.amount),
+    }));
+    const rows = [...actRows, ...payRows]
+      .sort((a, b) => b._date.getTime() - a._date.getTime())
+      .map(({ _date, ...rest }) => rest);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Historia");
+    XLSX.writeFile(wb, `historia-${caseRef}.xlsx`);
+  }
 
   async function submitUpload() {
     if (!uploadFile) { setUploadError("Ju lutem zgjidhni një skedar."); return; }
@@ -1182,6 +1220,110 @@ export default function CaseDetailPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* HISTORIA */}
+        {activeTab === "Historia" && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-[13px] font-semibold text-gray-900">Historia e Aktiviteteve</h3>
+              <button
+                onClick={exportHistoriaToExcel}
+                disabled={allActivitiesLoading || allActivities.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                <Download size={13} />
+                Eksporto Excel
+              </button>
+            </div>
+            {allActivitiesLoading ? (
+              <div className="py-16 flex justify-center">
+                <RefreshCw size={18} className="text-gray-300 animate-spin" />
+              </div>
+            ) : allActivities.length === 0 ? (
+              <EmptyState icon={Clock} title="Nuk ka aktivitete" description="Nuk ka aktivitete të regjistruara për këtë klient." />
+            ) : (() => {
+              // Merge activities + payments into a single list sorted newest first
+              type Row = { _type: "activity" | "payment"; _date: Date; data: any };
+              const merged: Row[] = [
+                ...allActivities.map((a: any) => ({ _type: "activity" as const, _date: new Date(a.occurredAt ?? 0), data: a })),
+                ...allPayments.map((p: any) => ({ _type: "payment" as const, _date: new Date(p.paymentDate ?? 0), data: p })),
+              ].sort((a, b) => b._date.getTime() - a._date.getTime());
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[12px]">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50">
+                        <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Data</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Lloji</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Zyrtari</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide">Shënimet</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Data Premtimit</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Shuma Premtuar</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-medium text-gray-400 uppercase tracking-wide whitespace-nowrap">Pagesa e Realizuar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {merged.map((row, i) => {
+                        if (row._type === "payment") {
+                          const p = row.data;
+                          return (
+                            <tr key={`pay-${p.id ?? i}`} className="hover:bg-emerald-50/40 transition-colors">
+                              <td className="px-4 py-2.5 whitespace-nowrap text-gray-500">
+                                {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">Pagesë</span>
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap text-gray-500">{p.officer?.fullName ?? "—"}</td>
+                              <td className="px-4 py-2.5 text-gray-500 max-w-[280px]">
+                                <span className="font-mono text-[11px]">{p.paymentReference ?? p.notes ?? "—"}</span>
+                              </td>
+                              <td className="px-4 py-2.5"><span className="text-gray-200">—</span></td>
+                              <td className="px-4 py-2.5"><span className="text-gray-200">—</span></td>
+                              <td className="px-4 py-2.5 whitespace-nowrap text-right">
+                                <span className="font-semibold text-emerald-700 tabular">{formatCurrency(Number(p.amount))}</span>
+                              </td>
+                            </tr>
+                          );
+                        }
+                        const a = row.data;
+                        const isPromise = a.activityType === "PROMISE_TO_PAY" || a.outcome === "PROMISE_RECEIVED";
+                        return (
+                          <tr key={`act-${a.id ?? i}`} className="hover:bg-gray-50/60 transition-colors">
+                            <td className="px-4 py-2.5 whitespace-nowrap text-gray-500">
+                              {a.occurredAt ? new Date(a.occurredAt).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                isPromise ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-600"
+                              }`}>
+                                {ACT_LABEL[a.activityType] ?? a.activityType}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-gray-500">{a.officer?.fullName ?? "—"}</td>
+                            <td className="px-4 py-2.5 text-gray-700 max-w-[280px]">
+                              <span className="line-clamp-2">{a.notes ?? "—"}</span>
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-gray-500">
+                              {isPromise && a.nextActionDate
+                                ? new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })
+                                : <span className="text-gray-200">—</span>}
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap text-right">
+                              {isPromise && a.promiseAmount
+                                ? <span className="font-semibold text-amber-700 tabular">{formatCurrency(Number(a.promiseAmount))}</span>
+                                : <span className="text-gray-200">—</span>}
+                            </td>
+                            <td className="px-4 py-2.5"><span className="text-gray-200">—</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
 

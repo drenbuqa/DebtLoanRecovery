@@ -122,12 +122,12 @@ export function can(role: string | null | undefined, permission: Permission): bo
 
 // Data scoping: OFFICERs only see their own cases/activities
 export function isScopedToSelf(role: string | null | undefined): boolean {
-  return role === "OFFICER";
+  return role === "OFFICER" || role === "MANAGER";
 }
 
-// Office scoping: MANAGERs only see data from their own office
+// Office scoping: no longer used (managers are now personal-scoped like officers)
 export function isScopedToOffice(role: string | null | undefined): boolean {
-  return role === "MANAGER";
+  return false;
 }
 
 // Human-readable role labels and descriptions
