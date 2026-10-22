@@ -223,34 +223,36 @@ export class CasesService {
         { agreements: { some: { status: AGR_ACTIVE, installments: { some: { status: 'PENDING' as any, dueDate: { gte: today, lt: tomorrow } } } } } },
       ]});
     } else if (query.view === 'all_promises') {
-      // On-time: has a PENDING promise/installment due today or future, AND none overdue
+      // On-time: has a PENDING promise/installment due today or future, AND no overdue ones.
+      // Promises may be PENDING or BROKEN (scheduler marks past-due PENDING → BROKEN nightly),
+      // so both statuses must be checked when excluding overdue commitments.
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
         { promises: { some: { status: 'PENDING', promiseDate: { gte: today } } } },
         { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { dueDate: { gte: today }, status: 'PENDING' as any } } } } },
       ]});
-      // NOT (A OR B) = NOT A AND NOT B
-      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
+      where.AND.push({ NOT: { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: today } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'vonesa') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 1–30 days overdue: worst overdue commitment is 1–30 days old
+      // 1–30 days overdue: worst overdue commitment is between 1–30 days past due.
+      // Include BROKEN promises (scheduler marks PENDING → BROKEN nightly for overdue ones).
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
-        { promises: { some: { status: 'PENDING', promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } },
+        { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { gte: thirtyOneDaysAgo, lt: today } } } },
         { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { gte: thirtyOneDaysAgo, lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ]});
-      // NOT (A OR B) = NOT A AND NOT B
-      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } } });
+      where.AND.push({ NOT: { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: thirtyOneDaysAgo } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'premtime_thyera') {
       const thirtyOneDaysAgo = new Date(today);
       thirtyOneDaysAgo.setUTCDate(thirtyOneDaysAgo.getUTCDate() - 30);
-      // 31+ days overdue: has any overdue commitment older than 30 days
+      // 31+ days overdue: has any commitment older than 30 days past due.
+      // Include BROKEN promises (scheduler marks PENDING → BROKEN nightly for overdue ones).
       if (!where.AND) where.AND = [];
       where.AND.push({ OR: [
-        { promises: { some: { status: 'PENDING', promiseDate: { lt: thirtyOneDaysAgo } } } },
+        { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: thirtyOneDaysAgo } } } },
         { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: thirtyOneDaysAgo }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } },
       ]});
     } else if (query.view === 'ndjekja_sot') {
@@ -266,15 +268,13 @@ export class CasesService {
         { promises: { some: { status: 'PENDING', promiseDate: { gte: today, lte: sevenDaysFromNow } } } },
         { agreements: { some: { status: 'ACTIVE' as any, installments: { some: { dueDate: { gte: today, lte: sevenDaysFromNow }, status: 'PENDING' as any } } } } },
       ]});
-      where.AND.push({ NOT: { promises: { some: { status: 'PENDING', promiseDate: { lt: today } } } } });
+      where.AND.push({ NOT: { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: today } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'ndjekja_radhes') {
-      // Show only cases where the case-level nextActionDate is in the future (so the column shows a date)
-      // AND a non-promise activity exists with a matching future nextActionDate.
-      // The dual check prevents old promise-set nextActionDate values from leaking in,
-      // and also prevents activity records whose case.nextActionDate was never updated.
+      // Show only cases that have at least one non-promise activity with a future nextActionDate
+      // (the "Ndjekja e Radhës" optional field on the activity form).
+      // We do NOT use case.nextActionDate because old records may have had it set by promises.
       if (!where.AND) where.AND = [];
-      where.AND.push({ nextActionDate: { gte: today } });
       where.AND.push({
         activities: {
           some: {
