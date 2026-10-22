@@ -436,10 +436,7 @@ const VIEWS = [
 // ── Mobile case card ─────────────────────────────────────────
 function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
   const debtor = c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—";
-  // Only show follow-up date if it's different from the promise date (avoid showing promise date in follow-up column)
-  const nextActionDateStr = c.nextActionDate ? new Date(c.nextActionDate).toISOString().slice(0, 10) : null;
-  const promiseDateStr = c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toISOString().slice(0, 10) : null;
-  const showFollowUp = nextActionDateStr && nextActionDateStr !== promiseDateStr;
+  const showFollowUp = !!c.nextActionDate;
   const nextAction = showFollowUp
     ? new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" })
     : null;
@@ -845,11 +842,7 @@ function CasesPageInner() {
                   const phone = b?.phones?.[0]?.phoneNumber;
                   const fazaLabel: Record<string, string> = { KLIENT_I_RI: "Klienti i Ri", PAKONTAKTUAR: "I Pakontaktuar", ZOTIM_PAGESE: "Zotim Pagese", ME_MARREVESHJE: "Me Marrëveshje", KONTESTIM_BORGJI: "Kontestim Borgji", NUK_PRANON_MARREVESHJE: "Nuk Pranon Marrëveshje", JURIDIKE: "Juridike", TJERA: "Të Tjera" };
                   const latestPromise = c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0];
-                  // Don't show nextActionDate when it equals the promise date — that means it was
-                  // set from a promise activity (old data bug), not from a real follow-up activity.
-                  const nextActionDateStr = c.nextActionDate ? new Date(c.nextActionDate).toISOString().slice(0, 10) : null;
-                  const promiseDateStr = latestPromise?.promiseDate ? new Date(latestPromise.promiseDate).toISOString().slice(0, 10) : null;
-                  const showFollowUp = nextActionDateStr && nextActionDateStr !== promiseDateStr;
+                  const showFollowUp = !!c.nextActionDate;
                   const promiseDaysOverdue = (() => {
                     if (!latestPromise) return 0;
                     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
