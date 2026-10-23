@@ -841,7 +841,7 @@ export default function ImportPage() {
                 ].map(({ col, req, desc }) => (
                   <div key={col} className="flex items-start gap-2 px-3 py-2 hover:bg-gray-50">
                     <span className="font-mono text-[11px] text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded shrink-0 mt-0.5">{col}</span>
-                    {req && <span className="text-[9px] font-bold text-red-500 uppercase tracking-wide shrink-0 mt-1">req</span>}
+                    {req && <span className="text-[9px] font-bold text-red-500 uppercase tracking-wide shrink-0 mt-1">E detyrueshme</span>}
                     <span className="text-gray-500 leading-relaxed">{desc}</span>
                   </div>
                 ))}

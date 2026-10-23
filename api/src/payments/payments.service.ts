@@ -202,6 +202,69 @@ export class PaymentsService {
     return payment;
   }
 
+  async updatePayment(id: string, dto: { amount?: number; paymentDate?: string; paymentChannel?: string; notes?: string }, updatedById: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Pagesa nuk u gjet');
+    if (payment.voidedAt) throw new BadRequestException('Nuk mund të ndryshohet një pagesë e anuluar');
+
+    return this.prisma.$transaction(async (tx) => {
+      const oldAmount = Number(payment.amount);
+      const newAmount = dto.amount !== undefined ? Number(dto.amount) : oldAmount;
+      const amountDiff = newAmount - oldAmount;
+
+      const updated = await tx.payment.update({
+        where: { id },
+        data: {
+          ...(dto.amount !== undefined && { amount: dto.amount }),
+          ...(dto.paymentDate !== undefined && { paymentDate: new Date(dto.paymentDate) }),
+          ...(dto.paymentChannel !== undefined && { paymentChannel: dto.paymentChannel }),
+          ...(dto.notes !== undefined && { notes: dto.notes }),
+        },
+        select: PAYMENT_SELECT,
+      });
+
+      // Adjust outstanding balance if amount changed
+      if (amountDiff !== 0) {
+        const loan = await tx.loan.findFirst({
+          where: { case: { id: payment.caseId } },
+          select: { id: true, currentOutstandingBalance: true },
+        });
+        if (loan) {
+          const newBalance = Math.max(0, Number(loan.currentOutstandingBalance) - amountDiff);
+          await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: newBalance } });
+          await tx.loanBalanceHistory.create({
+            data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: newBalance, source: 'ADJUSTMENT', recordedById: updatedById },
+          });
+        }
+      }
+
+      return updated;
+    });
+  }
+
+  async deletePayment(id: string, deletedById: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new NotFoundException('Pagesa nuk u gjet');
+
+    return this.prisma.$transaction(async (tx) => {
+      // Restore outstanding balance before deleting
+      const loan = await tx.loan.findFirst({
+        where: { case: { id: payment.caseId } },
+        select: { id: true, currentOutstandingBalance: true },
+      });
+      if (loan && !payment.voidedAt) {
+        const restored = Number(loan.currentOutstandingBalance) + Number(payment.amount);
+        await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: restored } });
+        await tx.loanBalanceHistory.create({
+          data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: restored, source: 'VOID', recordedById: deletedById },
+        });
+      }
+
+      await tx.payment.delete({ where: { id } });
+      return { success: true };
+    });
+  }
+
   async voidPayment(id: string, reason: string, voidedById: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id } });
     if (!payment) throw new NotFoundException('Pagesa nuk u gjet');

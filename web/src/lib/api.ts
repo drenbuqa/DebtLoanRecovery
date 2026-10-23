@@ -162,6 +162,10 @@ export const payments = {
     req('/payments', { method: 'POST', body: JSON.stringify(data) }),
   void: (id: string, reason: string) =>
     req(`/payments/${id}/void`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+  update: (id: string, data: any) =>
+    req(`/payments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    req(`/payments/${id}`, { method: 'DELETE' }),
 };
 
 // Agreements

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 import { RegisterPaymentDto } from './dto/register-payment.dto';
@@ -34,5 +34,17 @@ export class PaymentsController {
   @RequireRoles('ADMIN', 'MANAGER')
   void(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
     return this.svc.voidPayment(id, reason, req.user.id);
+  }
+
+  @Patch(':id')
+  @RequireRoles('ADMIN', 'MANAGER')
+  update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.svc.updatePayment(id, body, req.user.id);
+  }
+
+  @Delete(':id')
+  @RequireRoles('ADMIN', 'MANAGER')
+  delete(@Param('id') id: string, @Request() req: any) {
+    return this.svc.deletePayment(id, req.user.id);
   }
 }
