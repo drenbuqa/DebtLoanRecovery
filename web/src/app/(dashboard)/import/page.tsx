@@ -518,12 +518,16 @@ function ReferencePanel() {
 
 // ── Bulk update panel ──────────────────────────────────────────────────────────
 
-type BulkType = "officer" | "institution" | "city";
+type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2";
 
 const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
-  { key: "officer",     label: "Zyrtar",        desc: "Ndrysho oficerina e klientit" },
-  { key: "institution", label: "Institucioni",   desc: "Ndrysho bankën/institucionin e kredisë" },
-  { key: "city",        label: "Qyteti",         desc: "Ndrysho qytetin e huamarrësit" },
+  { key: "officer",           label: "Zyrtar",           desc: "Ndrysho zyrtar kryesor" },
+  { key: "secondary_officer", label: "Zyrtar i Dytë",    desc: "Ndrysho zyrtar dytësor" },
+  { key: "institution",       label: "Institucioni",     desc: "Ndrysho bankën/institucionin" },
+  { key: "city",              label: "Qyteti",           desc: "Ndrysho qytetin e huamarrësit" },
+  { key: "category",          label: "Kategoria",        desc: "Ndrysho kategorinë (D1–D4, LEGAL)" },
+  { key: "balance",           label: "Borgji",           desc: "Ndrysho borgjin aktual" },
+  { key: "phone2",            label: "Tel. i Dytë",      desc: "Ndrysho numrin e dytë të telefonit" },
 ];
 
 function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; institutions: any[]; cities: any[] }) {
@@ -551,10 +555,10 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
 
   // Reference table for the selected type
   function CodeTable() {
-    if (type === "officer") {
+    if (type === "officer" || type === "secondary_officer") {
       return (
         <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-          {officers.map((o, idx) => (
+          {officers.map((o: any, idx: number) => (
             <div key={o.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
               <span className="w-7 font-mono font-bold text-brand-700 text-center">{o.userCode ?? idx + 1}</span>
               <span className="flex-1 text-gray-800">{o.fullName}</span>
@@ -578,6 +582,25 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
         </div>
       );
     }
+    if (type === "category") {
+      return (
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden">
+          {[["D1","Faza 1"], ["D2","Faza 2"], ["D3","Faza 3"], ["D4","Faza 4"], ["LEGAL","Ligjore"]].map(([code, label]) => (
+            <div key={code} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-12 font-mono font-bold text-brand-700">{code}</span>
+              <span className="flex-1 text-gray-800">{label}</span>
+              <CopyBtn text={code} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (type === "balance") {
+      return <p className="text-[12px] text-gray-500 leading-relaxed">Vendosni shumën e borgjit aktual (numër decimal, p.sh. <span className="font-mono bg-gray-100 px-1 rounded">4500.00</span>) në kolonën e dytë të Excel.</p>;
+    }
+    if (type === "phone2") {
+      return <p className="text-[12px] text-gray-500 leading-relaxed">Vendosni numrin e dytë të telefonit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">044123456</span>) në kolonën e dytë të Excel.</p>;
+    }
     // city
     return (
       <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
@@ -598,7 +621,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
         className="w-full flex items-center justify-between px-5 py-4 text-left">
         <div>
           <div className="text-[14px] font-semibold text-gray-900">Ndryshime të Pjesshme</div>
-          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, institucion ose qytet me ngarkesë Excel</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, institucion, qytet, kategori, borgji ose telefon me ngarkesë Excel</div>
         </div>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
@@ -607,7 +630,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
         <div className="border-t border-gray-100 p-5 space-y-5">
 
           {/* Type selector */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:flex md:flex-wrap">
             {BULK_TYPE_OPTIONS.map(({ key, label, desc }) => (
               <button key={key} onClick={() => { setType(key); reset(); }}
                 className={`px-3 py-3 rounded-xl border text-left transition-all ${
@@ -631,10 +654,12 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
               </p>
               <button
                 onClick={() => {
-                  const colB = type === "officer" ? "Kodi i Zyratarit" : type === "institution" ? "Kodi i Institucionit" : "Kodi i Qytetit";
+                  const colB = type === "officer" ? "Kodi i Zyratarit" : type === "secondary_officer" ? "Kodi i Zyratarit Dytësor" : type === "institution" ? "Kodi i Institucionit" : type === "city" ? "Kodi i Qytetit" : type === "category" ? "Kategoria (D1/D2/D3/D4/LEGAL)" : type === "balance" ? "Borgji Aktual" : "Numri i Telefonit të Dytë";
+                  const ex1 = type === "officer" || type === "secondary_officer" ? 3 : type === "institution" ? 4 : type === "city" ? 19 : type === "category" ? "D2" : type === "balance" ? 4500.00 : "044123456";
+                  const ex2 = type === "officer" || type === "secondary_officer" ? 7 : type === "institution" ? 9 : type === "city" ? 5 : type === "category" ? "D3" : type === "balance" ? 1200.50 : "045654321";
                   const rows = [
-                    { "Numri i Klientit (case_reference)": "Q71234567R", [colB]: type === "officer" ? 3 : type === "institution" ? 4 : 19 },
-                    { "Numri i Klientit (case_reference)": "M31234567N", [colB]: type === "officer" ? 7 : type === "institution" ? 9 : 5 },
+                    { "Numri i Klientit (case_reference)": "Q71234567R", [colB]: ex1 },
+                    { "Numri i Klientit (case_reference)": "M31234567N", [colB]: ex2 },
                     { "Numri i Klientit (case_reference)": "", [colB]: "" },
                   ];
                   downloadExcel(rows, `template-${type}`);
@@ -649,7 +674,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
                     template-{type}.xlsx
                   </div>
                   <div className="text-[11px] text-gray-400 mt-0.5">
-                    {type === "officer" ? "case_reference · kodi i zyratarit" : type === "institution" ? "case_reference · kodi i institucionit" : "case_reference · kodi i qytetit"}
+                    {type === "officer" ? "case_reference · kodi i zyratarit" : type === "secondary_officer" ? "case_reference · kodi i zyratarit dytësor" : type === "institution" ? "case_reference · kodi i institucionit" : type === "city" ? "case_reference · kodi i qytetit" : type === "category" ? "case_reference · kategoria (D1–D4/LEGAL)" : type === "balance" ? "case_reference · borgji aktual" : "case_reference · numri i telefonit të dytë"}
                   </div>
                 </div>
                 <Download size={14} className="text-gray-400 group-hover:text-brand-500 shrink-0 transition-colors" />

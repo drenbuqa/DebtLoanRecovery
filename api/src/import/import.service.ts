@@ -651,7 +651,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'npl'|'institution'|'city', performedById: string) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2', performedById: string) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -675,7 +675,7 @@ export class ImportService {
     }
 
     let officerByCode: Map<number, string> | null = null;
-    if (type === 'officer') {
+    if (type === 'officer' || type === 'secondary_officer') {
       const officers = await this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] as any[] } },
         select: { id: true, userCode: true },
@@ -709,6 +709,35 @@ export class ImportService {
           const officerId = officerByCode!.get(code);
           if (!officerId) { errors.push(`${rowLabel}: kodi i zyrtatit ${code} nuk ekziston`); skipped++; continue; }
           await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
+          updated++;
+        } else if (type === 'secondary_officer') {
+          const code = parseInt(codeRaw);
+          const officerId = officerByCode!.get(code);
+          if (!officerId) { errors.push(`${rowLabel}: kodi i zyrtatit dytësor ${code} nuk ekziston`); skipped++; continue; }
+          await this.prisma.case.update({ where: { id: cas.id }, data: { secondaryOfficerId: officerId } });
+          updated++;
+        } else if (type === 'category') {
+          const val = codeRaw.toUpperCase();
+          const valid = ['D1', 'D2', 'D3', 'D4', 'LEGAL'];
+          if (!valid.includes(val)) { errors.push(`${rowLabel}: kategoria "${codeRaw}" nuk është e vlefshme (D1-D4, LEGAL)`); skipped++; continue; }
+          await this.prisma.case.update({ where: { id: cas.id }, data: { collectionStage: val as any } });
+          updated++;
+        } else if (type === 'balance') {
+          const amount = parseFloat(codeRaw);
+          if (isNaN(amount) || amount < 0) { errors.push(`${rowLabel}: borgji "${codeRaw}" nuk është numër valid`); skipped++; continue; }
+          if (!cas.loanId) { errors.push(`${rowLabel}: rasti "${caseRef}" nuk ka kredi`); skipped++; continue; }
+          await this.prisma.loan.update({ where: { id: cas.loanId }, data: { currentOutstandingBalance: amount } });
+          updated++;
+        } else if (type === 'phone2') {
+          if (!cas.loan?.borrowerId) { errors.push(`${rowLabel}: rasti "${caseRef}" nuk ka huamarrës`); skipped++; continue; }
+          const existing = await this.prisma.personPhone.findFirst({
+            where: { personId: cas.loan.borrowerId, isPrimary: false, isActive: true },
+          });
+          if (existing) {
+            await this.prisma.personPhone.update({ where: { id: existing.id }, data: { phoneNumber: codeRaw } });
+          } else {
+            await this.prisma.personPhone.create({ data: { personId: cas.loan.borrowerId, phoneNumber: codeRaw, isPrimary: false, isActive: true } });
+          }
           updated++;
         } else if (type === 'institution') {
           const code = parseInt(codeRaw);
