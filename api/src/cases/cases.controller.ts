@@ -97,4 +97,10 @@ export class CasesController {
   remove(@Param('id') id: string) {
     return this.svc.deleteCase(id);
   }
+
+  @Post('admin/recalculate-next-action')
+  @RequireRoles('ADMIN')
+  recalculateNextAction() {
+    return this.svc.recalculateAllNextActionDates();
+  }
 }

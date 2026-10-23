@@ -45,9 +45,10 @@ const CASE_LIST_SELECT = {
   assignedOfficer: { select: { id: true, fullName: true } },
   secondaryOfficer: { select: { id: true, fullName: true } },
   office: { select: { id: true, name: true } },
-  // Oldest PENDING promise — this is the most overdue active promise
+  // Oldest active (PENDING or BROKEN) promise — PENDING are on-time, BROKEN are overdue
+  // (scheduler marks PENDING → BROKEN nightly for past-due ones)
   promises: {
-    where: { status: 'PENDING' as any },
+    where: { status: { in: ['PENDING', 'BROKEN'] as any[] } },
     orderBy: { promiseDate: 'asc' as const },
     take: 1,
     select: { id: true, promiseDate: true, promisedAmount: true, status: true, createdAt: true },
@@ -371,6 +372,34 @@ export class CasesService {
     });
     if (!c) throw new NotFoundException('Dosja nuk u gjet');
     return c;
+  }
+
+  async recalculateAllNextActionDates() {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const cases = await this.prisma.case.findMany({ select: { id: true } });
+    let updated = 0;
+    for (const c of cases) {
+      const ndjekja = await this.prisma.activity.findFirst({
+        where: {
+          caseId: c.id,
+          activityType: { not: 'PROMISE_TO_PAY' as any },
+          outcome: { not: 'PROMISE_RECEIVED' as any },
+          nextActionDate: { gte: now },
+        },
+        orderBy: { nextActionDate: 'asc' },
+        select: { nextActionDate: true, notes: true },
+      });
+      await this.prisma.case.update({
+        where: { id: c.id },
+        data: {
+          nextActionDate: ndjekja?.nextActionDate ?? null,
+          nextActionNote: ndjekja?.notes ?? null,
+        },
+      });
+      if (ndjekja?.nextActionDate) updated++;
+    }
+    return { total: cases.length, updated };
   }
 
   async updateNextAction(id: string, dto: { nextActionDate?: string; nextActionNote?: string }) {

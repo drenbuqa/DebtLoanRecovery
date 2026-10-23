@@ -48,14 +48,28 @@ export class ActivitiesService {
 
     const isPromise = dto.activityType === 'PROMISE_TO_PAY' || dto.outcome === 'PROMISE_RECEIVED';
 
-    // Only update the case's follow-up date for non-promise activities.
-    // For promises, nextActionDate is the promise due date — that belongs on PromiseToPay, not the follow-up field.
-    if (dto.nextActionDate && !isPromise) {
-      await this.prisma.case.update({
-        where: { id: dto.caseId },
-        data: { nextActionDate: new Date(dto.nextActionDate), nextActionNote: dto.notes },
-      });
-    }
+    // Recalculate case.nextActionDate from the earliest future non-promise activity.
+    // This runs on every activity creation so the field stays accurate (handles old data,
+    // expired dates, and new activities that don't select a follow-up date).
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const ndjekja = await this.prisma.activity.findFirst({
+      where: {
+        caseId: dto.caseId,
+        activityType: { not: 'PROMISE_TO_PAY' as any },
+        outcome: { not: 'PROMISE_RECEIVED' as any },
+        nextActionDate: { gte: now },
+      },
+      orderBy: { nextActionDate: 'asc' },
+      select: { nextActionDate: true, notes: true },
+    });
+    await this.prisma.case.update({
+      where: { id: dto.caseId },
+      data: {
+        nextActionDate: ndjekja?.nextActionDate ?? null,
+        nextActionNote: ndjekja?.notes ?? null,
+      },
+    });
 
     // Derive collectionStatus from outcome when not explicitly set
     const outcomeStatusMap: Record<string, string> = {
