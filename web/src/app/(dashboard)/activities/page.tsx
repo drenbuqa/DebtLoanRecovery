@@ -313,7 +313,9 @@ export default function ActivitiesPage() {
         activityType: logType,
         outcome: logOutcome || undefined,
         notes: logNotes.trim(),
-        occurredAt: logDate ? new Date(logDate).toISOString() : undefined,
+        occurredAt: logDate
+          ? (logDate === new Date().toISOString().split("T")[0] ? new Date().toISOString() : new Date(logDate).toISOString())
+          : undefined,
         promiseAmount: logPromise ? Number(logPromise) : undefined,
         nextActionDate: (showPromise && logPromiseDate) ? logPromiseDate : (showFollowup && logNextDate) ? logNextDate : undefined,
         updatedAddress: logUpdatedAddress.trim() || undefined,

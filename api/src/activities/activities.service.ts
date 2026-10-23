@@ -29,7 +29,16 @@ export class ActivitiesService {
         channel: dto.channel,
         notes: dto.notes,
         outcome: dto.outcome as ActivityOutcome | undefined,
-        occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : new Date(),
+        occurredAt: (() => {
+          if (!dto.occurredAt) return new Date();
+          const d = new Date(dto.occurredAt);
+          // date-only strings (e.g. "2026-10-23") parse to UTC midnight — replace time with now
+          if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+            const now = new Date();
+            d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds(), 0);
+          }
+          return d;
+        })(),
         ...(dto.nextActionDate && { nextActionDate: new Date(dto.nextActionDate) }),
         ...(dto.promiseAmount && {
           promiseAmount: dto.promiseAmount,

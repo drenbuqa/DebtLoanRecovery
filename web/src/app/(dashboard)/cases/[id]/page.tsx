@@ -217,7 +217,9 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
         activityType: type,
         outcome: outcome || undefined,
         notes,
-        occurredAt: activityDate || undefined,
+        occurredAt: activityDate
+          ? (activityDate === today ? new Date().toISOString() : activityDate)
+          : undefined,
         promiseAmount: promiseAmount ? parseFloat(promiseAmount) : undefined,
         nextActionDate: (showPromise && promiseDate) ? promiseDate : (showFollowup && nextDate) ? nextDate : undefined,
         updatedAddress: updatedAddress.trim() || undefined,
