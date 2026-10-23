@@ -181,12 +181,22 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   const [nextDate, setNextDate] = useState("");
   const [updatedAddress, setUpdatedAddress] = useState("");
   const [updatedPhone, setUpdatedPhone] = useState("");
+  const [updatedPhone2, setUpdatedPhone2] = useState("");
+  const [secondaryOfficerId, setSecondaryOfficerId] = useState("");
+  const [currentBalance, setCurrentBalance] = useState("");
   const [caseCategory, setCaseCategory] = useState("");
   const [collectionStatus, setCollectionStatus] = useState("");
+  const [officers, setOfficers] = useState<{ id: string; fullName: string }[]>([]);
   const [docFile, setDocFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    usersApi.list({ isActive: true }).then((u: any) =>
+      setOfficers((u as any[]).filter((x: any) => x.role === "OFFICER" || x.role === "MANAGER"))
+    ).catch(() => {});
+  }, []);
 
   function handleTypeChange(t: string) {
     setType(t);
@@ -224,6 +234,9 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
         nextActionDate: (showPromise && promiseDate) ? promiseDate : (showFollowup && nextDate) ? nextDate : undefined,
         updatedAddress: updatedAddress.trim() || undefined,
         updatedPhone: updatedPhone.trim() || undefined,
+        updatedPhone2: updatedPhone2.trim() || undefined,
+        secondaryOfficerId: secondaryOfficerId || undefined,
+        currentBalance: currentBalance ? parseFloat(currentBalance) : undefined,
         caseCategory: caseCategory || undefined,
         collectionStatus: type === "PROMISE_TO_PAY" ? undefined : (collectionStatus || undefined),
       });
@@ -303,6 +316,27 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                 <div>
                   <label className={lbl}>Kategoria e Klientit</label>
                   <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} clearable />
+                </div>
+
+                {/* Partial updates: secondary officer, debt, phone 2 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={lbl}>Zyrtari i Dytë</label>
+                    <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId}
+                      placeholder="Pa ndryshim" clearable
+                      options={officers.map((o) => ({ value: o.id, label: o.fullName }))} />
+                  </div>
+                  <div>
+                    <label className={lbl}>Borgji Aktual (EUR)</label>
+                    <input type="number" min="0" step="0.01" value={currentBalance}
+                      onChange={(e) => setCurrentBalance(e.target.value)}
+                      placeholder="Pa ndryshim" className={tinp} />
+                  </div>
+                </div>
+                <div>
+                  <label className={lbl}>Numri i Telefonit të Dytë</label>
+                  <input value={updatedPhone2} onChange={(e) => setUpdatedPhone2(e.target.value)}
+                    placeholder="+383 44 …" className={tinp} />
                 </div>
 
                 {/* Address + Phone side by side when both shown, full width when only phone */}

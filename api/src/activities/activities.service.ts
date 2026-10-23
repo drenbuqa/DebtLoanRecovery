@@ -19,6 +19,10 @@ export class ActivitiesService {
     occurredAt?: string;
     updatedAddress?: string;
     updatedPhone?: string;
+    updatedPhone2?: string;
+    secondaryOfficerId?: string;
+    currentBalance?: number;
+    caseCategory?: string;
     collectionStatus?: string;
   }) {
     const activity = await this.prisma.activity.create({
@@ -97,6 +101,26 @@ export class ActivitiesService {
         where: { id: dto.caseId },
         data: { collectionStatus: autoStatus as any },
       });
+    }
+
+    // Apply partial case/loan/borrower updates registered alongside the activity
+    if (dto.secondaryOfficerId !== undefined) {
+      await this.prisma.case.update({ where: { id: dto.caseId }, data: { secondaryOfficerId: dto.secondaryOfficerId || null } });
+    }
+    if (dto.currentBalance !== undefined) {
+      const c = await this.prisma.case.findUnique({ where: { id: dto.caseId }, select: { loanId: true } });
+      if (c?.loanId) await this.prisma.loan.update({ where: { id: c.loanId }, data: { currentOutstandingBalance: dto.currentBalance } });
+    }
+    if (dto.updatedPhone2 !== undefined) {
+      const c = await this.prisma.case.findUnique({ where: { id: dto.caseId }, select: { loan: { select: { borrowerId: true } } } });
+      if (c?.loan?.borrowerId) {
+        const existing = await this.prisma.personPhone.findFirst({ where: { personId: c.loan.borrowerId, isPrimary: false, isActive: true } });
+        if (existing) {
+          await this.prisma.personPhone.update({ where: { id: existing.id }, data: { phoneNumber: dto.updatedPhone2 } });
+        } else {
+          await this.prisma.personPhone.create({ data: { personId: c.loan.borrowerId, phoneNumber: dto.updatedPhone2, isPrimary: false, isActive: true } });
+        }
+      }
     }
 
     // Create a structured PromiseToPay record for every promise (amount may be 0 if not specified)
