@@ -233,7 +233,7 @@ export class PaymentsService {
           const newBalance = Math.max(0, Number(loan.currentOutstandingBalance) - amountDiff);
           await tx.loan.update({ where: { id: loan.id }, data: { currentOutstandingBalance: newBalance } });
           await tx.loanBalanceHistory.create({
-            data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: newBalance, source: 'ADJUSTMENT', recordedById: updatedById },
+            data: { loanId: loan.id, balanceDate: new Date(), outstandingBalance: newBalance, source: 'MANUAL', recordedById: updatedById },
           });
         }
       }
