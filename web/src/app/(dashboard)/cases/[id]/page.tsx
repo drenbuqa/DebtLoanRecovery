@@ -1290,8 +1290,8 @@ export default function CaseDetailPage() {
                     return (
                       <div key={a.id ?? i} className="flex gap-4 px-5 py-4 group hover:bg-gray-50/60 transition-colors">
                         {/* Icon */}
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isPromise ? "bg-amber-50" : "bg-gray-100"}`}>
-                          <Icon size={14} className={isPromise ? "text-amber-500" : "text-gray-400"} />
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <Icon size={14} className="text-gray-400" />
                         </div>
 
                         {/* Content */}
@@ -1300,7 +1300,7 @@ export default function CaseDetailPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[12.5px] font-semibold text-gray-800">{label}</span>
                             {outcomeLabel && (
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${isPromise ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-500"}`}>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">
                                 {outcomeLabel}
                               </span>
                             )}
@@ -1313,28 +1313,28 @@ export default function CaseDetailPage() {
                           )}
 
                           {/* Extra details row */}
-                          {(isPromise && (a.promiseAmount || a.nextActionDate)) || a.updatedPhone || a.updatedAddress ? (
+                          {(isPromise && (a.promiseAmount || a.nextActionDate)) || (!isPromise && a.nextActionDate) || a.updatedPhone || a.updatedAddress ? (
                             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
                               {isPromise && a.promiseAmount && (
-                                <span className="text-[11px] text-amber-700 font-medium">
-                                  Shuma: {formatCurrency(Number(a.promiseAmount))}
+                                <span className="text-[11px] text-gray-500">
+                                  Shuma premtimit: <span className="font-medium text-gray-700">{formatCurrency(Number(a.promiseAmount))}</span>
                                 </span>
                               )}
                               {isPromise && a.nextActionDate && (
-                                <span className="text-[11px] text-amber-600">
-                                  Data premtimit: {new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                <span className="text-[11px] text-gray-500">
+                                  Data premtimit: <span className="font-medium text-gray-700">{new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
                                 </span>
                               )}
                               {!isPromise && a.nextActionDate && (
-                                <span className="text-[11px] text-brand-600">
-                                  Ndjekja: {new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                <span className="text-[11px] text-gray-500">
+                                  Ndjekja e radhës: <span className="font-medium text-gray-700">{new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
                                 </span>
                               )}
                               {a.updatedPhone && (
-                                <span className="text-[11px] text-gray-500">Tel: {a.updatedPhone}</span>
+                                <span className="text-[11px] text-gray-500">Tel. i siguruar: <span className="font-medium text-gray-700">{a.updatedPhone}</span></span>
                               )}
                               {a.updatedAddress && (
-                                <span className="text-[11px] text-gray-500">Adresa: {a.updatedAddress}</span>
+                                <span className="text-[11px] text-gray-500">Adresa e re: <span className="font-medium text-gray-700">{a.updatedAddress}</span></span>
                               )}
                             </div>
                           ) : null}
