@@ -116,7 +116,7 @@ const ACT_TYPE_OPTIONS = [
   { value: "MEETING_BORROWER", label: "Takim me Huamarresin" },
   { value: "MEETING_GUARANTOR",label: "Takim me Garantorin" },
   { value: "PROMISE_TO_PAY",   label: "Zotim për Pagesë" },
-  { value: "NOTE",             label: "Aktivitete Tjera" },
+  { value: "NOTE",             label: "Aktivitete Tjera / Shënim" },
 ];
 
 const CASE_CATEGORY_OPTIONS = [
@@ -167,7 +167,7 @@ const FOLLOWUP_TYPES = new Set(["CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROW
 // Address relevant when physically present; phone when any contact made; doc upload for formal interactions
 const SHOW_ADDRESS_TYPES = new Set(["VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
 const SHOW_PHONE_TYPES   = new Set(["CALL_BORROWER", "CALL_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "MEETING_BORROWER", "MEETING_GUARANTOR"]);
-const SHOW_DOC_TYPES     = new Set(["WARNING_LETTER", "MEETING_BORROWER", "MEETING_GUARANTOR", "VISIT_BORROWER", "VISIT_GUARANTOR", "OTHER"]);
+const SHOW_DOC_TYPES     = new Set(["WARNING_LETTER", "SMS", "LEGAL_ACTION", "LETTER"]);
 
 // ── Modal: Log Activity ──────────────────────────────────────
 function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onClose: () => void; onSuccess: () => void }) {
@@ -181,22 +181,11 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   const [nextDate, setNextDate] = useState("");
   const [updatedAddress, setUpdatedAddress] = useState("");
   const [updatedPhone, setUpdatedPhone] = useState("");
-  const [updatedPhone2, setUpdatedPhone2] = useState("");
-  const [secondaryOfficerId, setSecondaryOfficerId] = useState("");
-  const [currentBalance, setCurrentBalance] = useState("");
   const [caseCategory, setCaseCategory] = useState("");
-  const [collectionStatus, setCollectionStatus] = useState("");
-  const [officers, setOfficers] = useState<{ id: string; fullName: string }[]>([]);
   const [docFile, setDocFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    usersApi.list({ isActive: true }).then((u: any) =>
-      setOfficers((u as any[]).filter((x: any) => x.role === "OFFICER" || x.role === "MANAGER"))
-    ).catch(() => {});
-  }, []);
 
   function handleTypeChange(t: string) {
     setType(t);
@@ -228,17 +217,13 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
         outcome: outcome || undefined,
         notes,
         occurredAt: activityDate
-          ? (activityDate === today ? new Date().toISOString() : activityDate)
+          ? (activityDate === new Date().toISOString().split("T")[0] ? new Date().toISOString() : new Date(activityDate).toISOString())
           : undefined,
         promiseAmount: promiseAmount ? parseFloat(promiseAmount) : undefined,
         nextActionDate: (showPromise && promiseDate) ? promiseDate : (showFollowup && nextDate) ? nextDate : undefined,
         updatedAddress: updatedAddress.trim() || undefined,
         updatedPhone: updatedPhone.trim() || undefined,
-        updatedPhone2: updatedPhone2.trim() || undefined,
-        secondaryOfficerId: secondaryOfficerId || undefined,
-        currentBalance: currentBalance ? parseFloat(currentBalance) : undefined,
         caseCategory: caseCategory || undefined,
-        collectionStatus: type === "PROMISE_TO_PAY" ? undefined : (collectionStatus || undefined),
       });
       // Upload document to case if attached
       if (docFile) {
@@ -316,27 +301,6 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                 <div>
                   <label className={lbl}>Kategoria e Klientit</label>
                   <Select value={caseCategory} onChange={setCaseCategory} placeholder="Zgjidhni kategorinë…" options={CASE_CATEGORY_OPTIONS} clearable />
-                </div>
-
-                {/* Partial updates: secondary officer, debt, phone 2 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={lbl}>Zyrtari i Dytë</label>
-                    <Select value={secondaryOfficerId} onChange={setSecondaryOfficerId}
-                      placeholder="Pa ndryshim" clearable
-                      options={officers.map((o) => ({ value: o.id, label: o.fullName }))} />
-                  </div>
-                  <div>
-                    <label className={lbl}>Borgji Aktual (EUR)</label>
-                    <input type="number" min="0" step="0.01" value={currentBalance}
-                      onChange={(e) => setCurrentBalance(e.target.value)}
-                      placeholder="Pa ndryshim" className={tinp} />
-                  </div>
-                </div>
-                <div>
-                  <label className={lbl}>Numri i Telefonit të Dytë</label>
-                  <input value={updatedPhone2} onChange={(e) => setUpdatedPhone2(e.target.value)}
-                    placeholder="+383 44 …" className={tinp} />
                 </div>
 
                 {/* Address + Phone side by side when both shown, full width when only phone */}
