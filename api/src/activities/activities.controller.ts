@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, Body, Request, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Patch, Param, Body, Request, Query, UseGuards } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
@@ -24,6 +24,12 @@ export class ActivitiesController {
   @Get('cases/:caseId/activities')
   list(@Param('caseId') caseId: string) {
     return this.svc.findByCaseId(caseId);
+  }
+
+  @Patch('activities/:id')
+  @RequireRoles('ADMIN', 'MANAGER')
+  update(@Param('id') id: string, @Body() body: { notes?: string; channel?: string; occurredAt?: string }) {
+    return this.svc.updateActivity(id, body);
   }
 
   @Delete('activities/:id')

@@ -202,6 +202,23 @@ export class ActivitiesService {
     });
   }
 
+  async updateActivity(id: string, dto: { notes?: string; channel?: string; occurredAt?: string }) {
+    return this.prisma.activity.update({
+      where: { id },
+      data: {
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.channel !== undefined && { channel: dto.channel }),
+        ...(dto.occurredAt !== undefined && { occurredAt: new Date(dto.occurredAt) }),
+      },
+      select: {
+        id: true, activityType: true, channel: true, notes: true,
+        outcome: true, occurredAt: true, nextActionDate: true,
+        promiseAmount: true, updatedAddress: true, updatedPhone: true,
+        officer: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
   async deleteActivity(id: string) {
     await this.prisma.activity.delete({ where: { id } });
     return { success: true };

@@ -50,14 +50,27 @@ function EmptyState({ icon: Icon, title, description, action }: {
 
 // ── Activity icon map ───────────────────────────────────────
 const ACT_ICON: Record<string, any> = {
-  CALL: Phone, VISIT: MapPin, FIELD_VISIT: MapPin, SMS: Phone,
-  EMAIL: Phone, LETTER: Phone, PROMISE_TO_PAY: CheckSquare,
-  PAYMENT_RECEIVED: CreditCard, LEGAL_ACTION: Scale, NOTE: FileText,
+  CALL: Phone, CALL_BORROWER: Phone, CALL_GUARANTOR: Phone,
+  VISIT: MapPin, VISIT_BORROWER: MapPin, VISIT_GUARANTOR: MapPin, FIELD_VISIT: MapPin,
+  MEETING_BORROWER: FileText, MEETING_GUARANTOR: FileText,
+  SMS: Phone, EMAIL: Phone, LETTER: FileText, WARNING_LETTER: FileText,
+  PROMISE_TO_PAY: CheckSquare, PAYMENT_RECEIVED: CreditCard,
+  LEGAL_ACTION: Scale, NOTE: FileText,
 };
 const ACT_LABEL: Record<string, string> = {
-  CALL: "Kontakt", VISIT: "Vizitë", FIELD_VISIT: "Vizitë", SMS: "Kontakt",
-  EMAIL: "Kontakt", LETTER: "Kontakt", PROMISE_TO_PAY: "Premtim Pagese",
-  PAYMENT_RECEIVED: "Pagesë e Regjistruar", LEGAL_ACTION: "Veprim Juridik", NOTE: "Shënim",
+  CALL: "Telefonatë", CALL_BORROWER: "Tel. Huamarrës", CALL_GUARANTOR: "Tel. Garantori",
+  VISIT: "Vizitë", VISIT_BORROWER: "Vizitë Huamarrës", VISIT_GUARANTOR: "Vizitë Garantori",
+  FIELD_VISIT: "Vizitë në Terren",
+  MEETING_BORROWER: "Takim Huamarrës", MEETING_GUARANTOR: "Takim Garantori",
+  SMS: "SMS", EMAIL: "Email", LETTER: "Letër", WARNING_LETTER: "Letërvërejtje",
+  PROMISE_TO_PAY: "Premtim Pagese", PAYMENT_RECEIVED: "Pagesë e Regjistruar",
+  LEGAL_ACTION: "Veprim Juridik", NOTE: "Shënim",
+};
+const OUTCOME_LABEL: Record<string, string> = {
+  CONTACTED: "Kontaktuar", NO_ANSWER: "Nuk u përgjigj",
+  PROMISE_RECEIVED: "Me Premtim", REFUSED: "Ka Refuzuar",
+  DISPUTE: "Ka Kundërshtuar", DECEASED: "I/E Ndjerë",
+  FULL_PAYMENT: "Pagesë e plotë", PARTIAL_PAYMENT: "Pagesë e pjesshme",
 };
 
 // ── Status dot ──────────────────────────────────────────────
@@ -636,6 +649,55 @@ function EditPaymentModal({ payment, onClose, onSaved }: { payment: any; onClose
   );
 }
 
+// ── Edit activity modal ──────────────────────────────────────
+function EditActivityModal({ activity, onClose, onSaved }: { activity: any; onClose: () => void; onSaved: () => void }) {
+  const [notes, setNotes] = useState(activity.notes ?? "");
+  const [date, setDate] = useState(activity.occurredAt ? new Date(activity.occurredAt).toISOString().split("T")[0] : "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!notes.trim()) { setError("Shënimet janë të detyrueshme."); return; }
+    setLoading(true); setError("");
+    try {
+      await activitiesApi.update(activity.id, {
+        notes: notes.trim(),
+        occurredAt: date ? new Date(date).toISOString() : undefined,
+      });
+      onSaved();
+    } catch (e: any) { setError(e.message); setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Aktivitetin</h2>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <div>
+            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Data</label>
+            <DatePicker value={date} onChange={setDate} placeholder="Zgjidhni datën" />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shënime <span className="text-red-500">*</span></label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
+          </div>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
+          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-brand-600 text-white text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── More actions dropdown ────────────────────────────────────
 function MoreMenu({ onAgreement, onStatusUpdate, onEdit, onDelete }: { onAgreement?: () => void; onStatusUpdate?: () => void; onEdit?: () => void; onDelete?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -714,6 +776,7 @@ export default function CaseDetailPage() {
   const [showLogActivity, setShowLogActivity] = useState(false);
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [caseVoidTarget, setCaseVoidTarget] = useState<any>(null);
+  const [editActivityTarget, setEditActivityTarget] = useState<any>(null);
   const [editPaymentTarget, setEditPaymentTarget] = useState<any>(null);
   const [deletePaymentTarget, setDeletePaymentTarget] = useState<any>(null);
   const [deletingPayment, setDeletingPayment] = useState(false);
@@ -968,6 +1031,7 @@ export default function CaseDetailPage() {
       {showAddPayment && <AddPaymentModal caseId={caseId} officerId={user?.id} onClose={() => setShowAddPayment(false)} onSuccess={() => { loadCase(); toast("Pagesa u regjistrua"); }} />}
       {showAgreement && <CreateAgreementModal caseId={caseId} onClose={() => setShowAgreement(false)} onSuccess={() => { loadCase(); toast("Marrëveshja u krijua"); }} />}
       {caseVoidTarget && <CaseVoidModal payment={caseVoidTarget} onClose={() => setCaseVoidTarget(null)} onVoided={() => { setCaseVoidTarget(null); loadCase(); toast("Pagesa u anulua"); }} />}
+      {editActivityTarget && <EditActivityModal activity={editActivityTarget} onClose={() => setEditActivityTarget(null)} onSaved={() => { setEditActivityTarget(null); loadCase(); toast("Aktiviteti u ndryshua"); }} />}
       {editPaymentTarget && <EditPaymentModal payment={editPaymentTarget} onClose={() => setEditPaymentTarget(null)} onSaved={() => { setEditPaymentTarget(null); loadCase(); toast("Pagesa u ndryshua"); }} />}
       {deletePaymentTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setDeletePaymentTarget(null)}>
@@ -1216,35 +1280,87 @@ export default function CaseDetailPage() {
               {activities.length === 0 ? (
                 <EmptyState icon={Clock} title="Nuk ka aktivitete" description="Regjistroni një telefonatë, vizitë ose shënim për të filluar kronologjinë e klientit." action={{ label: "Regjistro Aktivitet", onClick: () => setShowLogActivity(true) }} />
               ) : (
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-gray-100">
                   {activities.map((a: any, i: number) => {
                     const Icon = ACT_ICON[a.activityType] ?? Clock;
                     const label = ACT_LABEL[a.activityType] ?? a.activityType;
                     const dateStr = a.occurredAt ?? a.date;
+                    const isPromise = a.activityType === "PROMISE_TO_PAY" || a.outcome === "PROMISE_RECEIVED";
+                    const outcomeLabel = a.outcome ? (OUTCOME_LABEL[a.outcome] ?? formatEnum(a.outcome)) : null;
                     return (
-                      <div key={a.id ?? i} className="flex gap-3.5 px-5 py-3.5 group">
-                        <div className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Icon size={13} className="text-gray-500" />
+                      <div key={a.id ?? i} className="flex gap-4 px-5 py-4 group hover:bg-gray-50/60 transition-colors">
+                        {/* Icon */}
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isPromise ? "bg-amber-50" : "bg-gray-100"}`}>
+                          <Icon size={14} className={isPromise ? "text-amber-500" : "text-gray-400"} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-[12px] font-semibold text-gray-700">{label}</span>
-                            <span className="text-[11px] text-gray-400">{a.officer?.fullName ?? a.user ?? ""}</span>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          {/* Header row */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[12.5px] font-semibold text-gray-800">{label}</span>
+                            {outcomeLabel && (
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${isPromise ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-500"}`}>
+                                {outcomeLabel}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-gray-400">{a.officer?.fullName ?? ""}</span>
                           </div>
-                          <p className="text-[12.5px] text-gray-600 leading-snug">{a.notes ?? a.text}</p>
-                          {a.outcome && <p className="text-[11px] text-gray-400 mt-0.5">{formatEnum(a.outcome)}</p>}
-                        </div>
-                        <div className="flex items-start gap-2 shrink-0">
-                          <div className="text-[11px] text-gray-400 mt-0.5">
-                            {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : ""}
-                          </div>
-                          {can("activity:delete") && a.id && (
-                            <button onClick={() => deleteActivity(a.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 mt-0.5"
-                              title="Fshi aktivitetin">
-                              <Trash2 size={13} />
-                            </button>
+
+                          {/* Notes */}
+                          {(a.notes ?? a.text) && (
+                            <p className="text-[12.5px] text-gray-600 leading-snug">{a.notes ?? a.text}</p>
                           )}
+
+                          {/* Extra details row */}
+                          {(isPromise && (a.promiseAmount || a.nextActionDate)) || a.updatedPhone || a.updatedAddress ? (
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
+                              {isPromise && a.promiseAmount && (
+                                <span className="text-[11px] text-amber-700 font-medium">
+                                  Shuma: {formatCurrency(Number(a.promiseAmount))}
+                                </span>
+                              )}
+                              {isPromise && a.nextActionDate && (
+                                <span className="text-[11px] text-amber-600">
+                                  Data premtimit: {new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                </span>
+                              )}
+                              {!isPromise && a.nextActionDate && (
+                                <span className="text-[11px] text-brand-600">
+                                  Ndjekja: {new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                </span>
+                              )}
+                              {a.updatedPhone && (
+                                <span className="text-[11px] text-gray-500">Tel: {a.updatedPhone}</span>
+                              )}
+                              {a.updatedAddress && (
+                                <span className="text-[11px] text-gray-500">Adresa: {a.updatedAddress}</span>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {/* Right: date + actions */}
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className="text-[11px] text-gray-400 whitespace-nowrap">
+                            {dateStr ? new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                          </span>
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {can("activity:delete") && a.id && (
+                              <button onClick={() => setEditActivityTarget(a)}
+                                className="p-1.5 text-gray-300 hover:text-brand-500 transition-colors rounded"
+                                title="Ndrysho aktivitetin">
+                                <Pencil size={13} />
+                              </button>
+                            )}
+                            {can("activity:delete") && a.id && (
+                              <button onClick={() => deleteActivity(a.id)}
+                                className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
+                                title="Fshi aktivitetin">
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
