@@ -114,6 +114,7 @@ const CASE_DETAIL_EXTRA = {
     select: {
       id: true, activityType: true, channel: true, notes: true,
       outcome: true, occurredAt: true, nextActionDate: true, promiseAmount: true,
+      updatedAddress: true, updatedPhone: true,
       officer: { select: { id: true, fullName: true } },
     },
   },
