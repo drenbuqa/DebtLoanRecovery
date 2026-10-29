@@ -423,8 +423,8 @@ export class PerformanceService {
     to.setHours(23, 59, 59, 999);
 
     const diffDays = (to.getTime() - from.getTime()) / 86_400_000;
-    // ≤14 days → daily, ≤95 days → weekly (covers "3 months" which is ~92 days), else monthly
-    const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 95 ? 'week' : 'month';
+    // ≤14 days → daily, ≤400 days → weekly (covers 6 months ~183d and this year ~301d), else monthly
+    const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 400 ? 'week' : 'month';
 
     // For week mode, rewind fetch start to the Monday that starts the first bucket.
     // For month mode, rewind to the 1st of the from-month so the first bucket covers the full month.
