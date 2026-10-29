@@ -222,6 +222,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (new Date(promiseDate) <= today) { setError("Data e premtimit duhet të jetë pas datës së sotme"); return; }
     }
+    if (showFollowup && outcome === "CONTACTED" && !nextDate) { setError("Ndjekja e radhës është e detyrueshme për 'Kontaktuar — Pa Premtim'"); return; }
     if (!notes.trim()) { setError("Shënimet janë të detyrueshme"); return; }
     setLoading(true); setError("");
     try {
@@ -305,7 +306,7 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
                 {/* Follow-up date */}
                 {showFollowup && (
                   <div>
-                    <label className={lbl}>Ndjekja e Radhës</label>
+                    <label className={lbl}>Ndjekja e Radhës {outcome === "CONTACTED" && <span className="text-red-500">*</span>}</label>
                     <DatePicker value={nextDate} onChange={setNextDate} placeholder="Zgjidhni datën" minDate={new Date().toISOString().slice(0, 10)} />
                   </div>
                 )}
