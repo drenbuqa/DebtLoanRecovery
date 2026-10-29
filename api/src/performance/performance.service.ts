@@ -195,48 +195,87 @@ export class PerformanceService {
 
   async officeStats(query: { from?: string; to?: string }) {
     const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const to = query.to ? new Date(query.to) : new Date();
+    const toRaw = query.to ? new Date(query.to) : new Date();
+    // Include full day for the `to` date
+    const to = new Date(toRaw); to.setHours(23, 59, 59, 999);
 
-    // 5 queries total regardless of office/case count — no row hydration
-    const [offices, totalCaseCounts, activeCaseCounts, paymentAgg, activityAgg] = await Promise.all([
+    // All queries use COALESCE(c.office_id, u.office_id) so cases with null officeId
+    // are attributed via their assigned officer's office.
+    const [offices, caseAgg, paymentAgg, activityAgg, promiseAgg] = await Promise.all([
       this.prisma.office.findMany({
         where: { isActive: true },
         select: { id: true, name: true, code: true, _count: { select: { users: true } } },
         orderBy: { name: 'asc' },
       }),
-      this.prisma.case.groupBy({ by: ['officeId'], _count: { id: true } }),
-      this.prisma.case.groupBy({ by: ['officeId'], where: { status: 'ACTIVE' }, _count: { id: true } }),
-      // Prisma groupBy can't traverse relations (payment→case→officeId), so raw SQL for these two
-      this.prisma.$queryRaw<{ office_id: string; total: string }[]>`
-        SELECT c.office_id, COALESCE(SUM(p.amount), 0)::text AS total
+      this.prisma.$queryRaw<{ eff_office_id: string; total: string; active: string; outstanding: string }[]>`
+        SELECT
+          COALESCE(c.office_id, u.office_id) AS eff_office_id,
+          COUNT(c.id)::text AS total,
+          COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END)::text AS active,
+          COALESCE(SUM(l.current_outstanding_balance), 0)::text AS outstanding
+        FROM cases c
+        LEFT JOIN users u ON u.id = c.assigned_officer_id
+        LEFT JOIN loans l ON l.id = c.loan_id
+        WHERE COALESCE(c.office_id, u.office_id) IS NOT NULL
+        GROUP BY COALESCE(c.office_id, u.office_id)
+      `,
+      this.prisma.$queryRaw<{ eff_office_id: string; total: string }[]>`
+        SELECT
+          COALESCE(c.office_id, u.office_id) AS eff_office_id,
+          COALESCE(SUM(p.amount), 0)::text AS total
         FROM payments p
         JOIN cases c ON c.id = p.case_id
+        LEFT JOIN users u ON u.id = c.assigned_officer_id
         WHERE p.payment_date >= ${from} AND p.payment_date <= ${to}
           AND p.voided_at IS NULL
-        GROUP BY c.office_id
+          AND COALESCE(c.office_id, u.office_id) IS NOT NULL
+        GROUP BY COALESCE(c.office_id, u.office_id)
       `,
-      this.prisma.$queryRaw<{ office_id: string; cnt: string }[]>`
-        SELECT c.office_id, COUNT(a.id)::text AS cnt
+      this.prisma.$queryRaw<{ eff_office_id: string; cnt: string }[]>`
+        SELECT
+          COALESCE(c.office_id, u.office_id) AS eff_office_id,
+          COUNT(a.id)::text AS cnt
         FROM activities a
         JOIN cases c ON c.id = a.case_id
+        LEFT JOIN users u ON u.id = c.assigned_officer_id
         WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to}
-        GROUP BY c.office_id
+          AND COALESCE(c.office_id, u.office_id) IS NOT NULL
+        GROUP BY COALESCE(c.office_id, u.office_id)
+      `,
+      this.prisma.$queryRaw<{ eff_office_id: string; cnt: string; amount: string }[]>`
+        SELECT
+          COALESCE(c.office_id, u.office_id) AS eff_office_id,
+          COUNT(pt.id)::text AS cnt,
+          COALESCE(SUM(pt.promised_amount), 0)::text AS amount
+        FROM promises_to_pay pt
+        JOIN cases c ON c.id = pt.case_id
+        LEFT JOIN users u ON u.id = c.assigned_officer_id
+        WHERE pt.status = 'PENDING'
+          AND COALESCE(c.office_id, u.office_id) IS NOT NULL
+        GROUP BY COALESCE(c.office_id, u.office_id)
       `,
     ]);
 
-    const totalMap = new Map(totalCaseCounts.map((r) => [r.officeId, r._count.id]));
-    const activeMap = new Map(activeCaseCounts.map((r) => [r.officeId, r._count.id]));
-    const payMap = new Map(paymentAgg.map((r) => [r.office_id, Number(r.total)]));
-    const actMap = new Map(activityAgg.map((r) => [r.office_id, Number(r.cnt)]));
+    const caseMap    = new Map(caseAgg.map((r) => [r.eff_office_id, r]));
+    const payMap     = new Map(paymentAgg.map((r) => [r.eff_office_id, Number(r.total)]));
+    const actMap     = new Map(activityAgg.map((r) => [r.eff_office_id, Number(r.cnt)]));
+    const promiseMap = new Map(promiseAgg.map((r) => [r.eff_office_id, r]));
 
-    return offices.map((o) => ({
-      id: o.id, name: o.name, code: o.code,
-      totalCases: totalMap.get(o.id) ?? 0,
-      activeCases: activeMap.get(o.id) ?? 0,
-      officerCount: o._count.users,
-      collected: payMap.get(o.id) ?? 0,
-      activities: actMap.get(o.id) ?? 0,
-    }));
+    return offices.map((o) => {
+      const c = caseMap.get(o.id);
+      const pr = promiseMap.get(o.id);
+      return {
+        id: o.id, name: o.name, code: o.code,
+        officerCount:    o._count.users,
+        totalCases:      Number(c?.total ?? 0),
+        activeCases:     Number(c?.active ?? 0),
+        outstanding:     Number(c?.outstanding ?? 0),
+        collected:       payMap.get(o.id) ?? 0,
+        activities:      Number(actMap.get(o.id) ?? 0),
+        pendingPromises: Number(pr?.cnt ?? 0),
+        promisedAmount:  Number(pr?.amount ?? 0),
+      };
+    });
   }
 
   async institutionStats(query: { from?: string; to?: string; institutionId?: string; officerId?: string; officeId?: string }) {

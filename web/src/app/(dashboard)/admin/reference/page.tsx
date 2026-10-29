@@ -6,7 +6,7 @@ import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
 import { offices as officesApi, performance as perfApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import { RefreshCw, Plus, X, MapPin, Users, FolderOpen, TrendingUp, Activity, CreditCard } from "lucide-react";
+import { RefreshCw, Plus, X, MapPin, Users, FolderOpen, TrendingUp, Activity, CreditCard, Landmark, AlertCircle } from "lucide-react";
 import { AccessGuard } from "@/components/AccessGuard";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
@@ -140,11 +140,13 @@ function OfficesPageInner() {
   });
 
   // Totals
-  const totalActive    = merged.reduce((s, o) => s + (o.activeCases ?? 0), 0);
-  const totalCases     = merged.reduce((s, o) => s + (o.totalCases ?? o.caseCount ?? 0), 0);
-  const totalCollected = merged.reduce((s, o) => s + (o.collected ?? 0), 0);
-  const totalActivities = merged.reduce((s, o) => s + (o.activities ?? 0), 0);
-  const totalOfficers  = merged.reduce((s, o) => s + (o.officerCount ?? o.userCount ?? 0), 0);
+  const totalActive      = merged.reduce((s, o) => s + (o.activeCases ?? 0), 0);
+  const totalCases       = merged.reduce((s, o) => s + (o.totalCases ?? o.caseCount ?? 0), 0);
+  const totalCollected   = merged.reduce((s, o) => s + (o.collected ?? 0), 0);
+  const totalActivities  = merged.reduce((s, o) => s + (o.activities ?? 0), 0);
+  const totalOfficers    = merged.reduce((s, o) => s + (o.officerCount ?? o.userCount ?? 0), 0);
+  const totalOutstanding = merged.reduce((s, o) => s + (o.outstanding ?? 0), 0);
+  const totalPromises    = merged.reduce((s, o) => s + (o.pendingPromises ?? 0), 0);
 
   const periodLabel = PERFORMANCE_PRESETS.find((p) => p.key === datePreset)?.label ?? "";
 
@@ -178,13 +180,15 @@ function OfficesPageInner() {
         </div>
 
         {/* Summary KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
           {[
-            { label: "Zyra",          value: merged.length },
-            { label: "Oficerë",       value: totalOfficers },
-            { label: "Klient Aktive",  value: totalActive },
-            { label: "I Mbledhur",    value: formatCurrency(totalCollected), emerald: true },
-            { label: "Aktivitete",    value: totalActivities },
+            { label: "Zyra",           value: merged.length },
+            { label: "Oficerë",        value: totalOfficers },
+            { label: "Klientë Aktive", value: totalActive },
+            { label: "Borxhi Total",   value: formatCurrency(totalOutstanding) },
+            { label: "I Mbledhur",     value: formatCurrency(totalCollected) },
+            { label: "Premtime",       value: totalPromises },
+            { label: "Aktivitete",     value: totalActivities },
           ].map((s: any) => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
               <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
@@ -217,12 +221,16 @@ function OfficesPageInner() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {merged.map((o) => {
-              const activeCases  = o.activeCases ?? 0;
-              const totalC       = o.totalCases ?? o.caseCount ?? 0;
-              const collected    = o.collected ?? 0;
-              const activities   = o.activities ?? 0;
-              const officerCount = o.officerCount ?? o.userCount ?? 0;
-              const shareOfTotal = totalCollected > 0 ? (collected / totalCollected) * 100 : 0;
+              const activeCases     = o.activeCases ?? 0;
+              const totalC          = o.totalCases ?? o.caseCount ?? 0;
+              const collected       = o.collected ?? 0;
+              const activities      = o.activities ?? 0;
+              const officerCount    = o.officerCount ?? o.userCount ?? 0;
+              const outstanding     = o.outstanding ?? 0;
+              const pendingPromises = o.pendingPromises ?? 0;
+              const promisedAmount  = o.promisedAmount ?? 0;
+              const shareOfTotal    = totalCollected > 0 ? (collected / totalCollected) * 100 : 0;
+              const shareOfDebt     = totalOutstanding > 0 ? (outstanding / totalOutstanding) * 100 : 0;
 
               return (
                 <div key={o.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-brand-300 hover:shadow-sm transition-all">
@@ -242,22 +250,37 @@ function OfficesPageInner() {
 
                   {/* Stats grid */}
                   <div className="p-4 grid grid-cols-2 gap-2">
-                    <StatCell icon={FolderOpen}  label="Klient Aktive"  value={String(activeCases)} sub={`${totalC} gjithsej`} />
-                    <StatCell icon={Users}        label="Oficerë"       value={String(officerCount)} />
-                    <StatCell icon={CreditCard}   label={`I Mbledhur (${periodLabel})`} value={formatCurrency(collected)} />
-                    <StatCell icon={Activity}     label={`Aktivitete (${periodLabel})`} value={String(activities)} />
+                    <StatCell icon={FolderOpen}   label="Klientë Aktive"              value={String(activeCases)}        sub={`${totalC} gjithsej`} />
+                    <StatCell icon={Users}         label="Oficerë"                     value={String(officerCount)} />
+                    <StatCell icon={Landmark}      label="Borxhi Total"                value={formatCurrency(outstanding)} />
+                    <StatCell icon={CreditCard}    label={`I Mbledhur (${periodLabel})`} value={formatCurrency(collected)} />
+                    <StatCell icon={AlertCircle}   label="Premtime Aktive"             value={String(pendingPromises)}    sub={formatCurrency(promisedAmount)} />
+                    <StatCell icon={Activity}      label={`Aktivitete (${periodLabel})`} value={String(activities)} />
                   </div>
 
                   {/* Share of total collections bar */}
                   {totalCollected > 0 && (
-                    <div className="px-4 pb-4">
-                      <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                        <span>Pjesa e arkëtimeve totale</span>
-                        <span className="font-semibold text-gray-600">{shareOfTotal.toFixed(1)}%</span>
+                    <div className="px-4 pb-4 space-y-2">
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                          <span>Pjesa e arkëtimeve totale</span>
+                          <span className="font-semibold text-gray-600">{shareOfTotal.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${Math.min(shareOfTotal, 100)}%` }} />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${Math.min(shareOfTotal, 100)}%` }} />
-                      </div>
+                      {totalOutstanding > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+                            <span>Pjesa e borxhit total</span>
+                            <span className="font-semibold text-gray-600">{shareOfDebt.toFixed(1)}%</span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-gray-400 rounded-full transition-all" style={{ width: `${Math.min(shareOfDebt, 100)}%` }} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
