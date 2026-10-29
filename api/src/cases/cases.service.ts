@@ -307,8 +307,8 @@ export class CasesService {
         where,
         select: CASE_LIST_SELECT,
         orderBy: query.view === 'ndjekja_radhes'
-          ? [{ nextActionDate: 'asc' as const }]
-          : [{ priorityScore: 'desc' }, { updatedAt: 'desc' }],
+          ? [{ nextActionDate: 'asc' as const }, { loan: { currentOutstandingBalance: 'desc' as const } }]
+          : [{ loan: { currentOutstandingBalance: 'desc' as const } }, { updatedAt: 'desc' as const }],
         skip,
         take: limit,
       }),
