@@ -426,12 +426,15 @@ export class PerformanceService {
     // ≤14 days → daily, ≤95 days → weekly (covers "3 months" which is ~92 days), else monthly
     const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 95 ? 'week' : 'month';
 
-    // For week mode, rewind fetch start to the Monday that starts the first bucket
+    // For week mode, rewind fetch start to the Monday that starts the first bucket.
+    // For month mode, rewind to the 1st of the from-month so the first bucket covers the full month.
     let fetchFrom = new Date(from);
     if (mode === 'week') {
       const dow = fetchFrom.getDay();
       fetchFrom.setDate(fetchFrom.getDate() - (dow === 0 ? 6 : dow - 1));
       fetchFrom.setHours(0, 0, 0, 0);
+    } else if (mode === 'month') {
+      fetchFrom = new Date(from.getFullYear(), from.getMonth(), 1);
     }
 
     const actWhere: any = { occurredAt: { gte: fetchFrom, lte: to } };
