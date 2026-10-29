@@ -468,7 +468,7 @@ function CaseCard({ c, onClick }: { c: any; onClick: () => void }) {
         </div>
         <div>
           <div className="text-[9px] text-gray-400 uppercase tracking-wide font-medium mb-0.5">Ndjekja e Radhës</div>
-          <div className={`text-[13px] font-bold ${nextAction ? "text-gray-700" : "text-gray-300"}`}>
+          <div className={`text-[13px] font-bold ${isOverdue ? "text-red-500" : nextAction ? "text-gray-700" : "text-gray-300"}`}>
             {nextAction ?? "—"}
           </div>
         </div>
@@ -921,16 +921,19 @@ function CasesPageInner() {
                         ) : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {showFollowUp ? (
-                          <div>
-                            <div className="text-[11px] font-medium text-gray-700">
-                              {new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                        {showFollowUp ? (() => {
+                          const overdue = new Date(c.nextActionDate) < new Date();
+                          return (
+                            <div>
+                              <div className={`text-[11px] font-medium ${overdue ? "text-red-500" : "text-gray-700"}`}>
+                                {new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                              </div>
+                              {c.nextActionNote && (
+                                <div className="text-[10px] text-gray-400 truncate max-w-[120px]">{c.nextActionNote}</div>
+                              )}
                             </div>
-                            {c.nextActionNote && (
-                              <div className="text-[10px] text-gray-400 truncate max-w-[120px]">{c.nextActionNote}</div>
-                            )}
-                          </div>
-                        ) : <span className="text-gray-300">—</span>}
+                          );
+                        })() : <span className="text-gray-300">—</span>}
                       </td>
                       {can("case:delete") && (
                         <td className="px-2 py-2">
