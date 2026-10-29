@@ -6,6 +6,13 @@ import { useFormErrors } from "@/lib/form";
 import Topbar from "@/components/layout/Topbar";
 import { offices as officesApi, performance as perfApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
+
+function fmtShort(v: number) {
+  if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 10_000)    return `€${(v / 1_000).toFixed(0)}k`;
+  if (v >= 1_000)     return `€${(v / 1_000).toFixed(1)}k`;
+  return `€${v.toFixed(0)}`;
+}
 import { RefreshCw, Plus, X, MapPin, Users, FolderOpen, TrendingUp, Activity, CreditCard, Landmark, AlertCircle } from "lucide-react";
 import { AccessGuard } from "@/components/AccessGuard";
 import { useAuth } from "@/lib/auth";
@@ -185,14 +192,14 @@ function OfficesPageInner() {
             { label: "Zyra",           value: merged.length },
             { label: "Oficerë",        value: totalOfficers },
             { label: "Klientë Aktive", value: totalActive },
-            { label: "Borxhi Total",   value: formatCurrency(totalOutstanding) },
-            { label: "I Mbledhur",     value: formatCurrency(totalCollected) },
+            { label: "Borxhi Total",   value: fmtShort(totalOutstanding) },
+            { label: "I Mbledhur",     value: fmtShort(totalCollected) },
             { label: "Premtime",       value: totalPromises },
             { label: "Aktivitete",     value: totalActivities },
           ].map((s: any) => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-4 py-4 min-w-0" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide truncate">{s.label}</div>
-              <div className="font-bold tabular leading-tight mt-1.5 text-gray-900 truncate" style={{ fontSize: String(s.value).length > 12 ? "14px" : String(s.value).length > 9 ? "17px" : "22px" }}>{s.value}</div>
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{s.label}</div>
+              <div className="text-[22px] font-bold tabular leading-tight mt-1.5 text-gray-900">{s.value}</div>
             </div>
           ))}
         </div>
