@@ -305,6 +305,7 @@ export default function ActivitiesPage() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       if (new Date(logPromiseDate) <= today) { setLogError("Data e premtimit duhet të jetë pas datës së sotme."); return; }
     }
+    if (showFollowup && logOutcome === "CONTACTED" && !logNextDate) { setLogError("Ndjekja e radhës është e detyrueshme për 'Kontaktuar — Pa Premtim'."); return; }
     if (!logNotes.trim()) { setLogError("Shënimet janë të detyrueshme."); return; }
     setLogging(true); setLogError("");
     try {
@@ -469,7 +470,7 @@ export default function ActivitiesPage() {
                       )}
                       {showFollowup && (
                         <div>
-                          <label className={lbl}>Ndjekja e Radhës</label>
+                          <label className={lbl}>Ndjekja e Radhës {logOutcome === "CONTACTED" && <span className="text-red-500">*</span>}</label>
                           <DatePicker value={logNextDate} onChange={setLogNextDate} placeholder="Zgjidhni datën" minDate={new Date().toISOString().slice(0, 10)} />
                         </div>
                       )}
