@@ -412,13 +412,28 @@ export class PerformanceService {
     const CALL_TYPES  = ['CALL', 'CALL_BORROWER', 'CALL_GUARANTOR', 'SMS', 'WARNING_LETTER'];
     const VISIT_TYPES = ['VISIT', 'FIELD_VISIT', 'VISIT_BORROWER', 'VISIT_GUARANTOR', 'MEETING_BORROWER', 'MEETING_GUARANTOR'];
 
-    const from = query.from ? new Date(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const to   = query.to   ? new Date(query.to)   : new Date();
+    // Parse date-only strings as local midnight to avoid UTC day-shift
+    const parseDate = (s: string) => {
+      const parts = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return parts ? new Date(+parts[1], +parts[2] - 1, +parts[3]) : new Date(s);
+    };
+    const from = query.from ? parseDate(query.from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const to   = query.to   ? parseDate(query.to)   : new Date();
+    // Make `to` inclusive: cover the full last day
+    to.setHours(23, 59, 59, 999);
 
     const diffDays = (to.getTime() - from.getTime()) / 86_400_000;
     const mode: 'day' | 'week' | 'month' = diffDays <= 14 ? 'day' : diffDays <= 90 ? 'week' : 'month';
 
-    const actWhere: any = { occurredAt: { gte: from, lte: to } };
+    // For week mode, rewind fetch start to the Monday that starts the first bucket
+    let fetchFrom = new Date(from);
+    if (mode === 'week') {
+      const dow = fetchFrom.getDay();
+      fetchFrom.setDate(fetchFrom.getDate() - (dow === 0 ? 6 : dow - 1));
+      fetchFrom.setHours(0, 0, 0, 0);
+    }
+
+    const actWhere: any = { occurredAt: { gte: fetchFrom, lte: to } };
     if (query.officerId) {
       actWhere.officerId = query.officerId;
     } else if (query.officeId) {
@@ -438,28 +453,36 @@ export class PerformanceService {
       orderBy: { occurredAt: 'asc' },
     });
 
+    // Local-date helper: "YYYY-MM-DD"
+    const localDay = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // Local-month helper: "YYYY-MM"
+    const localMonth = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
     type Bucket = { label: string; key: string; calls: number; visits: number; other: number };
     const buckets: Bucket[] = [];
 
     if (mode === 'day') {
       const d = new Date(from); d.setHours(0, 0, 0, 0);
-      const end = new Date(to); end.setHours(23, 59, 59, 999);
+      const end = new Date(to);
       while (d <= end) {
-        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: d.toISOString().slice(0, 10), calls: 0, visits: 0, other: 0 });
+        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: localDay(d), calls: 0, visits: 0, other: 0 });
         d.setDate(d.getDate() + 1);
       }
     } else if (mode === 'week') {
-      const d = new Date(from); d.setHours(0, 0, 0, 0);
-      const day = d.getDay();
-      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // rewind to Monday
+      const d = new Date(fetchFrom);
       while (d <= to) {
-        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: d.toISOString().slice(0, 10), calls: 0, visits: 0, other: 0 });
+        buckets.push({ label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`, key: localDay(d), calls: 0, visits: 0, other: 0 });
         d.setDate(d.getDate() + 7);
       }
     } else {
       const d = new Date(from.getFullYear(), from.getMonth(), 1);
       while (d <= to) {
-        buckets.push({ label: MONTH_SHORT[d.getMonth()], key: d.toISOString().slice(0, 7), calls: 0, visits: 0, other: 0 });
+        const yearSuffix = d.getFullYear() !== from.getFullYear() || buckets.length > 0 && d.getMonth() === 0
+          ? ` '${String(d.getFullYear()).slice(2)}`
+          : '';
+        buckets.push({ label: MONTH_SHORT[d.getMonth()] + yearSuffix, key: localMonth(d), calls: 0, visits: 0, other: 0 });
         d.setMonth(d.getMonth() + 1);
       }
     }
@@ -468,14 +491,14 @@ export class PerformanceService {
       const d = new Date(act.occurredAt);
       let key: string;
       if (mode === 'day') {
-        key = d.toISOString().slice(0, 10);
+        key = localDay(d);
       } else if (mode === 'week') {
         const dow = d.getDay();
         const mon = new Date(d); mon.setHours(0, 0, 0, 0);
         mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-        key = mon.toISOString().slice(0, 10);
+        key = localDay(mon);
       } else {
-        key = d.toISOString().slice(0, 7);
+        key = localMonth(d);
       }
       const bucket = buckets.find((b) => b.key === key);
       if (!bucket) continue;

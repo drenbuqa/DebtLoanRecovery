@@ -66,7 +66,7 @@ function OfficerTable({ officers, role }: { officers: any[]; role: "primary" | "
                 <Td><span className="tabular text-gray-700">{s.promises}</span></Td>
                 <Td><span className="tabular text-gray-600">{formatCurrency(s.promiseAmount)}</span></Td>
                 <Td>
-                  <span className={`tabular font-semibold ${s.collectedAmount > 0 ? "text-emerald-700" : "text-gray-400"}`}>
+                  <span className={`tabular font-semibold ${s.collectedAmount > 0 ? "text-gray-900" : "text-gray-400"}`}>
                     {formatCurrency(s.collectedAmount)}
                   </span>
                 </Td>
