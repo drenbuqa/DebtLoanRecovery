@@ -481,7 +481,12 @@ export class ImportService {
     // Process in background — do not await
     setImmediate(() => {
       this.processImport(rows, fileName, importedById, importedByUsername, job.id, columnOverrides, institutionOverride)
-        .catch(() => {});
+        .catch(async (e) => {
+          await this.prisma.importJob.update({
+            where: { id: job.id },
+            data: { status: 'FAILED', completedAt: new Date() },
+          }).catch(() => {});
+        });
     });
 
     return job.id;
@@ -811,16 +816,35 @@ export class ImportService {
     const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
     const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
     const cityByCode = new Map(cities.map(c => [c.code, c.name]));
+
+    // Pre-load all existing loan numbers in one query instead of per-row lookups
+    const existingLoanNumbers = new Set(
+      (await this.prisma.loan.findMany({ select: { loanNumber: true } })).map(l => l.loanNumber),
+    );
+
+    const CHUNK_SIZE = 500;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2;
       const loanNum = cleanId(row.loan_number) || `row-${rowNum}`;
 
+      // Yield to event loop between chunks to keep memory stable and server responsive
+      if (i > 0 && i % CHUNK_SIZE === 0) {
+        await new Promise<void>(r => setImmediate(r));
+      }
+
+      // Save progress every 100 rows so the UI stays current and a crash is recoverable
+      if (i > 0 && i % 100 === 0) {
+        await this.prisma.importJob.update({
+          where: { id: jobId },
+          data: { successfulRows: succeeded, failedRows: failed },
+        }).catch(() => {});
+      }
+
       try {
         this.validateRow(row, rowNum);
 
-        const existing = await this.prisma.loan.findUnique({ where: { loanNumber: loanNum } });
-        if (existing) { skipped++; continue; }
+        if (existingLoanNumbers.has(loanNum)) { skipped++; continue; }
 
         const instRaw = row.institution_name?.trim() ?? '';
         const instCode = parseInt(instRaw);
@@ -934,6 +958,8 @@ export class ImportService {
           });
         });
 
+        // Track newly inserted loan numbers so in-file duplicates are caught without a DB query
+        existingLoanNumbers.add(loanNum);
         succeeded++;
       } catch (e: any) {
         failed++;
