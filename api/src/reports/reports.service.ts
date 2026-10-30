@@ -1254,6 +1254,145 @@ export class ReportsService {
     res.send(buf);
   }
 
+  // ─── Promises Excel ──────────────────────────────────────────────────────────
+
+  async promisesXlsx(query: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string; status?: string }, res: Response) {
+    const where: any = {};
+
+    if (query.dateFrom || query.dateTo) {
+      where.promiseDate = {};
+      if (query.dateFrom) where.promiseDate.gte = new Date(query.dateFrom);
+      if (query.dateTo) where.promiseDate.lte = new Date(query.dateTo);
+    }
+
+    if (query.status) where.status = query.status;
+
+    const caseWhere: any = { deletedAt: null };
+    if (query.officerId) {
+      caseWhere.OR = [
+        { assignedOfficerId: query.officerId },
+        { secondaryOfficerId: query.officerId },
+      ];
+    } else if (query.officeId) {
+      const caseFilter = await this.officeCaseWhere(query.officeId);
+      caseWhere.AND = [caseFilter];
+    }
+    where.case = caseWhere;
+
+    const promises = await this.prisma.promiseToPay.findMany({
+      where,
+      orderBy: [{ promiseDate: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        createdBy: { select: { fullName: true } },
+        case: {
+          include: {
+            loan: {
+              include: {
+                borrower: {
+                  include: {
+                    phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 2 },
+                  },
+                },
+                institution: true,
+                relatedParties: {
+                  include: {
+                    person: {
+                      include: {
+                        phones: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }], take: 1 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            assignedOfficer: { select: { id: true, fullName: true } },
+            secondaryOfficer: { select: { id: true, fullName: true } },
+            office: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+
+    const headers = [
+      'promise_date', 'promised_amount', 'currency', 'status',
+      'fulfilled_amount', 'fulfilled_at', 'notes', 'created_by', 'created_at',
+      'personal_id', 'full_name',
+      'phone1', 'phone2', 'address', 'city',
+      'loan_number', 'institution_name',
+      'assigned_officer', 'secondary_officer',
+      'original_loan_amount', 'current_outstanding_balance',
+      'last_payment_date', 'collection_stage',
+      'office_code',
+      '1. guarantor_personal_id', '1. guarantor_first_last_name', '1. guarantor_phone',
+      '2. guarantor_personal_id', '2. guarantor_first_last_name', '2. guarantor_phone',
+      'co_borrower_personal_id', 'co_borrower_first_last_name', 'co_borrower_phone',
+      'case_reference', 'case_status',
+    ];
+
+    const d = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : '';
+
+    const rows = promises.map((p) => {
+      const c = p.case;
+      const b = c.loan.borrower;
+      const phones = b.phones ?? [];
+      const parties = c.loan.relatedParties ?? [];
+      const guarantors = parties.filter((rp) => rp.role === 'GUARANTOR');
+      const coBorrower = parties.find((rp) => rp.role === 'CO_BORROWER');
+      const g1 = guarantors[0]?.person;
+      const g2 = guarantors[1]?.person;
+      const co = coBorrower?.person;
+
+      return [
+        d(p.promiseDate),
+        Number(p.promisedAmount),
+        p.currency,
+        p.status,
+        p.fulfilledAmount != null ? Number(p.fulfilledAmount) : '',
+        d(p.fulfilledAt),
+        (p.notes ?? '').replace(/"/g, '""'),
+        p.createdBy.fullName,
+        d(p.createdAt),
+        b.personalId ?? '',
+        b.fullName ?? '',
+        phones[0]?.phoneNumber ?? '',
+        phones[1]?.phoneNumber ?? '',
+        b.address ?? '',
+        b.city ?? '',
+        c.loan.loanNumber ?? '',
+        c.loan.institution?.name ?? '',
+        c.assignedOfficer?.fullName ?? '',
+        c.secondaryOfficer?.fullName ?? '',
+        Number(c.loan.originalLoanAmount ?? 0),
+        Number(c.loan.currentOutstandingBalance ?? 0),
+        d(c.loan.lastPaymentDate),
+        c.collectionStage,
+        (c.office as any)?.code ?? '',
+        g1?.personalId ?? '',
+        g1?.fullName ?? '',
+        g1?.phones?.[0]?.phoneNumber ?? '',
+        g2?.personalId ?? '',
+        g2?.fullName ?? '',
+        g2?.phones?.[0]?.phoneNumber ?? '',
+        co?.personalId ?? '',
+        co?.fullName ?? '',
+        co?.phones?.[0]?.phoneNumber ?? '',
+        c.caseReference,
+        c.status,
+      ];
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = headers.map((h: string) => ({ wch: Math.max(h.length + 4, 16) }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Premtimet');
+
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `premtimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
+  }
+
   // ─── PDF helpers ─────────────────────────────────────────────────────────────
 
   private header(doc: PDFKit.PDFDocument, title: string) {

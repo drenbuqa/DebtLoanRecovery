@@ -396,4 +396,15 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
+  downloadPromisesXlsx: async (params?: { officerId?: string; officeId?: string; dateFrom?: string; dateTo?: string; status?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.officerId) qs.set('officerId', params.officerId);
+    if (params?.officeId) qs.set('officeId', params.officeId);
+    if (params?.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) qs.set('dateTo', params.dateTo);
+    if (params?.status) qs.set('status', params.status);
+    const res = await fetch(`${API_BASE}/reports/promises/xlsx?${qs}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
+    return res.blob();
+  },
 };

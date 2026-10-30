@@ -5,7 +5,7 @@ import Topbar from "@/components/layout/Topbar";
 import { useAuth } from "@/lib/auth";
 import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi, reports as reportsApi, fetchAllPages } from "@/lib/api";
 import { formatEnum } from "@/lib/utils";
-import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle, Handshake } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { AccessGuard } from "@/components/AccessGuard";
 
@@ -65,6 +65,14 @@ const REPORTS = [
     icon: AlertCircle,
     columns: ["NID", "Emri Mbiemri", "Tel 1", "Tel 2", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Data Premtimit", "Shuma Premtuar", "Garant 1 Emri", "Garant 1 Tel", "Garant 2 Emri", "Garant 2 Tel", "Ref. Klient", "Statusi", "Faza", "Kategoria"],
     info: "Eksporton klientët me premtime të vonuara ose këste të papaguara — me detaje të plota kontakti, garantorët dhe informacionin e kredisë. Oficeri shikon vetëm klientët e tij/saj.",
+  },
+  {
+    code: "PROMISES",
+    name: "Raporti i Premtimeve",
+    desc: "Të gjitha premtimet e pagesës me statusin, shumën dhe të dhënat e klientit",
+    icon: Handshake,
+    columns: ["Data Premtimit", "Shuma Premtuar", "Valuta", "Statusi", "Shuma Realizuar", "Data Realizimit", "Shënime", "Krijuar nga", "Data Krijimit", "NID", "Emri Mbiemri", "Tel 1", "Tel 2", "Adresa", "Qyteti", "Nr. Kredisë", "Institucioni", "Zyrtari 1", "Zyrtari 2", "Shuma Origjinale", "Borxhi Aktual", "Data Pagesës së Fundit", "Faza", "Kodi Zyrës", "Garant 1 NID", "Garant 1 Emri", "Garant 1 Tel", "Garant 2 NID", "Garant 2 Emri", "Garant 2 Tel", "Ko-huamarrësi NID", "Ko-huamarrësi Emri", "Ko-huamarrësi Tel", "Ref. Klient", "Statusi Rastit"],
+    info: "Eksporton të gjitha premtimet e pagesës me detajet e premtimit (data, shuma, statusi, realizimi) dhe të dhënat e plota të klientit dhe kredisë. Oficeri shikon vetëm premtimet e klientëve të tij/saj; manageri shikon zyrën e tij/saj; admini shikon të gjitha.",
   },
 ];
 
@@ -203,6 +211,20 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const a = document.createElement("a");
         a.href = url;
         a.download = `klientet-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        onClose();
+        return;
+      } else if (report.code === "PROMISES") {
+        const params: any = {};
+        if (user?.role === "OFFICER") params.officerId = user.id;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+        const blob = await reportsApi.downloadPromisesXlsx(params);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `premtimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();

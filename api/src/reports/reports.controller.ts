@@ -116,4 +116,13 @@ export class ReportsController {
     if (user?.role === 'OFFICER' || user?.role === 'MANAGER') { officerId = user.id; officeId = undefined; }
     return this.svc.overdueClientsXlsx({ officerId, officeId }, res);
   }
+
+  @Get('promises/xlsx')
+  promisesXlsx(@Query() q: any, @Req() req: Request, @Res() res: Response) {
+    const user = (req as any).user;
+    let { officerId, officeId } = q;
+    if (user?.role === 'OFFICER') { officerId = user.id; officeId = undefined; }
+    else if (user?.role === 'MANAGER' && !officeId) { officeId = user.officeId; }
+    return this.svc.promisesXlsx({ officerId, officeId, dateFrom: q.dateFrom, dateTo: q.dateTo, status: q.status }, res);
+  }
 }
