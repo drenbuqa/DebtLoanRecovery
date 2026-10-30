@@ -290,6 +290,16 @@ export class CasesService {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {
       where.legalProceedings = { some: {} };
+    } else if (query.view === 'signal_90') {
+      // Cases with NO activity AND NO payment in the last 90 days.
+      // Only active cases (ACTIVE status) — closed/suspended are excluded as they are
+      // handled separately. This surfaces cases where the 90-day action rule has been breached.
+      const ninetyDaysAgo = new Date(today);
+      ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90);
+      where.status = 'ACTIVE';
+      if (!where.AND) where.AND = [];
+      where.AND.push({ NOT: { activities: { some: { activityDate: { gte: ninetyDaysAgo } } } } });
+      where.AND.push({ NOT: { payments: { some: { paymentDate: { gte: ninetyDaysAgo }, voidedAt: null } } } });
     }
 
     if (query.search) {

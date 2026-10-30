@@ -430,6 +430,7 @@ const VIEWS = [
   { key: "all_promises",    label: "Premtimet" },
   { key: "vonesa",          label: "Vonesat" },
   { key: "premtime_thyera", label: "Dështimet" },
+  { key: "signal_90",       label: "Sinjal 90+", signal: true },
   { key: "inactive",        label: "Joaktive" },
 ];
 
@@ -789,10 +790,15 @@ function CasesPageInner() {
               onClick={() => { setView(v.key); setPage(1); }}
               className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                 view === v.key
-                  ? "border-brand-600 text-brand-700"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? v.signal
+                    ? "border-amber-500 text-amber-700"
+                    : "border-brand-600 text-brand-700"
+                  : v.signal
+                    ? "border-transparent text-amber-600 hover:text-amber-700 hover:border-amber-300"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
+              {v.signal && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 mb-px align-middle" />}
               {v.label}
             </button>
           ))}
