@@ -285,7 +285,7 @@ export const importApi = {
   templateUrl: () => `${API_BASE}/import/template`,
   referenceData: () => req<{ officers: any[]; institutions: any[]; cities: any[]; offices: any[] }>('/import/reference-data'),
   fields: () => req<any[]>('/import/fields'),
-  jobs: () => req<any[]>('/import/jobs'),
+  jobs: (type?: string) => req<any[]>('/import/jobs' + (type ? `?type=${type}` : '')),
   preview: async (file: File) => {
     const form = new FormData();
     form.append('file', file);

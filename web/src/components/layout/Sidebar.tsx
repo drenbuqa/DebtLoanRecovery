@@ -11,7 +11,7 @@ import {
   LayoutDashboard, FolderOpen, Activity,
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
-  LogOut, X, Upload, CalendarDays, PanelLeftClose, PanelLeftOpen,
+  LogOut, X, Upload, CalendarDays, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 
 // ── Nav config ─────────────────────────────────────────────────
@@ -337,7 +337,7 @@ export default function Sidebar() {
         <div className="flex items-center border-b border-gray-100 shrink-0 overflow-hidden"
           style={{
             height: 56,
-            padding: collapsed ? "0 0 0 0" : "0 12px 0 20px",
+            padding: collapsed ? "0 0 0 0" : "0 8px 0 12px",
             transition: "padding 280ms cubic-bezier(0.4, 0, 0.2, 1)",
             justifyContent: collapsed ? "center" : "space-between",
           }}>
@@ -357,8 +357,8 @@ export default function Sidebar() {
             title={collapsed ? "Hap menunë" : "Mbyll menunë"}
           >
             {collapsed
-              ? <PanelLeftOpen size={16} />
-              : <PanelLeftClose size={16} />}
+              ? <ChevronsRight size={16} />
+              : <ChevronsLeft size={16} />}
           </button>
         </div>
 

@@ -692,6 +692,8 @@ enum ImportType {
   PORTFOLIO
   PAYMENTS
   BALANCES
+  ACTIVITIES
+  BULK_UPDATE
 }
 
 enum ImportStatus {

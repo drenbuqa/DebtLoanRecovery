@@ -268,7 +268,7 @@ export class LeaveService {
     });
     if (overlap) throw new BadRequestException('Keni tashmë një kërkesë pushimi në këtë periudhë');
 
-    return this.prisma.leaveRequest.create({
+    const request = await this.prisma.leaveRequest.create({
       data: {
         userId,
         leaveType: dto.leaveType,
@@ -281,6 +281,25 @@ export class LeaveService {
         user: { select: { id: true, fullName: true } },
       },
     });
+
+    // Notify all admins/managers about the new leave request
+    const typeLabels: Record<string, string> = { ANNUAL: 'Pushim Vjetor', SICK: 'Pushim i Sëmurë', UNPAID: 'Pushim pa Pagë' };
+    const admins = await this.prisma.user.findMany({
+      where: { isActive: true, role: { in: ['ADMIN', 'MANAGER'] }, id: { not: userId } },
+      select: { id: true },
+    });
+    if (admins.length > 0) {
+      await this.prisma.notification.createMany({
+        data: admins.map(a => ({
+          userId: a.id,
+          title: `${request.user.fullName} kërkoi ${typeLabels[dto.leaveType] ?? dto.leaveType}`,
+          body: `${workingDays} ditë pune · ${start.toLocaleDateString('sq-AL')} – ${end.toLocaleDateString('sq-AL')}`,
+          link: '/leave/admin',
+        })),
+      });
+    }
+
+    return request;
   }
 
   /** Cancel own request */
@@ -335,11 +354,24 @@ export class LeaveService {
     const date = new Date(initialDate);
     if (isNaN(date.getTime())) throw new BadRequestException('Data e pavlefshme');
 
-    return this.prisma.leaveBalance.upsert({
+    const result = await this.prisma.leaveBalance.upsert({
       where: { userId },
       create: { userId, initialDays, initialDate: date, createdById: adminId },
       update: { initialDays, initialDate: date },
     });
+
+    if (userId !== adminId) {
+      await this.prisma.notification.create({
+        data: {
+          userId,
+          title: 'Bilanci i pushimeve u konfigurua',
+          body: `${initialDays} ditë fillestare nga ${date.toLocaleDateString('sq-AL')}`,
+          link: '/leave',
+        },
+      });
+    }
+
+    return result;
   }
 
   /** Admin: create manual adjustment */
@@ -348,7 +380,7 @@ export class LeaveService {
     if (!user) throw new NotFoundException('Përdoruesi nuk u gjet');
     if (days === 0) throw new BadRequestException('Ditët nuk mund të jenë 0');
 
-    return this.prisma.leaveAdjustment.create({
+    const adj = await this.prisma.leaveAdjustment.create({
       data: {
         userId,
         days,
@@ -358,12 +390,26 @@ export class LeaveService {
         createdById: adminId,
       },
     });
+
+    if (userId !== adminId) {
+      const sign = days > 0 ? '+' : '';
+      await this.prisma.notification.create({
+        data: {
+          userId,
+          title: `Bilanci i pushimeve u rregullua (${sign}${days} ditë)`,
+          body: note,
+          link: '/leave',
+        },
+      });
+    }
+
+    return adj;
   }
 
   /** Admin: list all staff with their balances */
   async listStaffBalances() {
     const staff = await this.prisma.user.findMany({
-      where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
+      where: { isActive: true, role: { in: ['OFFICER', 'MANAGER'] } },
       select: {
         id: true,
         fullName: true,

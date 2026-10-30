@@ -761,7 +761,7 @@ export class CasesService {
   }
 
   async updateStatus(id: string, dto: { status?: string; collectionStage?: string; collectionStatus?: string; note?: string }, changedById: string) {
-    const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true, collectionStatus: true } });
+    const current = await this.prisma.case.findUnique({ where: { id }, select: { status: true, collectionStage: true, collectionStatus: true, assignedOfficerId: true, caseReference: true, loan: { select: { borrower: { select: { fullName: true } } } } } });
     if (!current) throw new NotFoundException('Klienti nuk u gjet');
 
     const updates: any = {};
@@ -795,6 +795,20 @@ export class CasesService {
         }),
       ),
     ]);
+
+    // Notify assigned officer when case escalated to LEGAL
+    if (dto.status === 'LEGAL' && current.status !== 'LEGAL' && current.assignedOfficerId && current.assignedOfficerId !== changedById) {
+      const borrowerName = current.loan?.borrower?.fullName ?? current.caseReference;
+      await this.prisma.notification.create({
+        data: {
+          userId: current.assignedOfficerId,
+          title: `Klienti ${borrowerName} u kalua në Juridike`,
+          body: `Rasti ${current.caseReference} kërkon ndjekje ligjore`,
+          link: `/cases/${id}`,
+        },
+      });
+    }
+
     return updated;
   }
 

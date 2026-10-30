@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { leave as leaveApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays, Plus, X, Clock, CheckCircle, XCircle, Ban,
   AlertTriangle, ChevronRight, Info,
@@ -234,12 +235,12 @@ function RequestModal({ balance, onClose, onSuccess }: { balance: any; onClose: 
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Fillimit</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className="w-full h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
             </div>
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Mbarimit</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
-                className="w-full h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
             </div>
           </div>
 
@@ -272,13 +273,13 @@ function RequestModal({ balance, onClose, onSuccess }: { balance: any; onClose: 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
           <button onClick={onClose}
-            className="h-9 px-5 text-[13px] font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
             Anulo
           </button>
           <button onClick={submit} disabled={saving}
-            className="h-9 px-5 text-[13px] font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60 rounded-lg transition-colors flex items-center gap-2">
+            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2">
             {saving ? (
               <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -304,7 +305,8 @@ const FILTER_OPTIONS = [
 ] as const;
 
 export default function LeavePage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const router = useRouter();
   const [balance, setBalance]     = useState<any>(null);
   const [requests, setRequests]   = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -319,7 +321,10 @@ export default function LeavePage() {
     } catch {} finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (user?.role === "ADMIN") { router.replace("/leave/admin"); return; }
+    load();
+  }, [user]);
 
   async function cancelReq(id: string) {
     if (!confirm("A jeni sigurt që doni të anuloni këtë kërkesë?")) return;
@@ -389,7 +394,7 @@ export default function LeavePage() {
           </div>
 
           {/* Filter tabs */}
-          <div className="flex border-b border-gray-100 px-5 overflow-x-auto">
+          <div className="flex border-b border-gray-100 px-5">
             {FILTER_OPTIONS.map(({ key, label }) => (
               <button key={key} onClick={() => setFilter(key)}
                 className={`px-4 py-3 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${

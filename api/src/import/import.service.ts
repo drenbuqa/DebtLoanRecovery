@@ -386,12 +386,15 @@ export class ImportService {
     return raw;
   }
 
-  async listJobs(limit = 20): Promise<any[]> {
+  async listJobs(limit = 20, type?: string): Promise<any[]> {
+    const where: any = {};
+    if (type) where.importType = type;
     const jobs = await this.prisma.importJob.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
-        id: true, fileName: true, status: true,
+        id: true, fileName: true, status: true, importType: true,
         totalRows: true, successfulRows: true, failedRows: true,
         createdAt: true, completedAt: true,
         uploadedBy: { select: { fullName: true } },
@@ -656,7 +659,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2', performedById: string) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -667,6 +670,10 @@ export class ImportService {
         return !['case', 'rasti', 'reference', 'nr', 'numri'].some(h => first.includes(h));
       }
       return true;
+    });
+
+    const job = await this.prisma.importJob.create({
+      data: { uploadedById: performedById, importType: 'BULK_UPDATE', fileName, status: 'PROCESSING', totalRows: dataRows.length, startedAt: new Date() },
     });
 
     let updated = 0, skipped = 0;
@@ -811,6 +818,11 @@ export class ImportService {
         skipped++;
       }
     }
+
+    await this.prisma.importJob.update({
+      where: { id: job.id },
+      data: { status: 'COMPLETED', successfulRows: updated, failedRows: errors.length, completedAt: new Date() },
+    });
 
     return { updated, skipped, errors, total: dataRows.length };
   }
@@ -1119,12 +1131,16 @@ export class ImportService {
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   }
 
-  async importActivities(buffer: Buffer, importedById: string): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
+  async importActivities(buffer: Buffer, importedById: string, fileName = 'aktivitetet.xlsx'): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
     const wb = XLSX.read(buffer, { type: 'buffer', raw: false, cellDates: false });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const raw: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
     if (raw.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
     if (raw.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta');
+
+    const job = await this.prisma.importJob.create({
+      data: { uploadedById: importedById, importType: 'ACTIVITIES', fileName, status: 'PROCESSING', totalRows: raw.length, startedAt: new Date() },
+    });
 
     // Normalise column keys
     const rows = raw.map(r => {
@@ -1197,15 +1213,24 @@ export class ImportService {
       if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
     }
 
+    await this.prisma.importJob.update({
+      where: { id: job.id },
+      data: { status: failed === rows.length ? 'FAILED' : 'COMPLETED', successfulRows: succeeded, failedRows: failed, completedAt: new Date() },
+    });
+
     return { total: rows.length, succeeded, failed, errors };
   }
 
-  async importPayments(buffer: Buffer, importedById: string): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
+  async importPayments(buffer: Buffer, importedById: string, fileName = 'pagesat.xlsx'): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
     const wb = XLSX.read(buffer, { type: 'buffer', raw: false, cellDates: false });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const raw: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
     if (raw.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
     if (raw.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta');
+
+    const job = await this.prisma.importJob.create({
+      data: { uploadedById: importedById, importType: 'PAYMENTS', fileName, status: 'PROCESSING', totalRows: raw.length, startedAt: new Date() },
+    });
 
     const rows = raw.map(r => {
       const out: Record<string, string> = {};
@@ -1287,6 +1312,11 @@ export class ImportService {
 
       if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
     }
+
+    await this.prisma.importJob.update({
+      where: { id: job.id },
+      data: { status: failed === rows.length ? 'FAILED' : 'COMPLETED', successfulRows: succeeded, failedRows: failed, completedAt: new Date() },
+    });
 
     return { total: rows.length, succeeded, failed, errors };
   }

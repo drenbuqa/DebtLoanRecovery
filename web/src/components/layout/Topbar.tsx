@@ -127,15 +127,20 @@ function GlobalSearch() {
 }
 
 // ── Notifications ────────────────────────────────────────────
+function NotifDot() {
+  return <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0 mt-1.5" />;
+}
+
 function NotificationsPanel() {
-  const [open, setOpen]         = useState(false);
-  const [alerts, setAlerts]     = useState<any>(null);
-  const [notifs, setNotifs]     = useState<any[]>([]);
+  const [open, setOpen]               = useState(false);
+  const [alerts, setAlerts]           = useState<any>(null);
+  const [notifs, setNotifs]           = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading]   = useState(false);
-  const ref                     = useRef<HTMLDivElement>(null);
-  const router                  = useRouter();
-  const { user, scopedToSelf }  = useAuth();
+  const [loading, setLoading]         = useState(false);
+  const [alertsNew, setAlertsNew]     = useState(false);
+  const ref                           = useRef<HTMLDivElement>(null);
+  const router                        = useRouter();
+  const { user, scopedToSelf }        = useAuth();
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -167,20 +172,30 @@ function NotificationsPanel() {
 
   async function toggle() {
     if (open) { setOpen(false); return; }
-    // Open: load content, then mark all read so badge clears
+
+    // Business alerts are "new" if the panel hasn't been opened today
+    try {
+      const today = new Date().toDateString();
+      const lastSeen = localStorage.getItem("notif_panel_date");
+      setAlertsNew(lastSeen !== today);
+      localStorage.setItem("notif_panel_date", today);
+    } catch {}
+
     setOpen(true);
     setLoading(true);
     await loadPanel().catch(() => {});
     setLoading(false);
-    // Mark all as read on the server and clear badge immediately
+
+    // Mark all as read on the server and clear the badge, but keep local readAt
+    // so items remain visually "unread" for this session
     notificationsApi.markAllRead().catch(() => {});
     setUnreadCount(0);
-    setNotifs(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
   }
 
-  async function markRead(id: string) {
-    await notificationsApi.markRead(id).catch(() => {});
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
+  function goAndClose(path: string, notifId?: string) {
+    if (notifId) notificationsApi.markRead(notifId).catch(() => {});
+    router.push(path);
+    setOpen(false);
   }
 
   const hasBusinessAlerts = !scopedToSelf && alerts && (
@@ -209,68 +224,80 @@ function NotificationsPanel() {
             <div className="px-4 py-6 text-[12px] text-gray-400 text-center">Duke ngarkuar…</div>
           ) : (
             <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-              {/* Personal leave notifications */}
-              {notifs.slice(0, 10).map(n => (
-                <button key={n.id} onClick={() => { markRead(n.id); if (n.link) { router.push(n.link); setOpen(false); } }}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
-                    <CalendarDays size={13} className="text-brand-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-gray-900 truncate">
-                      {n.title}
-                    </div>
-                    {n.body && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{n.body}</div>}
-                    <div className="text-[10px] text-gray-300 mt-0.5">
-                      {new Date(n.createdAt).toLocaleDateString("sq-AL")}
-                    </div>
-                  </div>
-                </button>
-              ))}
 
-              {/* Business alerts */}
+              {/* Personal notifications — unread items get a blue dot + subtle bg */}
+              {notifs.slice(0, 10).map(n => {
+                const unread = !n.readAt;
+                const link = n.link ?? "/";
+                const Icon = link.startsWith("/cases") ? FolderOpen
+                           : link.startsWith("/legal") ? Scale
+                           : CalendarDays;
+                return (
+                  <button key={n.id} onClick={() => goAndClose(link, n.id)}
+                    className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${unread ? "bg-blue-50/40" : ""}`}>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${unread ? "bg-brand-100" : "bg-brand-50"}`}>
+                      <Icon size={13} className="text-brand-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[13px] truncate ${unread ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
+                        {n.title}
+                      </div>
+                      {n.body && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{n.body}</div>}
+                      <div className="text-[10px] text-gray-300 mt-0.5">
+                        {new Date(n.createdAt).toLocaleDateString("sq-AL")}
+                      </div>
+                    </div>
+                    {unread && <NotifDot />}
+                  </button>
+                );
+              })}
+
+              {/* Business alerts — shown as "new" if first panel open today */}
               {!scopedToSelf && alerts?.overdueInstallments > 0 && (
-                <button onClick={() => { router.push("/agreements"); setOpen(false); }}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
+                <button onClick={() => goAndClose("/agreements")}
+                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${alertsNew ? "bg-blue-50/40" : ""}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${alertsNew ? "bg-red-100" : "bg-red-50"}`}>
                     <AlertCircle size={13} className="text-red-500" />
                   </div>
-                  <div>
-                    <div className="text-[13px] font-medium text-gray-900">
+                  <div className="flex-1">
+                    <div className={`text-[13px] ${alertsNew ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
                       {alerts.overdueInstallments} këst{alerts.overdueInstallments !== 1 ? "e" : ""} me vonesë
                     </div>
                     <div className="text-[11px] text-gray-400">Kërkon ndjekje të menjëhershme</div>
                   </div>
+                  {alertsNew && <NotifDot />}
                 </button>
               )}
 
               {!scopedToSelf && alerts?.promisesToday > 0 && (
-                <button onClick={() => { router.push("/cases?view=promises_today"); setOpen(false); }}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                <button onClick={() => goAndClose("/cases?view=promises_today")}
+                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${alertsNew ? "bg-blue-50/40" : ""}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${alertsNew ? "bg-amber-100" : "bg-amber-50"}`}>
                     <CheckSquare size={13} className="text-amber-500" />
                   </div>
-                  <div>
-                    <div className="text-[13px] font-medium text-gray-900">
+                  <div className="flex-1">
+                    <div className={`text-[13px] ${alertsNew ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
                       {alerts.promisesToday} premtim{alerts.promisesToday !== 1 ? "e" : ""} pagese për sot
                     </div>
                     <div className="text-[11px] text-gray-400">Ndiqni angazhimet e pagesave</div>
                   </div>
+                  {alertsNew && <NotifDot />}
                 </button>
               )}
 
               {!scopedToSelf && alerts?.legalCases > 0 && (
-                <button onClick={() => { router.push("/legal"); setOpen(false); }}
-                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
+                <button onClick={() => goAndClose("/legal")}
+                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${alertsNew ? "bg-blue-50/40" : ""}`}>
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${alertsNew ? "bg-brand-100" : "bg-brand-50"}`}>
                     <Scale size={13} className="text-brand-600" />
                   </div>
-                  <div>
-                    <div className="text-[13px] font-medium text-gray-900">
+                  <div className="flex-1">
+                    <div className={`text-[13px] ${alertsNew ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
                       {alerts.legalCases} klient juridike aktive
                     </div>
                     <div className="text-[11px] text-gray-400">Procedime që kërkojnë vëmendje</div>
                   </div>
+                  {alertsNew && <NotifDot />}
                 </button>
               )}
 

@@ -110,17 +110,17 @@ function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () =
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
           <button onClick={onClose}
-            className="h-9 px-4 text-[13px] font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
             Anulo
           </button>
           <button onClick={() => submit(false)} disabled={saving}
-            className="h-9 px-4 flex items-center gap-2 text-[13px] font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors">
+            className="px-4 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl transition-colors">
             <X size={14} /> Refuzo
           </button>
           <button onClick={() => submit(true)} disabled={saving}
-            className="h-9 px-4 flex items-center gap-2 text-[13px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-lg transition-colors">
+            className="px-5 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors">
             <Check size={14} /> Aprovo
           </button>
         </div>
@@ -207,7 +207,7 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data Fillestare e Akumulimit</label>
                 <input type="date" value={initialDate} onChange={e => setInitialDate(e.target.value)}
-                  className="w-full h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë Fillestare</label>
@@ -263,13 +263,13 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
           <button onClick={onClose}
-            className="h-9 px-5 text-[13px] font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
             Anulo
           </button>
           <button onClick={tab === "balance" ? saveBalance : saveAdj} disabled={saving}
-            className="h-9 px-5 flex items-center gap-2 text-[13px] font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-60 rounded-lg transition-colors">
+            className="px-5 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-xl transition-colors">
             {saving ? (
               <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -304,7 +304,7 @@ function StaffRow({ item, onManage }: { item: any; onManage: (item: any) => void
         </div>
 
         {/* Info */}
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => b.hasBalance && setOpen(o => !o)}>
+        <div className={`flex-1 min-w-0 ${b.hasBalance ? "cursor-pointer" : ""}`} onClick={() => b.hasBalance && setOpen(o => !o)}>
           <div className="text-[13px] font-semibold text-gray-900">{item.user.fullName}</div>
           <div className="text-[11px] text-gray-400 mt-0.5">
             {item.user.office?.name ?? "—"} · #{item.user.userCode}
@@ -331,7 +331,7 @@ function StaffRow({ item, onManage }: { item: any; onManage: (item: any) => void
         </div>
 
         {/* Available days large */}
-        <div className="text-right w-16 shrink-0 cursor-pointer" onClick={() => b.hasBalance && setOpen(o => !o)}>
+        <div className={`text-right w-16 shrink-0 ${b.hasBalance ? "cursor-pointer" : ""}`} onClick={() => b.hasBalance && setOpen(o => !o)}>
           {b.hasBalance ? (
             <>
               <div className="text-[20px] font-bold text-brand-700 leading-none tabular">{b.balance}</div>
@@ -441,39 +441,17 @@ export default function LeaveAdminPage() {
         {!loading && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              {
-                label: "Kërkesa në Pritje",
-                val: pending.length,
-                icon: Clock,
-                color: pending.length > 0 ? "text-amber-700 bg-amber-50 border-amber-200" : "text-gray-600 bg-white border-gray-200",
-              },
-              {
-                label: "Anëtarë Stafi",
-                val: staff.length,
-                icon: Users,
-                color: "text-brand-700 bg-brand-50 border-brand-200",
-              },
-              {
-                label: "Pa Bilans",
-                val: noBalance,
-                icon: AlertTriangle,
-                color: noBalance > 0 ? "text-red-700 bg-red-50 border-red-200" : "text-gray-500 bg-white border-gray-200",
-              },
-              {
-                label: "Aprovuara (total)",
-                val: staff.reduce((s, x) => s + (x.balance.usedAnnual ?? 0), 0),
-                icon: CheckCircle,
-                color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-              },
-            ].map(({ label, val, icon: Icon, color }) => (
-              <div key={label} className={`rounded-2xl border px-5 py-4 ${color}`}
+              { label: "Kërkesa në Pritje",  val: pending.length,                                            icon: Clock },
+              { label: "Anëtarë Stafi",       val: staff.length,                                              icon: Users },
+              { label: "Pa Bilans",           val: noBalance,                                                 icon: AlertTriangle },
+              { label: "Aprovuara (total)",   val: staff.reduce((s, x) => s + (x.balance.usedAnnual ?? 0), 0), icon: CheckCircle },
+            ].map(({ label, val, icon: Icon }) => (
+              <div key={label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex flex-col justify-between"
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-[28px] font-bold leading-none tabular">{val}</div>
-                    <div className="text-[11px] font-medium mt-1 opacity-80">{label}</div>
-                  </div>
-                  <Icon size={18} className="opacity-60 shrink-0 mt-0.5" />
+                <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide leading-tight">{label}</div>
+                <div className="flex items-end justify-between mt-2">
+                  <div className="text-[28px] font-bold text-gray-900 tabular leading-none">{val}</div>
+                  <Icon size={16} className="text-gray-300 shrink-0 mb-0.5" />
                 </div>
               </div>
             ))}

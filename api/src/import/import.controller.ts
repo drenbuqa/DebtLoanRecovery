@@ -70,8 +70,8 @@ export class ImportController {
   }
 
   @Get('jobs')
-  jobs(@Query('limit') limit?: string) {
-    return this.svc.listJobs(limit ? Math.min(parseInt(limit), 100) : 20);
+  jobs(@Query('limit') limit?: string, @Query('type') type?: string) {
+    return this.svc.listJobs(limit ? Math.min(parseInt(limit), 100) : 50, type);
   }
 
   @Post('preview')
@@ -91,7 +91,7 @@ export class ImportController {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
     const validTypes = ['officer', 'institution', 'city'];
     if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
-    return this.svc.bulkUpdate(file.buffer, type as any, req.user.id);
+    return this.svc.bulkUpdate(file.buffer, type as any, req.user.id, file.originalname);
   }
 
   @Get('jobs/:id/rollback-check')
@@ -135,14 +135,14 @@ export class ImportController {
   @UseInterceptors(fileInterceptor())
   async importActivities(@UploadedFile() file: Express.Multer.File, @Request() req: any) {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
-    return this.svc.importActivities(file.buffer, req.user.id);
+    return this.svc.importActivities(file.buffer, req.user.id, file.originalname);
   }
 
   @Post('payments-bulk')
   @UseInterceptors(fileInterceptor())
   async importPayments(@UploadedFile() file: Express.Multer.File, @Request() req: any) {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
-    return this.svc.importPayments(file.buffer, req.user.id);
+    return this.svc.importPayments(file.buffer, req.user.id, file.originalname);
   }
 
   @Post('loans')

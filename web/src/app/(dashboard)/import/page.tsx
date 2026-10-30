@@ -7,7 +7,7 @@ import {
   Upload, Download, CheckCircle, XCircle, AlertTriangle,
   FileSpreadsheet, Clock, RotateCcw, ChevronDown, ChevronUp,
   Copy, Check, X, RefreshCw, Info, ChevronRight, History,
-  Pencil, ArrowRightLeft,
+  Pencil, ArrowRightLeft, Activity, CreditCard, Users,
 } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
 
@@ -20,6 +20,22 @@ function fmtDate(d: string | Date) {
     hour: "2-digit", minute: "2-digit",
   });
 }
+
+const IMPORT_TYPE_LABELS: Record<string, string> = {
+  PORTFOLIO:   "Import Klientësh",
+  ACTIVITIES:  "Import Aktivitetesh",
+  PAYMENTS:    "Import Pagesash",
+  BALANCES:    "Import Bilancesh",
+  BULK_UPDATE: "Ndryshime të Pjesshme",
+};
+
+const IMPORT_TYPE_COLORS: Record<string, string> = {
+  PORTFOLIO:   "bg-brand-50 text-brand-700 border-brand-200",
+  ACTIVITIES:  "bg-blue-50 text-blue-700 border-blue-200",
+  PAYMENTS:    "bg-emerald-50 text-emerald-700 border-emerald-200",
+  BALANCES:    "bg-amber-50 text-amber-700 border-amber-200",
+  BULK_UPDATE: "bg-purple-50 text-purple-700 border-purple-200",
+};
 
 // ── Copy button ────────────────────────────────────────────────────────────────
 
@@ -70,7 +86,7 @@ function UploadZone({ onFile }: { onFile: (f: File) => void }) {
 
 // ── Result panel ───────────────────────────────────────────────────────────────
 
-function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) {
+function ResultPanel({ result, onReset, successLabel = "klient" }: { result: any; onReset: () => void; successLabel?: string }) {
   const [showErrors, setShowErrors] = useState(false);
   const hasErrors = result.errors?.length > 0;
   const allFailed = result.succeeded === 0 && result.failed > 0;
@@ -87,7 +103,7 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
           <div key={label} className={`${bg} rounded-xl border border-gray-200 px-4 py-3`}
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{label}</div>
-            <div className={`text-[24px] font-bold tabular ${color}`}>{fmt(val)}</div>
+            <div className={`text-[24px] font-bold tabular ${color}`}>{fmt(val ?? 0)}</div>
           </div>
         ))}
       </div>
@@ -100,22 +116,14 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
             <p className="text-[12px] text-red-600 mt-0.5">Të gjitha rreshtat kishin gabime. Kontrolloni se po përdorni modelin e saktë.</p>
           </div>
         </div>
-      ) : result.skipped === result.total ? (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-          <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-[13px] font-semibold text-amber-800">Asnjë klient i ri</p>
-            <p className="text-[12px] text-amber-600 mt-0.5">Të gjitha kreditë ekzistojnë tashmë — sistemi anashkalon automatikisht dublikatat.</p>
-          </div>
-        </div>
       ) : (
         <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
           <CheckCircle size={15} className="text-emerald-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-[13px] font-semibold text-emerald-800">
-              {fmt(result.succeeded)} klient{result.succeeded !== 1 ? "ë" : ""} u shtuan me sukses
+              {fmt(result.succeeded)} {successLabel}{result.succeeded !== 1 ? "ë" : ""} u shtuan me sukses
             </p>
-            {result.skipped > 0 && (
+            {(result.skipped ?? 0) > 0 && (
               <p className="text-[12px] text-emerald-600 mt-0.5">{fmt(result.skipped)} anashkaluar — ekzistonin tashmë.</p>
             )}
           </div>
@@ -137,12 +145,12 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
               {result.errors.map((e: any, i: number) => (
                 <div key={i} className="px-4 py-2.5 bg-white">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[11px] font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">Rreshti {e.row}</span>
-                    {e.loan_number && !e.loan_number.startsWith("row-") && (
-                      <span className="text-[11px] text-gray-400 font-mono">{e.loan_number}</span>
+                    <span className="text-[11px] font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">Rreshti {e.row ?? e.rowNumber}</span>
+                    {(e.ref || e.loan_number) && !String(e.ref ?? e.loan_number).startsWith("row-") && (
+                      <span className="text-[11px] text-gray-400 font-mono">{e.ref ?? e.loan_number}</span>
                     )}
                   </div>
-                  <p className="text-[12px] text-gray-700">{e.error}</p>
+                  <p className="text-[12px] text-gray-700">{e.error ?? e.errorMessage}</p>
                 </div>
               ))}
             </div>
@@ -178,6 +186,18 @@ function StatusBadge({ status, allSkipped }: { status: string; allSkipped?: bool
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${m.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} /> {m.label}
+    </span>
+  );
+}
+
+// ── Type badge ─────────────────────────────────────────────────────────────────
+
+function TypeBadge({ importType }: { importType: string }) {
+  const label = IMPORT_TYPE_LABELS[importType] ?? importType;
+  const color = IMPORT_TYPE_COLORS[importType] ?? "bg-gray-100 text-gray-600 border-gray-200";
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${color}`}>
+      {label}
     </span>
   );
 }
@@ -325,14 +345,14 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
 
 // ── History row ────────────────────────────────────────────────────────────────
 
-function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
+function HistoryRow({ job, onRollback, showType }: { job: any; onRollback: () => void; showType?: boolean }) {
   const [open, setOpen] = useState(false);
   const [showRollback, setShowRollback] = useState(false);
   const hasErrors = job.errors?.length > 0;
   const skippedRows = job.skippedRows ?? (job.totalRows - job.successfulRows - job.failedRows);
   const allSkipped = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && skippedRows > 0 && (job.failedRows ?? 0) === 0;
   const allFailed  = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && (job.failedRows ?? 0) > 0;
-  const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0;
+  const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0 && job.importType === "PORTFOLIO";
   const canExpand = hasErrors || allSkipped || allFailed;
 
   return (
@@ -344,7 +364,10 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
         <div className="flex items-center gap-3 px-4 py-3">
           <FileSpreadsheet size={15} className="text-gray-400 shrink-0" />
           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => canExpand && setOpen(v => !v)}>
-            <div className="text-[13px] font-medium text-gray-900 truncate">{job.fileName}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[13px] font-medium text-gray-900 truncate">{job.fileName}</span>
+              {showType && job.importType && <TypeBadge importType={job.importType} />}
+            </div>
             <div className="text-[11px] text-gray-400 mt-0.5">
               {fmtDate(job.createdAt)} · {job.uploadedBy?.fullName ?? "—"}
             </div>
@@ -375,7 +398,7 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
               <div className="border-t border-amber-100 px-4 py-3 bg-amber-50/40 flex items-start gap-2">
                 <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-[12px] text-amber-800">
-                  Asnjë klient i ri nuk u shtua — të gjitha <strong>{fmt(skippedRows)}</strong> kreditë ekzistonin tashmë.
+                  Asnjë rekord i ri nuk u shtua — të gjitha <strong>{fmt(skippedRows)}</strong> rreshtat ekzistonin tashmë.
                 </p>
               </div>
             )}
@@ -403,6 +426,50 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
         )}
       </div>
     </>
+  );
+}
+
+// ── Mini history list (used at bottom of each section tab) ────────────────────
+
+function MiniHistory({ jobs, loading, onRollback, emptyLabel }: {
+  jobs: any[]; loading: boolean; onRollback: () => void; emptyLabel?: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const LIMIT = 5;
+  const visible = showAll ? jobs : jobs.slice(0, LIMIT);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-gray-100">
+        <History size={14} className="text-gray-400" />
+        <span className="text-[13px] font-semibold text-gray-700">Historiku i Importeve</span>
+        {!loading && jobs.length > 0 && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">{jobs.length}</span>
+        )}
+      </div>
+      <div className="p-4 space-y-2">
+        {loading ? (
+          [0, 1, 2].map(i => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)
+        ) : jobs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <FileSpreadsheet size={24} className="text-gray-200 mb-2" />
+            <p className="text-[12px] text-gray-400">{emptyLabel ?? "Asnjë import i regjistruar"}</p>
+          </div>
+        ) : (
+          <>
+            {visible.map(j => <HistoryRow key={j.id} job={j} onRollback={onRollback} />)}
+            {jobs.length > LIMIT && (
+              <button onClick={() => setShowAll(v => !v)}
+                className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors px-1 mt-1">
+                {showAll
+                  ? <><ChevronUp size={13} /> Shfaq më pak</>
+                  : <><ChevronDown size={13} /> Shfaq të gjitha ({jobs.length})</>}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -495,12 +562,14 @@ function ReferenceCodes({ data }: { data: { officers: any[]; institutions: any[]
   );
 }
 
-// ── Small upload card (used in historical + updates tabs) ──────────────────────
+// ── Small upload card ──────────────────────────────────────────────────────────
 
 function UploadCard({
-  onUpload,
+  onUpload, onDone, successLabel,
 }: {
   onUpload: (file: File) => Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }>;
+  onDone?: () => void;
+  successLabel?: string;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -517,6 +586,7 @@ function UploadCard({
       const r = await onUpload(file);
       setResult(r);
       setFile(null);
+      onDone?.();
     } catch (e: any) {
       setError(e.message ?? "Ndodhi një gabim.");
     } finally { setUploading(false); }
@@ -530,7 +600,7 @@ function UploadCard({
             ? <CheckCircle size={15} className="text-emerald-500 mt-0.5 shrink-0" />
             : <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />}
           <div className="text-[12px] text-gray-700 space-y-0.5">
-            <div><span className="font-semibold text-emerald-700">{result.succeeded}</span> rreshta u regjistruan me sukses</div>
+            <div><span className="font-semibold text-emerald-700">{result.succeeded}</span> {successLabel ?? "rreshta"} u regjistruan me sukses</div>
             {result.failed > 0 && <div><span className="font-semibold text-amber-700">{result.failed}</span> rreshta dështuan</div>}
             <div className="text-gray-400">Gjithsej: {result.total}</div>
           </div>
@@ -591,10 +661,10 @@ function UploadCard({
   );
 }
 
-// ── TAB 1: Import Klientë ──────────────────────────────────────────────────────
+// ── TAB 1: Import Klient ───────────────────────────────────────────────────────
 
 function ImportTab({
-  file, setFile, uploading, result, error, onSubmit, onReset, refData,
+  file, setFile, uploading, result, error, onSubmit, onReset, refData, jobs, loadingJobs, onRollback,
 }: {
   file: File | null;
   setFile: (f: File | null) => void;
@@ -604,11 +674,14 @@ function ImportTab({
   onSubmit: () => void;
   onReset: () => void;
   refData: { officers: any[]; institutions: any[]; cities: any[] } | null;
+  jobs: any[];
+  loadingJobs: boolean;
+  onRollback: () => void;
 }) {
   const [showRef, setShowRef] = useState(false);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
 
       {/* Step indicator */}
       <div className="flex items-center gap-2 text-[12px] text-gray-500 flex-wrap">
@@ -692,7 +765,7 @@ function ImportTab({
           </div>
 
           {result ? (
-            <ResultPanel result={result} onReset={onReset} />
+            <ResultPanel result={result} onReset={onReset} successLabel="klient" />
           ) : (
             <div className="flex flex-col flex-1 gap-3">
               {!file ? (
@@ -755,110 +828,165 @@ function ImportTab({
         </button>
         {showRef && <ReferenceCodes data={refData} />}
       </div>
+
+      {/* Per-section history */}
+      <MiniHistory jobs={jobs} loading={loadingJobs} onRollback={onRollback} emptyLabel="Asnjë import klientësh i regjistruar" />
     </div>
   );
 }
 
-// ── TAB 2: Import Historik ─────────────────────────────────────────────────────
+// ── TAB 2: Import Aktivitete ───────────────────────────────────────────────────
 
-function HistoricalTab() {
+function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh }: {
+  jobs: any[]; loadingJobs: boolean; onRollback: () => void; onRefresh: () => void;
+}) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <p className="text-[13px] text-gray-500">
-        Përdoreni këtë seksion për të ngarkuar aktivitete dhe pagesa historike për klientët ekzistues në sistem.
+        Importoni aktivitete historike (thirrje, vizita, premtime, etj.) për klientët ekzistues në sistem.
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        {/* Activities card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+            <Activity size={15} className="text-blue-600" />
+          </div>
           <div>
             <h3 className="text-[14px] font-semibold text-gray-900">Import Aktivitetesh</h3>
             <p className="text-[12px] text-gray-400 mt-0.5">Aktivitete historike për rastet ekzistuese</p>
           </div>
-
-          <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
-            <div>
-              <span className="text-[11px] font-semibold text-blue-700">Llojet (activity_type):</span>
-              <p className="text-[11px] text-blue-600 font-mono mt-0.5 leading-relaxed">
-                CALL, VISIT, SMS, EMAIL, LETTER, PROMISE_TO_PAY, PAYMENT_RECEIVED,<br />
-                LEGAL_ACTION, NOTE, FIELD_VISIT, CALL_BORROWER, CALL_GUARANTOR,<br />
-                VISIT_BORROWER, VISIT_GUARANTOR, WARNING_LETTER, MEETING_BORROWER, MEETING_GUARANTOR
-              </p>
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-blue-700">Rezultatet (outcome, opsionale):</span>
-              <p className="text-[11px] text-blue-600 font-mono mt-0.5">
-                CONTACTED, NO_ANSWER, PROMISE_RECEIVED, REFUSED,<br />
-                PARTIAL_PAYMENT, FULL_PAYMENT, DISPUTE, DECEASED, OTHER
-              </p>
-            </div>
-          </div>
-
-          <a
-            href={importApi.templateActivitiesUrl()}
-            download="dlr-template-aktivitetet.xlsx"
-            className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
-              <FileSpreadsheet size={15} className="text-emerald-600" />
-            </div>
-            <div className="flex-1 text-left">
-              <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-aktivitetet.xlsx</div>
-              <div className="text-[11px] text-gray-400">case_reference · activity_type · date · officer_code · outcome · notes</div>
-            </div>
-            <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
-          </a>
-
-          <UploadCard onUpload={(file) => importApi.importActivities(file)} />
         </div>
 
-        {/* Payments card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
           <div>
-            <h3 className="text-[14px] font-semibold text-gray-900">Import Pagesash</h3>
-            <p className="text-[12px] text-gray-400 mt-0.5">Pagesa historike për rastet ekzistuese</p>
+            <span className="text-[11px] font-semibold text-blue-700">Llojet (activity_type):</span>
+            <p className="text-[11px] text-blue-600 font-mono mt-0.5 leading-relaxed">
+              CALL, VISIT, SMS, EMAIL, LETTER, PROMISE_TO_PAY, PAYMENT_RECEIVED,<br />
+              LEGAL_ACTION, NOTE, FIELD_VISIT, CALL_BORROWER, CALL_GUARANTOR,<br />
+              VISIT_BORROWER, VISIT_GUARANTOR, WARNING_LETTER, MEETING_BORROWER, MEETING_GUARANTOR
+            </p>
+          </div>
+          <div>
+            <span className="text-[11px] font-semibold text-blue-700">Rezultatet (outcome, opsionale):</span>
+            <p className="text-[11px] text-blue-600 font-mono mt-0.5">
+              CONTACTED, NO_ANSWER, PROMISE_RECEIVED, REFUSED,<br />
+              PARTIAL_PAYMENT, FULL_PAYMENT, DISPUTE, DECEASED, OTHER
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Shkarko Templatein</p>
+            <a
+              href={importApi.templateActivitiesUrl()}
+              download="dlr-template-aktivitetet.xlsx"
+              className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                <FileSpreadsheet size={15} className="text-emerald-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-aktivitetet.xlsx</div>
+                <div className="text-[11px] text-gray-400">case_reference · activity_type · date · officer_code · outcome · notes</div>
+              </div>
+              <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
+            </a>
           </div>
 
-          <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
-            <div>
-              <span className="text-[11px] font-semibold text-blue-700">Kanalet (channel, opsionale):</span>
-              <p className="text-[11px] text-blue-600 font-mono mt-0.5">BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER</p>
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-blue-700">reference:</span>
-              <span className="text-[11px] text-blue-600"> nëse lihet bosh, gjenerohet automatikisht.</span>
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-blue-700">officer_code:</span>
-              <span className="text-[11px] text-blue-600"> opsional — nëse mungon, regjistrohet nën llogarinë tuaj.</span>
-            </div>
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Ngarko Skedarin</p>
+            <UploadCard
+              onUpload={(file) => importApi.importActivities(file)}
+              onDone={onRefresh}
+              successLabel="aktivitete"
+            />
           </div>
-
-          <a
-            href={importApi.templatePaymentsUrl()}
-            download="dlr-template-pagesat.xlsx"
-            className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
-              <FileSpreadsheet size={15} className="text-emerald-600" />
-            </div>
-            <div className="flex-1 text-left">
-              <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-pagesat.xlsx</div>
-              <div className="text-[11px] text-gray-400">case_reference · amount · date · reference · officer_code · channel</div>
-            </div>
-            <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
-          </a>
-
-          <UploadCard onUpload={(file) => importApi.importPayments(file)} />
         </div>
       </div>
+
+      {/* Per-section history */}
+      <MiniHistory jobs={jobs} loading={loadingJobs} onRollback={onRollback} emptyLabel="Asnjë import aktivitetesh i regjistruar" />
     </div>
   );
 }
 
-// ── TAB 3: Ndryshime ──────────────────────────────────────────────────────────
+// ── TAB 3: Import Pagesa ───────────────────────────────────────────────────────
+
+function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh }: {
+  jobs: any[]; loadingJobs: boolean; onRollback: () => void; onRefresh: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <p className="text-[13px] text-gray-500">
+        Importoni pagesa historike për klientët ekzistues në sistem.
+      </p>
+
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4"
+        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+            <CreditCard size={15} className="text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="text-[14px] font-semibold text-gray-900">Import Pagesash</h3>
+            <p className="text-[12px] text-gray-400 mt-0.5">Pagesa historike për rastet ekzistuese</p>
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2">
+          <div>
+            <span className="text-[11px] font-semibold text-emerald-700">Kanalet (channel, opsionale):</span>
+            <p className="text-[11px] text-emerald-600 font-mono mt-0.5">BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER</p>
+          </div>
+          <div>
+            <span className="text-[11px] font-semibold text-emerald-700">reference:</span>
+            <span className="text-[11px] text-emerald-600"> nëse lihet bosh, gjenerohet automatikisht.</span>
+          </div>
+          <div>
+            <span className="text-[11px] font-semibold text-emerald-700">officer_code:</span>
+            <span className="text-[11px] text-emerald-600"> opsional — nëse mungon, regjistrohet nën llogarinë tuaj.</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Shkarko Templatein</p>
+            <a
+              href={importApi.templatePaymentsUrl()}
+              download="dlr-template-pagesat.xlsx"
+              className="flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                <FileSpreadsheet size={15} className="text-emerald-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-pagesat.xlsx</div>
+                <div className="text-[11px] text-gray-400">case_reference · amount · date · reference · officer_code · channel</div>
+              </div>
+              <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
+            </a>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Ngarko Skedarin</p>
+            <UploadCard
+              onUpload={(file) => importApi.importPayments(file)}
+              onDone={onRefresh}
+              successLabel="pagesa"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Per-section history */}
+      <MiniHistory jobs={jobs} loading={loadingJobs} onRollback={onRollback} emptyLabel="Asnjë import pagesash i regjistruar" />
+    </div>
+  );
+}
+
+// ── TAB 4: Ndryshime te pjesshme ───────────────────────────────────────────────
 
 type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2";
 
@@ -1131,11 +1259,11 @@ function UpdatesTab({ officers, institutions, cities, offices }: { officers: any
   );
 }
 
-// ── TAB 4: Historiku ──────────────────────────────────────────────────────────
+// ── TAB 5: Historiku (unified) ────────────────────────────────────────────────
 
 function HistoryTab({ jobs, loadingJobs, onRollback }: { jobs: any[]; loadingJobs: boolean; onRollback: () => void }) {
   const [showAll, setShowAll] = useState(false);
-  const LIMIT = 8;
+  const LIMIT = 10;
   const visible = showAll ? jobs : jobs.slice(0, LIMIT);
 
   if (loadingJobs) {
@@ -1153,7 +1281,7 @@ function HistoryTab({ jobs, loadingJobs, onRollback }: { jobs: any[]; loadingJob
       <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-gray-200">
         <FileSpreadsheet size={28} className="text-gray-200 mb-3" />
         <p className="text-[13px] font-medium text-gray-400">Ende nuk ka importe të kryera</p>
-        <p className="text-[12px] text-gray-300 mt-1">Historitku i importeve do të shfaqet këtu</p>
+        <p className="text-[12px] text-gray-300 mt-1">Historiku i importeve do të shfaqet këtu</p>
       </div>
     );
   }
@@ -1161,7 +1289,7 @@ function HistoryTab({ jobs, loadingJobs, onRollback }: { jobs: any[]; loadingJob
   return (
     <div className="space-y-2">
       {visible.map(j => (
-        <HistoryRow key={j.id} job={j} onRollback={onRollback} />
+        <HistoryRow key={j.id} job={j} onRollback={onRollback} showType />
       ))}
       {jobs.length > LIMIT && (
         <button onClick={() => setShowAll(v => !v)}
@@ -1177,33 +1305,43 @@ function HistoryTab({ jobs, loadingJobs, onRollback }: { jobs: any[]; loadingJob
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-type Tab = "import" | "historical" | "updates" | "history";
+type Tab = "clients" | "activities" | "payments" | "updates" | "history";
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: "import",     label: "Import Klientësh", icon: Upload },
-  { key: "historical", label: "Import Historik",  icon: ArrowRightLeft },
-  { key: "updates",    label: "Ndryshime",         icon: Pencil },
-  { key: "history",    label: "Historiku",          icon: History },
+  { key: "clients",    label: "Import Klient",          icon: Users },
+  { key: "activities", label: "Import Aktivitete",      icon: Activity },
+  { key: "payments",   label: "Import Pagesa",          icon: CreditCard },
+  { key: "updates",    label: "Ndryshime te pjesshme",  icon: Pencil },
+  { key: "history",    label: "Historiku",              icon: History },
 ];
 
 export default function ImportPage() {
-  const [tab, setTab] = useState<Tab>("import");
+  const [tab, setTab] = useState<Tab>("clients");
 
-  // Main import state
+  // Main client import state
   const [file, setFile]           = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult]       = useState<any>(null);
   const [error, setError]         = useState("");
 
-  // Shared data
+  // All jobs (split by type in render)
   const [jobs, setJobs]               = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [refData, setRefData]         = useState<{ officers: any[]; institutions: any[]; cities: any[]; offices: any[] } | null>(null);
+
+  function refreshJobs() {
+    importApi.jobs().then(setJobs).catch(() => {});
+  }
 
   useEffect(() => {
     importApi.jobs().then(setJobs).catch(() => {}).finally(() => setLoadingJobs(false));
     importApi.referenceData().then(setRefData).catch(() => {});
   }, []);
+
+  // Split jobs by type
+  const clientJobs   = jobs.filter(j => j.importType === "PORTFOLIO");
+  const activityJobs = jobs.filter(j => j.importType === "ACTIVITIES");
+  const paymentJobs  = jobs.filter(j => j.importType === "PAYMENTS");
 
   async function submit() {
     if (!file) return;
@@ -1212,9 +1350,9 @@ export default function ImportPage() {
       const res = await importApi.upload(file);
       if (res?.status === "PROCESSING" && res?.jobId) {
         const poll = async () => {
-          const jobs = await importApi.jobs();
-          setJobs(jobs);
-          const job = jobs.find((j: any) => j.id === res.jobId);
+          const allJobs = await importApi.jobs();
+          setJobs(allJobs);
+          const job = allJobs.find((j: any) => j.id === res.jobId);
           if (!job || job.status === "PROCESSING") {
             setTimeout(poll, 2000);
           } else {
@@ -1242,15 +1380,13 @@ export default function ImportPage() {
 
   function reset() { setFile(null); setResult(null); setError(""); setUploading(false); }
 
-  function refreshJobs() { importApi.jobs().then(setJobs).catch(() => {}); }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Topbar title="Import Portofoli" subtitle="Menaxhoni importin e klientëve dhe ndryshimet në portofol" />
 
       {/* Tab bar */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6">
-        <nav className="flex gap-0">
+        <nav className="flex gap-0 overflow-x-auto">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -1273,9 +1409,9 @@ export default function ImportPage() {
         </nav>
       </div>
 
-      {/* Tab content */}
-      <div className="p-4 md:p-6 max-w-6xl">
-        {tab === "import" && (
+      {/* Tab content — full width, just padding */}
+      <div className="p-4 md:p-6">
+        {tab === "clients" && (
           <ImportTab
             file={file}
             setFile={setFile}
@@ -1285,9 +1421,27 @@ export default function ImportPage() {
             onSubmit={submit}
             onReset={reset}
             refData={refData}
+            jobs={clientJobs}
+            loadingJobs={loadingJobs}
+            onRollback={refreshJobs}
           />
         )}
-        {tab === "historical" && <HistoricalTab />}
+        {tab === "activities" && (
+          <ActivitiesTab
+            jobs={activityJobs}
+            loadingJobs={loadingJobs}
+            onRollback={refreshJobs}
+            onRefresh={refreshJobs}
+          />
+        )}
+        {tab === "payments" && (
+          <PaymentsTab
+            jobs={paymentJobs}
+            loadingJobs={loadingJobs}
+            onRollback={refreshJobs}
+            onRefresh={refreshJobs}
+          />
+        )}
         {tab === "updates" && (
           <UpdatesTab
             officers={refData?.officers ?? []}
