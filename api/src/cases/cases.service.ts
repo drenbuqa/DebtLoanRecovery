@@ -68,6 +68,12 @@ const CASE_LIST_SELECT = {
     },
   },
   _count: { select: { activities: true, payments: true } },
+  // Latest activity — used by the Ndjekja e Radhës Excel export
+  latestActivity: {
+    orderBy: { occurredAt: 'desc' as const },
+    take: 1,
+    select: { occurredAt: true, notes: true },
+  },
 };
 
 const CASE_DETAIL_EXTRA = {
@@ -316,9 +322,25 @@ export class CasesService {
       this.prisma.case.findMany({
         where,
         select: CASE_LIST_SELECT,
-        orderBy: query.view === 'ndjekja_radhes'
-          ? [{ nextActionDate: 'asc' as const }, { loan: { currentOutstandingBalance: 'desc' as const } }]
-          : [{ loan: { currentOutstandingBalance: 'desc' as const } }, { updatedAt: 'desc' as const }],
+        orderBy: (() => {
+          const byBalance = [
+            { loan: { currentOutstandingBalance: 'desc' as const } },
+            { updatedAt: 'desc' as const },
+          ];
+          if (query.view === 'ndjekja_radhes') {
+            return [{ nextActionDate: 'asc' as const }, { loan: { currentOutstandingBalance: 'desc' as const } }];
+          }
+          if (query.view === 'vonesa' || query.view === 'premtime_thyera') {
+            // Order by fewest overdue days first: the case whose most recent overdue promise
+            // is closest to today (largest promiseDate) appears first.
+            // Cases with only overdue installments (no promise records) fall back to balance DESC.
+            return [
+              { promises: { _max: { promiseDate: 'desc' } } } as any,
+              { loan: { currentOutstandingBalance: 'desc' as const } },
+            ];
+          }
+          return byBalance;
+        })(),
         skip,
         take: limit,
       }),

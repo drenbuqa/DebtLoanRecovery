@@ -44,6 +44,13 @@ model User {
   agreementsCreated        Agreement[]
   legalProceedingsCreated  LegalProceeding[]
   importJobs               ImportJob[]
+  leaveBalance             LeaveBalance?
+  leaveRequests            LeaveRequest[]          @relation("LeaveRequestUser")
+  leaveRequestsReviewed    LeaveRequest[]          @relation("LeaveRequestReviewer")
+  leaveAdjustments         LeaveAdjustment[]       @relation("LeaveAdjUser")
+  leaveAdjustmentsMade     LeaveAdjustment[]       @relation("LeaveAdjCreator")
+  leaveBalancesCreated     LeaveBalance[]          @relation("LeaveBalanceCreatedBy")
+  notifications            Notification[]
 
   @@map("users")
 }
@@ -699,4 +706,95 @@ enum BalanceSource {
   IMPORT
   MANUAL
   VOID
+}
+
+// ─────────────────────────────────────────────
+// LEAVE MANAGEMENT
+// ─────────────────────────────────────────────
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveAdjustmentType {
+  JUNE_CAP
+  MANUAL
+  CORRECTION
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  initialDays Float    @default(0) @map("initial_days")
+  initialDate DateTime @map("initial_date") @db.Date
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User @relation(fields: [userId], references: [id])
+  createdBy User @relation("LeaveBalanceCreatedBy", fields: [createdById], references: [id])
+
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  leaveType    LeaveType   @map("leave_type")
+  startDate    DateTime    @map("start_date") @db.Date
+  endDate      DateTime    @map("end_date") @db.Date
+  workingDays  Float       @map("working_days")
+  status       LeaveStatus @default(PENDING)
+  reason       String?     @db.Text
+  reviewedById String?     @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?   @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote   String?     @map("review_note") @db.Text
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user       User  @relation("LeaveRequestUser", fields: [userId], references: [id])
+  reviewedBy User? @relation("LeaveRequestReviewer", fields: [reviewedById], references: [id])
+
+  @@map("leave_requests")
+}
+
+model LeaveAdjustment {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  days        Float
+  type        LeaveAdjustmentType
+  note        String?             @db.Text
+  date        DateTime            @db.Date
+  capYear     Int?                @map("cap_year")
+  createdById String              @map("created_by_id") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User @relation("LeaveAdjUser", fields: [userId], references: [id])
+  createdBy User @relation("LeaveAdjCreator", fields: [createdById], references: [id])
+
+  @@unique([userId, capYear], name: "unique_june_cap")
+  @@map("leave_adjustments")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String    @db.VarChar(200)
+  body      String?   @db.Text
+  link      String?   @db.VarChar(500)
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
 }

@@ -182,7 +182,7 @@ export class PerformanceService {
         totalActivities: act.total, calls: act.calls, visits: act.visits,
         promises: prom.count, promiseAmount: prom.amount,
         collectedAmount: pay.sum, paymentCount: pay.count,
-        collectionRate: prom.amount > 0 ? +((pay.sum / prom.amount) * 100).toFixed(1) : null,
+        collectionRate: port > 0 ? +((pay.sum / port) * 100).toFixed(1) : null,
       };
     };
 

@@ -27,6 +27,8 @@ import { OfficesModule } from './offices/offices.module';
 import { PerformanceModule } from './performance/performance.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AuditModule } from './audit/audit.module';
+import { LeaveModule } from './leave/leave.module';
+import { NotificationModule } from './notifications/notification.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 
@@ -52,6 +54,8 @@ import { RolesGuard } from './auth/roles.guard';
     SchedulerModule,
     ReportsModule,
     ImportModule,
+    LeaveModule,
+    NotificationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

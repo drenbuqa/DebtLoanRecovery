@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { LeaveService } from '../leave/leave.service';
 import * as path from 'path';
 import { exec } from 'child_process';
 
@@ -9,7 +10,7 @@ import { exec } from 'child_process';
 export class SchedulerService {
   private readonly log = new Logger(SchedulerService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private leaveService: LeaveService) {}
 
   // Runs every night at 01:30 — mark unpaid installments whose due date has passed as OVERDUE
   @Cron('30 1 * * *')
@@ -34,6 +35,15 @@ export class SchedulerService {
       data: { status: 'BROKEN' },
     });
     this.log.log(`Broken promises sweep complete — ${result.count} promises marked BROKEN`);
+  }
+
+  // June 1 at midnight: apply annual leave cap (forfeits balance > 6 days)
+  @Cron('0 0 1 6 *')
+  async applyJuneCap() {
+    const year = new Date().getFullYear();
+    this.log.log(`June cap sweep started for year ${year}`);
+    await this.leaveService.applyJuneCap(year);
+    this.log.log(`June cap sweep complete for year ${year}`);
   }
 
   // Runs every night at 02:00 server time

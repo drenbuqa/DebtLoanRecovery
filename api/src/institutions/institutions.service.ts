@@ -121,6 +121,7 @@ export class InstitutionsService {
         periodPaymentsValue: 0, periodPaymentsCount: 0,
         periodPromisesValue: 0, periodPromisesCount: 0,
         periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0,
+        legalProceedingsCount: 0,
       }));
     }
 
@@ -144,6 +145,12 @@ export class InstitutionsService {
         agreement: { status: 'ACTIVE', caseId: { in: allCaseIds } },
       },
       select: { amount: true, agreement: { select: { caseId: true } } },
+    });
+
+    // 3c. Batch: active legal proceedings (not CLOSED) per case
+    const legalProceedings = await this.prisma.legalProceeding.findMany({
+      where: { caseId: { in: allCaseIds }, status: { not: 'CLOSED' as any } },
+      select: { caseId: true },
     });
 
     // 4. Aggregate per institution
@@ -177,6 +184,7 @@ export class InstitutionsService {
         periodVisits: acts.filter((a) => VISIT_TYPES.includes(a.activityType)).length,
         periodLegal:  acts.filter((a) => LEGAL_TYPES.includes(a.activityType)).length,
         periodOther:  acts.filter((a) => !SKIP_TYPES.includes(a.activityType)).length,
+        legalProceedingsCount: legalProceedings.filter((lp) => caseIds.has(lp.caseId)).length,
       };
     });
   }

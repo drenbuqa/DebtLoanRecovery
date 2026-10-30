@@ -33,7 +33,7 @@ export class ImportController {
 
   @Get('reference-data')
   async referenceData() {
-    const [officers, institutions, cities] = await Promise.all([
+    const [officers, institutions, cities, offices] = await Promise.all([
       this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['OFFICER', 'MANAGER', 'ADMIN'] } },
         select: { id: true, userCode: true, fullName: true, role: true, office: { select: { name: true, code: true } } },
@@ -48,8 +48,12 @@ export class ImportController {
         select: { id: true, code: true, name: true },
         orderBy: { code: 'asc' },
       }),
+      this.prisma.office.findMany({
+        select: { id: true, code: true, name: true },
+        orderBy: { code: 'asc' },
+      }),
     ]);
-    return { officers, institutions, cities };
+    return { officers, institutions, cities, offices };
   }
 
   @Get('template')
@@ -109,6 +113,36 @@ export class ImportController {
     }
     if (!check.canRollback) throw new ForbiddenException(check.reason);
     return this.svc.rollback(id);
+  }
+
+  @Get('template-activities')
+  templateActivities(@Res() res: Response) {
+    const buf = this.svc.templateActivitiesXlsx();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="dlr-template-aktivitetet.xlsx"');
+    res.send(buf);
+  }
+
+  @Get('template-payments')
+  templatePayments(@Res() res: Response) {
+    const buf = this.svc.templatePaymentsXlsx();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="dlr-template-pagesat.xlsx"');
+    res.send(buf);
+  }
+
+  @Post('activities')
+  @UseInterceptors(fileInterceptor())
+  async importActivities(@UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
+    return this.svc.importActivities(file.buffer, req.user.id);
+  }
+
+  @Post('payments-bulk')
+  @UseInterceptors(fileInterceptor())
+  async importPayments(@UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
+    return this.svc.importPayments(file.buffer, req.user.id);
   }
 
   @Post('loans')

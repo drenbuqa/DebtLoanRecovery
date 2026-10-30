@@ -656,7 +656,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2', performedById: string) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2', performedById: string) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -692,6 +692,12 @@ export class ImportService {
     if (type === 'city') {
       const cities = await this.prisma.city.findMany({ select: { code: true, name: true } });
       cityByCode = new Map(cities.map((c) => [c.code, c.name]));
+    }
+
+    let officeByCode: Map<string, string> | null = null;
+    if (type === 'office') {
+      const offices = await this.prisma.office.findMany({ select: { id: true, code: true } });
+      officeByCode = new Map(offices.map((o) => [o.code.toLowerCase(), o.id]));
     }
 
     for (let i = 0; i < dataRows.length; i++) {
@@ -755,6 +761,49 @@ export class ImportService {
           const cityName = cityByCode!.get(code);
           if (!cityName) { errors.push(`${rowLabel}: kodi i qytetit ${code} nuk ekziston`); skipped++; continue; }
           await this.prisma.person.update({ where: { id: cas.loan.borrowerId }, data: { city: cityName } });
+          updated++;
+        } else if (type === 'office') {
+          const officeId = officeByCode!.get(codeRaw.toLowerCase());
+          if (!officeId) { errors.push(`${rowLabel}: kodi i zyrës "${codeRaw}" nuk ekziston`); skipped++; continue; }
+          await this.prisma.case.update({ where: { id: cas.id }, data: { officeId } });
+          updated++;
+        } else if (type === 'guarantor1' || type === 'guarantor2') {
+          const fullName = codeRaw.trim();
+          const phone = String(row[2] ?? '').trim();
+          if (!fullName) { skipped++; continue; }
+          const guarantorIndex = type === 'guarantor1' ? 0 : 1;
+          const safeFullName = fullName.slice(0, 200);
+          const loanParties = await this.prisma.loanParty.findMany({
+            where: { loanId: cas.loanId, role: 'GUARANTOR' },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, personId: true },
+          });
+          if (loanParties[guarantorIndex]) {
+            const personId = loanParties[guarantorIndex].personId;
+            await this.prisma.person.update({ where: { id: personId }, data: { fullName: safeFullName } });
+            if (phone) {
+              const ph = phone.slice(0, 30);
+              const existing = await this.prisma.personPhone.findFirst({ where: { personId, isPrimary: true } });
+              if (existing) {
+                await this.prisma.personPhone.update({ where: { id: existing.id }, data: { phoneNumber: ph } });
+              } else {
+                await this.prisma.personPhone.create({ data: { personId, phoneNumber: ph, phoneType: 'MOBILE', isPrimary: true } });
+              }
+            }
+          } else {
+            const syntheticId = `NOID-G${guarantorIndex + 1}-${cas.loanId.slice(0, 10)}`.slice(0, 30);
+            const person = await this.prisma.person.upsert({
+              where: { personalId: syntheticId },
+              create: { personalId: syntheticId, fullName: safeFullName },
+              update: { fullName: safeFullName },
+            });
+            if (phone) {
+              const ph = phone.slice(0, 30);
+              const exists = await this.prisma.personPhone.findFirst({ where: { personId: person.id, phoneNumber: ph } });
+              if (!exists) await this.prisma.personPhone.create({ data: { personId: person.id, phoneNumber: ph, phoneType: 'MOBILE', isPrimary: true } });
+            }
+            await this.prisma.loanParty.createMany({ data: [{ loanId: cas.loanId, personId: person.id, role: 'GUARANTOR' }], skipDuplicates: true });
+          }
           updated++;
         }
       } catch (e: any) {
@@ -984,6 +1033,262 @@ export class ImportService {
       entity: 'Loan',
       details: `Import "${fileName}": ${succeeded} sukses, ${failed} gabime, ${skipped} anashkaluar nga ${rows.length} gjithsej`,
     });
+  }
+
+  // ── Activity type alias map ────────────────────────────────────────────────────
+  private static readonly ACTIVITY_TYPE_ALIASES: Record<string, string> = {
+    call: 'CALL', telefonatë: 'CALL', telefonata: 'CALL', tel: 'CALL',
+    visit: 'VISIT', vizitë: 'VISIT', vizita: 'VISIT',
+    sms: 'SMS',
+    email: 'EMAIL', 'e-mail': 'EMAIL',
+    letter: 'LETTER', letër: 'LETTER', letra: 'LETTER',
+    promise_to_pay: 'PROMISE_TO_PAY', premtim: 'PROMISE_TO_PAY', premtimpages: 'PROMISE_TO_PAY',
+    payment_received: 'PAYMENT_RECEIVED', pagesa: 'PAYMENT_RECEIVED', payment: 'PAYMENT_RECEIVED',
+    legal_action: 'LEGAL_ACTION', ligjore: 'LEGAL_ACTION', legal: 'LEGAL_ACTION',
+    note: 'NOTE', shënim: 'NOTE', shenium: 'NOTE',
+    field_visit: 'FIELD_VISIT', vizitëtereni: 'FIELD_VISIT',
+    call_borrower: 'CALL_BORROWER', call_guarantor: 'CALL_GUARANTOR',
+    visit_borrower: 'VISIT_BORROWER', visit_guarantor: 'VISIT_GUARANTOR',
+    warning_letter: 'WARNING_LETTER', letërvërejtje: 'WARNING_LETTER',
+    meeting_borrower: 'MEETING_BORROWER', meeting_guarantor: 'MEETING_GUARANTOR',
+  };
+
+  private static readonly ACTIVITY_OUTCOME_ALIASES: Record<string, string> = {
+    contacted: 'CONTACTED', kontaktuar: 'CONTACTED',
+    no_answer: 'NO_ANSWER', s_ka_përgjigjur: 'NO_ANSWER', nopërgjigjje: 'NO_ANSWER',
+    promise_received: 'PROMISE_RECEIVED', premtim: 'PROMISE_RECEIVED',
+    refused: 'REFUSED', refuzuar: 'REFUSED',
+    partial_payment: 'PARTIAL_PAYMENT', pagesëpjesshme: 'PARTIAL_PAYMENT',
+    full_payment: 'FULL_PAYMENT', pagesëplote: 'FULL_PAYMENT',
+    dispute: 'DISPUTE', mosmarrëveshje: 'DISPUTE',
+    deceased: 'DECEASED', vdekur: 'DECEASED',
+    other: 'OTHER', tjetër: 'OTHER',
+  };
+
+  private resolveActivityType(raw: string): string | null {
+    if (!raw?.trim()) return null;
+    const norm = raw.trim().toLowerCase().replace(/[\s\-\/]+/g, '_').replace(/[^a-zëç0-9_]/g, '');
+    const alias = ImportService.ACTIVITY_TYPE_ALIASES[norm];
+    if (alias) return alias;
+    const upper = raw.trim().toUpperCase();
+    const valid = ['CALL','VISIT','SMS','EMAIL','LETTER','PROMISE_TO_PAY','PAYMENT_RECEIVED','LEGAL_ACTION','NOTE','FIELD_VISIT','CALL_BORROWER','CALL_GUARANTOR','VISIT_BORROWER','VISIT_GUARANTOR','WARNING_LETTER','MEETING_BORROWER','MEETING_GUARANTOR'];
+    return valid.includes(upper) ? upper : null;
+  }
+
+  private resolveActivityOutcome(raw: string): string | null {
+    if (!raw?.trim()) return null;
+    const norm = raw.trim().toLowerCase().replace(/[\s\-\/]+/g, '_').replace(/[^a-zëç0-9_]/g, '');
+    const alias = ImportService.ACTIVITY_OUTCOME_ALIASES[norm];
+    if (alias) return alias;
+    const upper = raw.trim().toUpperCase();
+    const valid = ['CONTACTED','NO_ANSWER','PROMISE_RECEIVED','REFUSED','PARTIAL_PAYMENT','FULL_PAYMENT','DISPUTE','DECEASED','OTHER'];
+    return valid.includes(upper) ? upper : null;
+  }
+
+  templateActivitiesXlsx(): Buffer {
+    const headers = ['case_reference', 'activity_type', 'date', 'officer_code', 'outcome', 'notes', 'promise_amount'];
+    const types = ['CALL','VISIT','SMS','EMAIL','LETTER','PROMISE_TO_PAY','PAYMENT_RECEIVED','LEGAL_ACTION','NOTE','FIELD_VISIT','CALL_BORROWER','CALL_GUARANTOR','VISIT_BORROWER','VISIT_GUARANTOR','WARNING_LETTER','MEETING_BORROWER','MEETING_GUARANTOR'].join(', ');
+    const outcomes = ['CONTACTED','NO_ANSWER','PROMISE_RECEIVED','REFUSED','PARTIAL_PAYMENT','FULL_PAYMENT','DISPUTE','DECEASED','OTHER'].join(', ');
+    const examples = [
+      ['DLR-2024-ABCDEF', 'CALL', '2024-03-15', 3, 'CONTACTED', 'Klienti u kontaktua, premtoi pagesë brenda javës', ''],
+      ['DLR-2024-GHIJKL', 'PROMISE_TO_PAY', '2024-03-16', 3, 'PROMISE_RECEIVED', 'Premtim pagese', 500],
+      ['DLR-2024-MNOPQR', 'VISIT', '2024-03-17', '', 'NO_ANSWER', 'Nuk u gjet në shtëpi', ''],
+      ['', '', '', '', '', `Llojet e aktivitetit (activity_type): ${types}`, ''],
+      ['', '', '', '', '', `Rezultatet (outcome): ${outcomes}`, ''],
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 50 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Aktivitetet');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  templatePaymentsXlsx(): Buffer {
+    const headers = ['case_reference', 'amount', 'date', 'reference', 'officer_code', 'channel', 'notes'];
+    const examples = [
+      ['DLR-2024-ABCDEF', 500.00, '2024-03-15', 'PAY-2024-001', 3, 'BANK_TRANSFER', 'Pagesa e parë e muajit mars'],
+      ['DLR-2024-GHIJKL', 1200.50, '2024-03-16', '', 3, 'CASH', ''],
+      ['DLR-2024-MNOPQR', 300.00, '2024-03-17', 'PAY-2024-003', '', '', 'Pagese e pjesshme'],
+      ['', '', '', '', '', '', 'Kanalet (channel): BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER (opsional)'],
+      ['', '', '', '', '', '', 'reference: nëse lihet bosh gjenerohet automatikisht'],
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+    ws['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 50 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Pagesat');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  async importActivities(buffer: Buffer, importedById: string): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
+    const wb = XLSX.read(buffer, { type: 'buffer', raw: false, cellDates: false });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const raw: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+    if (raw.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
+    if (raw.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta');
+
+    // Normalise column keys
+    const rows = raw.map(r => {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(r)) {
+        const norm = normaliseKey(k);
+        out[norm] = String(v ?? '').trim();
+      }
+      return out;
+    });
+
+    // Pre-load officers
+    const officers = await this.prisma.user.findMany({ select: { id: true, userCode: true, fullName: true } });
+    const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
+
+    let succeeded = 0, failed = 0;
+    const errors: { row: number; ref: string; error: string }[] = [];
+    const CHUNK = 200;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      const caseRef = (row['case_reference'] ?? row['caseref'] ?? row['ref'] ?? '').trim();
+      const actTypeRaw = (row['activity_type'] ?? row['activitytype'] ?? row['tipi'] ?? row['type'] ?? '').trim();
+      const dateRaw = row['date'] ?? row['data'] ?? row['occurred_at'] ?? '';
+      const notesRaw = row['notes'] ?? row['shenime'] ?? row['shenimet'] ?? row['pershkrimi'] ?? '';
+      const outcomeRaw = row['outcome'] ?? row['rezultati'] ?? '';
+      const promiseAmtRaw = row['promise_amount'] ?? row['shuma'] ?? row['vlera'] ?? '';
+      const officerCodeRaw = row['officer_code'] ?? row['officer'] ?? row['zyrtari'] ?? '';
+
+      if (!caseRef && !actTypeRaw) { continue; } // blank row
+
+      try {
+        if (!caseRef) throw new Error('case_reference mungon');
+        const actType = this.resolveActivityType(actTypeRaw);
+        if (!actType) throw new Error(`activity_type "${actTypeRaw}" nuk njihet`);
+        const occurredAt = parseDate(dateRaw);
+        if (!occurredAt) throw new Error(`data "${dateRaw}" nuk mund të lexohet`);
+
+        const cas = await this.prisma.case.findUnique({ where: { caseReference: caseRef }, select: { id: true } });
+        if (!cas) throw new Error(`rasti "${caseRef}" nuk u gjet`);
+
+        let officerId = importedById;
+        if (officerCodeRaw) {
+          const code = parseInt(officerCodeRaw);
+          const found = !isNaN(code) ? officerByCode.get(code) : undefined;
+          if (found) officerId = found;
+        }
+
+        const outcome = this.resolveActivityOutcome(outcomeRaw) ?? undefined;
+        const promiseAmount = promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined;
+
+        await this.prisma.activity.create({
+          data: {
+            caseId: cas.id,
+            officerId,
+            activityType: actType as any,
+            occurredAt,
+            notes: notesRaw || undefined,
+            outcome: outcome as any,
+            promiseAmount: promiseAmount ?? undefined,
+          },
+        });
+        succeeded++;
+      } catch (e: any) {
+        failed++;
+        errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
+      }
+
+      if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
+    }
+
+    return { total: rows.length, succeeded, failed, errors };
+  }
+
+  async importPayments(buffer: Buffer, importedById: string): Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }> {
+    const wb = XLSX.read(buffer, { type: 'buffer', raw: false, cellDates: false });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const raw: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+    if (raw.length === 0) throw new BadRequestException('Dokumenti nuk ka rreshta me të dhëna');
+    if (raw.length > 50000) throw new BadRequestException('Maksimumi i lejuar është 50,000 rreshta');
+
+    const rows = raw.map(r => {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(r)) {
+        const norm = normaliseKey(k);
+        out[norm] = String(v ?? '').trim();
+      }
+      return out;
+    });
+
+    const officers = await this.prisma.user.findMany({ select: { id: true, userCode: true } });
+    const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
+
+    // Pre-load existing references to avoid duplicates
+    const existingRefs = new Set(
+      (await this.prisma.payment.findMany({ select: { paymentReference: true } })).map(p => p.paymentReference),
+    );
+
+    let succeeded = 0, failed = 0;
+    const errors: { row: number; ref: string; error: string }[] = [];
+    const CHUNK = 200;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2;
+      const caseRef = (row['case_reference'] ?? row['caseref'] ?? row['ref'] ?? '').trim();
+      const amountRaw = row['amount'] ?? row['shuma'] ?? row['vlera'] ?? '';
+      const dateRaw = row['date'] ?? row['data'] ?? row['payment_date'] ?? '';
+      const refRaw = (row['reference'] ?? row['payment_reference'] ?? row['referenca'] ?? '').trim();
+      const officerCodeRaw = row['officer_code'] ?? row['officer'] ?? row['zyrtari'] ?? '';
+      const channelRaw = (row['channel'] ?? row['kanali'] ?? '').trim().toUpperCase();
+      const notesRaw = row['notes'] ?? row['shenime'] ?? row['shenimet'] ?? '';
+
+      if (!caseRef && !amountRaw) { continue; }
+
+      try {
+        if (!caseRef) throw new Error('case_reference mungon');
+        const amount = parseDecimal(amountRaw);
+        if (!amount || amount <= 0) throw new Error(`shuma "${amountRaw}" nuk është e vlefshme`);
+        const paymentDate = parseDate(dateRaw);
+        if (!paymentDate) throw new Error(`data "${dateRaw}" nuk mund të lexohet`);
+
+        const cas = await this.prisma.case.findUnique({ where: { caseReference: caseRef }, select: { id: true } });
+        if (!cas) throw new Error(`rasti "${caseRef}" nuk u gjet`);
+
+        let officerId = importedById;
+        if (officerCodeRaw) {
+          const code = parseInt(officerCodeRaw);
+          const found = !isNaN(code) ? officerByCode.get(code) : undefined;
+          if (found) officerId = found;
+        }
+
+        // Build unique paymentReference
+        let payRef = refRaw.slice(0, 50);
+        if (!payRef) {
+          payRef = `IMP-${caseRef.slice(-6)}-${i + 1}-${Date.now().toString(36)}`.slice(0, 50);
+        }
+        if (existingRefs.has(payRef)) {
+          payRef = `${payRef.slice(0, 40)}-${Date.now().toString(36)}`.slice(0, 50);
+        }
+
+        await this.prisma.payment.create({
+          data: {
+            caseId: cas.id,
+            officerId,
+            paymentReference: payRef,
+            amount,
+            paymentDate,
+            paymentChannel: channelRaw || undefined,
+            notes: notesRaw || undefined,
+          },
+        });
+        existingRefs.add(payRef);
+        succeeded++;
+      } catch (e: any) {
+        failed++;
+        errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
+      }
+
+      if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
+    }
+
+    return { total: rows.length, succeeded, failed, errors };
   }
 
   private validateRow(row: ImportRow, rowNum: number) {
