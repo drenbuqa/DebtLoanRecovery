@@ -131,6 +131,7 @@ function NotificationsPanel() {
   const [open, setOpen]         = useState(false);
   const [alerts, setAlerts]     = useState<any>(null);
   const [notifs, setNotifs]     = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading]   = useState(false);
   const ref                     = useRef<HTMLDivElement>(null);
   const router                  = useRouter();
@@ -144,7 +145,18 @@ function NotificationsPanel() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  async function load() {
+  // Poll unread count every 60 s so badge stays fresh
+  useEffect(() => {
+    if (!user) return;
+    function fetchCount() {
+      notificationsApi.unreadCount().then(r => setUnreadCount(r.count ?? 0)).catch(() => {});
+    }
+    fetchCount();
+    const id = setInterval(fetchCount, 60_000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  async function loadPanel() {
     if (!user) return;
     const promises: Promise<any>[] = [notificationsApi.list().catch(() => [])];
     if (!scopedToSelf) promises.push(casesApi.dashboardStats().catch(() => null));
@@ -153,11 +165,17 @@ function NotificationsPanel() {
     if (stats !== undefined) setAlerts(stats);
   }
 
-  useEffect(() => { load(); }, [user, scopedToSelf]);
-
-  function toggle() {
-    if (!open) { setLoading(true); load().finally(() => setLoading(false)); }
-    setOpen((o) => !o);
+  async function toggle() {
+    if (open) { setOpen(false); return; }
+    // Open: load content, then mark all read so badge clears
+    setOpen(true);
+    setLoading(true);
+    await loadPanel().catch(() => {});
+    setLoading(false);
+    // Mark all as read on the server and clear badge immediately
+    notificationsApi.markAllRead().catch(() => {});
+    setUnreadCount(0);
+    setNotifs(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
   }
 
   async function markRead(id: string) {
@@ -165,25 +183,18 @@ function NotificationsPanel() {
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
   }
 
-  async function markAllRead() {
-    await notificationsApi.markAllRead().catch(() => {});
-    setNotifs(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
-  }
-
-  const unreadNotifs = notifs.filter(n => !n.readAt);
   const hasBusinessAlerts = !scopedToSelf && alerts && (
     alerts.promisesToday > 0 || alerts.overdueInstallments > 0 || alerts.legalCases > 0
   );
-  const totalBadge = unreadNotifs.length + (hasBusinessAlerts ? 1 : 0);
 
   return (
     <div ref={ref} className="relative">
       <button onClick={toggle}
         className="relative w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
         <Bell size={18} />
-        {totalBadge > 0 && (
-          <span className="absolute top-1 right-1 min-w-[14px] h-[14px] bg-brand-600 rounded-full text-[9px] text-white font-bold flex items-center justify-center px-0.5">
-            {totalBadge > 9 ? "9+" : totalBadge}
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 min-w-[14px] h-[14px] bg-red-500 rounded-full text-[9px] text-white font-bold flex items-center justify-center px-0.5">
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
@@ -192,11 +203,6 @@ function NotificationsPanel() {
         <div className="absolute top-full right-0 mt-1.5 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-gray-900">Njoftimet</span>
-            {unreadNotifs.length > 0 && (
-              <button onClick={markAllRead} className="text-[11px] text-brand-600 hover:text-brand-700 font-medium">
-                Shëno të gjitha si të lexuara
-              </button>
-            )}
           </div>
 
           {loading ? (
@@ -206,12 +212,12 @@ function NotificationsPanel() {
               {/* Personal leave notifications */}
               {notifs.slice(0, 10).map(n => (
                 <button key={n.id} onClick={() => { markRead(n.id); if (n.link) { router.push(n.link); setOpen(false); } }}
-                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${!n.readAt ? "bg-blue-50/40" : ""}`}>
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
                   <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
                     <CalendarDays size={13} className="text-brand-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-[13px] text-gray-900 truncate ${!n.readAt ? "font-semibold" : "font-medium"}`}>
+                    <div className="text-[13px] font-medium text-gray-900 truncate">
                       {n.title}
                     </div>
                     {n.body && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{n.body}</div>}
@@ -219,7 +225,6 @@ function NotificationsPanel() {
                       {new Date(n.createdAt).toLocaleDateString("sq-AL")}
                     </div>
                   </div>
-                  {!n.readAt && <span className="w-2 h-2 bg-brand-500 rounded-full shrink-0 mt-1.5" />}
                 </button>
               ))}
 

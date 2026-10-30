@@ -304,6 +304,7 @@ export class CasesService {
       ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90);
       where.status = 'ACTIVE';
       if (!where.AND) where.AND = [];
+      where.AND.push({ createdAt: { lt: ninetyDaysAgo } });
       where.AND.push({ NOT: { activities: { some: { occurredAt: { gte: ninetyDaysAgo } } } } });
       where.AND.push({ NOT: { payments: { some: { paymentDate: { gte: ninetyDaysAgo }, voidedAt: null } } } });
     }
@@ -331,13 +332,7 @@ export class CasesService {
             return [{ nextActionDate: 'asc' as const }, { loan: { currentOutstandingBalance: 'desc' as const } }];
           }
           if (query.view === 'vonesa' || query.view === 'premtime_thyera') {
-            // Order by fewest overdue days first: the case whose most recent overdue promise
-            // is closest to today (largest promiseDate) appears first.
-            // Cases with only overdue installments (no promise records) fall back to balance DESC.
-            return [
-              { promises: { _max: { promiseDate: 'desc' } } } as any,
-              { loan: { currentOutstandingBalance: 'desc' as const } },
-            ];
+            return [{ loan: { currentOutstandingBalance: 'desc' as const } }];
           }
           return byBalance;
         })(),
