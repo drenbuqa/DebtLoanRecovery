@@ -69,7 +69,7 @@ const CASE_LIST_SELECT = {
   },
   _count: { select: { activities: true, payments: true } },
   // Latest activity — used by the Ndjekja e Radhës Excel export
-  latestActivity: {
+  activities: {
     orderBy: { occurredAt: 'desc' as const },
     take: 1,
     select: { occurredAt: true, notes: true },
