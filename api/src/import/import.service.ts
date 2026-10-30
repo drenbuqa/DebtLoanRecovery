@@ -1175,7 +1175,7 @@ export class ImportService {
     const caseByRef = new Map(cases.map(c => [c.caseReference, c.id]));
 
     const errors: { row: number; ref: string; error: string }[] = [];
-    type ActivityRecord = Parameters<typeof this.prisma.activity.createMany>[0]['data'][0];
+    type ActivityRecord = import('@prisma/client').Prisma.ActivityCreateManyInput;
     const valid: ActivityRecord[] = [];
     const CHUNK = 500;
 
@@ -1273,7 +1273,7 @@ export class ImportService {
     );
 
     const errors: { row: number; ref: string; error: string }[] = [];
-    type PaymentRecord = Parameters<typeof this.prisma.payment.createMany>[0]['data'][0];
+    type PaymentRecord = import('@prisma/client').Prisma.PaymentCreateManyInput;
     const valid: PaymentRecord[] = [];
     const CHUNK = 500;
 

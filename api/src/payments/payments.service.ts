@@ -7,7 +7,6 @@ const PAYMENT_SELECT = {
   amount: true,
   currency: true,
   paymentDate: true,
-  paymentChannel: true,
   notes: true,
   case: {
     select: {
@@ -95,7 +94,6 @@ export class PaymentsService {
     amount: number;
     currency?: string;
     paymentDate: string;
-    paymentChannel?: string;
     notes?: string;
     nextPaymentDate?: string;
     nextPaymentAmount?: number;
@@ -115,7 +113,6 @@ export class PaymentsService {
           amount: dto.amount,
           currency: dto.currency ?? 'EUR',
           paymentDate: new Date(dto.paymentDate),
-          paymentChannel: dto.paymentChannel,
           notes: dto.notes,
         },
         select: PAYMENT_SELECT,
@@ -202,7 +199,7 @@ export class PaymentsService {
     return payment;
   }
 
-  async updatePayment(id: string, dto: { amount?: number; paymentDate?: string; paymentChannel?: string; notes?: string }, updatedById: string) {
+  async updatePayment(id: string, dto: { amount?: number; paymentDate?: string; notes?: string }, updatedById: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id } });
     if (!payment) throw new NotFoundException('Pagesa nuk u gjet');
     if (payment.voidedAt) throw new BadRequestException('Nuk mund të ndryshohet një pagesë e anuluar');
@@ -217,7 +214,6 @@ export class PaymentsService {
         data: {
           ...(dto.amount !== undefined && { amount: dto.amount }),
           ...(dto.paymentDate !== undefined && { paymentDate: new Date(dto.paymentDate) }),
-          ...(dto.paymentChannel !== undefined && { paymentChannel: dto.paymentChannel }),
           ...(dto.notes !== undefined && { notes: dto.notes }),
         },
         select: PAYMENT_SELECT,

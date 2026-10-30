@@ -246,13 +246,12 @@ export class ReportsService {
     });
 
     const rows = [
-      ['payment_reference', 'date', 'amount', 'currency', 'channel', 'case_reference', 'loan_number', 'borrower', 'officer', 'notes'],
+      ['payment_reference', 'date', 'amount', 'currency', 'case_reference', 'loan_number', 'borrower', 'officer', 'notes'],
       ...payments.map(p => [
         p.paymentReference,
         new Date(p.paymentDate).toISOString().slice(0, 10),
         Number(p.amount).toFixed(2),
         p.currency,
-        p.paymentChannel ?? '',
         p.case.caseReference,
         p.case.loan.loanNumber,
         `${p.case.loan.borrower.fullName}`,
@@ -523,7 +522,6 @@ export class ReportsService {
         d(p.paymentDate),
         Number(p.amount),
         p.currency,
-        p.paymentChannel ?? '',
         (p.notes ?? '').replace(/"/g, '""'),
         p.officer.fullName,
         b.personalId ?? '',

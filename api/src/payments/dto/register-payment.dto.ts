@@ -17,11 +17,6 @@ export class RegisterPaymentDto {
   paymentDate: string;
 
   @IsOptional()
-  @IsString({ message: 'Kanali i pagesës duhet të jetë tekst' })
-  @MaxLength(50)
-  paymentChannel?: string;
-
-  @IsOptional()
   @IsString({ message: 'Shënimet duhet të jenë tekst' })
   @MaxLength(500, { message: 'Shënimet nuk mund të kalojnë 500 karaktere' })
   notes?: string;

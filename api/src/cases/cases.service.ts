@@ -129,7 +129,7 @@ const CASE_DETAIL_EXTRA = {
     take: 20,
     select: {
       id: true, paymentReference: true, amount: true, currency: true,
-      paymentDate: true, paymentChannel: true, notes: true,
+      paymentDate: true, notes: true,
       officer: { select: { id: true, fullName: true } },
     },
   },
