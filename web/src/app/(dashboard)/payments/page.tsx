@@ -10,7 +10,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet, Plus } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { downloadExcel } from "@/lib/exportExcel";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -143,6 +143,106 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
   );
 }
 
+function EditPaymentModal({ payment, onClose, onSaved }: { payment: any; onClose: () => void; onSaved: () => void }) {
+  const [amount, setAmount] = useState(String(Number(payment.amount)));
+  const [date, setDate] = useState(payment.paymentDate ? payment.paymentDate.slice(0, 10) : "");
+  const [notes, setNotes] = useState(payment.notes ?? "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    const amt = parseFloat(amount);
+    if (!amount || isNaN(amt) || amt <= 0) { setError("Vendosni një shumë të vlefshme."); return; }
+    setLoading(true); setError(null);
+    try {
+      await paymentsApi.update(payment.id, {
+        amount: amt,
+        paymentDate: date || undefined,
+        notes: notes.trim() || undefined,
+      });
+      onSaved();
+    } catch (e: any) { setError(e.message); setLoading(false); }
+  };
+
+  const inp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Pagesën</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+          </div>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
+              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
+            <DatePicker value={date} onChange={setDate} />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
+          </div>
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
+          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-brand-600 text-white text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeletePaymentModal({ payment, onClose, onDeleted }: { payment: any; onClose: () => void; onDeleted: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const confirm = async () => {
+    setLoading(true); setError(null);
+    try {
+      await paymentsApi.delete(payment.id);
+      onDeleted();
+    } catch (e: any) { setError(e.message); setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-semibold text-gray-900">Fshi Pagesën</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
+          </div>
+          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[12px] text-red-800">
+            Kjo do të fshijë përgjithmonë pagesën prej <strong>{new Intl.NumberFormat("sq-AL", { style: "currency", currency: "EUR" }).format(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim <strong>nuk mund të zhbëhet</strong>.
+          </div>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
+          <button onClick={confirm} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke fshirë…" : "Fshi Pagesën"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -190,7 +290,7 @@ function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () =
   );
 }
 
-function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void; scopedToSelf: boolean }) {
+function PaymentCard({ p, onClick, scopedToSelf, onEdit, onDelete }: { p: any; onClick: () => void; scopedToSelf: boolean; onEdit?: () => void; onDelete?: () => void }) {
   const borrower = p.case?.loan?.borrower;
   const name = borrower ? `${borrower.fullName}` : "—";
   const date = new Date(p.paymentDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "long" });
@@ -201,7 +301,21 @@ function PaymentCard({ p, onClick, scopedToSelf }: { p: any; onClick: () => void
           <div className="text-[14px] font-semibold text-gray-900 truncate">{name}</div>
           <div className="text-[11px] text-gray-400 font-mono mt-0.5">{p.case?.caseReference ?? "—"}</div>
         </div>
-        <span className="text-[15px] font-bold text-gray-900 tabular shrink-0">{formatCurrency(Number(p.amount))}</span>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[15px] font-bold text-gray-900 tabular">{formatCurrency(Number(p.amount))}</span>
+          {onEdit && (
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="p-1.5 text-gray-300 hover:text-brand-500 transition-colors rounded" title="Ndrysho">
+              <Pencil size={13} />
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded" title="Fshi">
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="h-px bg-gray-100 mb-3" />
       <div className="flex items-center gap-3 text-[12px] text-gray-400">
@@ -226,8 +340,11 @@ export default function PaymentsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [voidTarget, setVoidTarget] = useState<any>(null);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canEdit = user?.role === "ADMIN" || user?.role === "MANAGER";
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -318,6 +435,20 @@ export default function PaymentsPage() {
           payment={voidTarget}
           onClose={() => setVoidTarget(null)}
           onVoided={() => { setVoidTarget(null); mutate(); toast("Pagesa u anulua"); }}
+        />
+      )}
+      {editTarget && (
+        <EditPaymentModal
+          payment={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); mutate(); toast("Pagesa u përditësua"); }}
+        />
+      )}
+      {deleteTarget && (
+        <DeletePaymentModal
+          payment={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={() => { setDeleteTarget(null); mutate(); toast("Pagesa u fshi"); }}
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
@@ -425,7 +556,11 @@ export default function PaymentsPage() {
             ) : (
               <div className={`transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : ""}`}>
                 {filtered.map((p) => (
-                  <PaymentCard key={p.id} p={p} scopedToSelf={scopedToSelf} onClick={() => p.case?.id && router.push(`/cases/${p.case.id}`)} />
+                  <PaymentCard key={p.id} p={p} scopedToSelf={scopedToSelf}
+                    onClick={() => p.case?.id && router.push(`/cases/${p.case.id}`)}
+                    onEdit={canEdit ? () => setEditTarget(p) : undefined}
+                    onDelete={canEdit ? () => setDeleteTarget(p) : undefined}
+                  />
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
@@ -509,7 +644,7 @@ export default function PaymentsPage() {
                       <Th>Shuma</Th>
                       <Th>Data</Th>
                       {!scopedToSelf && <Th>Oficeri</Th>}
-                      {canVoid && <Th />}
+                      {(canVoid || canEdit) && <Th />}
                     </tr>
                   </Thead>
                   <Tbody>
@@ -532,15 +667,37 @@ export default function PaymentsPage() {
                           </span>
                         </Td>
                         {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{p.officer?.fullName ?? "—"}</span></Td>}
-                        {canVoid && (
+                        {(canVoid || canEdit) && (
                           <Td>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setVoidTarget(p); }}
-                              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
-                              title="Anulo pagesën"
-                            >
-                              <Ban size={13} />
-                            </button>
+                            <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                              {canEdit && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditTarget(p); }}
+                                  className="p-1.5 text-gray-300 hover:text-brand-500 transition-colors rounded"
+                                  title="Ndrysho pagesën"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              )}
+                              {canEdit && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(p); }}
+                                  className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
+                                  title="Fshi pagesën"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                              {canVoid && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setVoidTarget(p); }}
+                                  className="p-1.5 text-gray-300 hover:text-amber-500 transition-colors rounded"
+                                  title="Anulo pagesën"
+                                >
+                                  <Ban size={13} />
+                                </button>
+                              )}
+                            </div>
                           </Td>
                         )}
                       </Tr>
