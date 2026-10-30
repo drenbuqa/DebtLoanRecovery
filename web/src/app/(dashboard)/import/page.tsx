@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { importApi } from "@/lib/api";
 import {
@@ -553,19 +553,170 @@ function ReferencePanel() {
 
 // ── Bulk update panel ──────────────────────────────────────────────────────────
 
-type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2";
+// ── Historical import panel (Activities / Payments) ───────────────────────────
+
+function HistoricalImportPanel({
+  title, subtitle, templateUrl, templateFileName, templateDesc, onUpload, typeNote,
+}: {
+  title: string;
+  subtitle: string;
+  templateUrl: string;
+  templateFileName: string;
+  templateDesc: string;
+  onUpload: (file: File) => Promise<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] }>;
+  typeNote: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<{ total: number; succeeded: number; failed: number; errors: { row: number; ref: string; error: string }[] } | null>(null);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function reset() { setFile(null); setResult(null); setError(""); }
+
+  async function submit() {
+    if (!file) return;
+    setUploading(true); setResult(null); setError("");
+    try {
+      const r = await onUpload(file);
+      setResult(r);
+      setFile(null);
+    } catch (e: any) {
+      setError(e.message ?? "Ndodhi një gabim.");
+    } finally { setUploading(false); }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <button onClick={() => { setOpen((v) => !v); reset(); }}
+        className="w-full flex items-center justify-between px-5 py-4 text-left">
+        <div>
+          <div className="text-[14px] font-semibold text-gray-900">{title}</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">{subtitle}</div>
+        </div>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 p-5 space-y-5">
+
+          {/* Note about types */}
+          <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl">
+            {typeNote}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            {/* Left: download template */}
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Shkarko Template</p>
+              <a
+                href={templateUrl}
+                download={templateFileName}
+                className="w-full flex items-center gap-4 px-4 py-4 bg-gray-50 hover:bg-brand-50 border border-gray-200 hover:border-brand-300 rounded-xl transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 group-hover:border-brand-200 flex items-center justify-center shrink-0 transition-colors">
+                  <FileSpreadsheet size={18} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="text-[13px] font-semibold text-gray-800 group-hover:text-brand-700 transition-colors">{templateFileName}</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">{templateDesc}</div>
+                </div>
+                <Download size={14} className="text-gray-400 group-hover:text-brand-500 shrink-0 transition-colors" />
+              </a>
+              <p className="text-[11px] text-gray-400 mt-2.5 leading-relaxed">
+                Plotësoni templatein me të dhënat tuaja historike, pastaj ngarkojeni këtu.
+              </p>
+            </div>
+
+            {/* Right: upload */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Ngarko Skedarin</p>
+
+              {result ? (
+                <div className="space-y-3">
+                  <div className={`flex items-start gap-2.5 p-3.5 rounded-xl border ${result.failed === 0 ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
+                    {result.failed === 0
+                      ? <CheckCircle size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                      : <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />}
+                    <div className="text-[12px] text-gray-700 space-y-0.5">
+                      <div><span className="font-semibold text-emerald-700">{result.succeeded}</span> rreshta u regjistruan me sukses</div>
+                      {result.failed > 0 && <div><span className="font-semibold text-amber-700">{result.failed}</span> rreshta dështuan</div>}
+                      <div className="text-gray-400">Gjithsej: {result.total}</div>
+                    </div>
+                  </div>
+                  {result.errors.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto border border-red-100 rounded-xl bg-red-50 p-3 space-y-1">
+                      {result.errors.slice(0, 50).map((e, i) => (
+                        <div key={i} className="text-[11px] text-red-700">
+                          <span className="font-mono font-semibold">Rreshti {e.row} ({e.ref}):</span> {e.error}
+                        </div>
+                      ))}
+                      {result.errors.length > 50 && <div className="text-[11px] text-red-400">... dhe {result.errors.length - 50} gabime të tjera</div>}
+                    </div>
+                  )}
+                  <button onClick={reset} className="w-full py-2 text-[12px] text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg transition-colors">
+                    Importo skedar tjetër
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${file ? "border-brand-400 bg-brand-50" : "border-gray-200 hover:border-gray-300 bg-gray-50"}`}
+                    onClick={() => inputRef.current?.click()}
+                  >
+                    <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile(f); setError(""); } }} />
+                    {file ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <FileSpreadsheet size={16} className="text-brand-500" />
+                        <span className="text-[13px] font-medium text-brand-700 truncate max-w-[200px]">{file.name}</span>
+                        <button onClick={(ev) => { ev.stopPropagation(); setFile(null); }} className="ml-1 text-gray-400 hover:text-red-500 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-[12px] text-gray-400">
+                        <Upload size={18} className="mx-auto mb-1.5 text-gray-300" />
+                        Kliko për të zgjedhur skedarin <span className="text-gray-500 font-medium">.xlsx / .xls / .csv</span>
+                      </div>
+                    )}
+                  </div>
+                  {error && <p className="text-[12px] text-red-600 px-1">{error}</p>}
+                  <button
+                    onClick={submit}
+                    disabled={!file || uploading}
+                    className="w-full py-2.5 rounded-xl text-[13px] font-semibold transition-all bg-brand-600 hover:bg-brand-700 text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {uploading ? <><RefreshCw size={14} className="animate-spin" /> Duke importuar…</> : <><Upload size={14} /> Importo</>}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2";
 
 const BULK_TYPE_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "officer",           label: "Zyrtar",           desc: "Ndrysho zyrtar kryesor" },
   { key: "secondary_officer", label: "Zyrtar i Dytë",    desc: "Ndrysho zyrtar dytësor" },
+  { key: "office",            label: "Zyra",             desc: "Ndrysho zyrën e caktuar" },
   { key: "institution",       label: "Institucioni",     desc: "Ndrysho bankën/institucionin" },
   { key: "city",              label: "Qyteti",           desc: "Ndrysho qytetin e huamarrësit" },
   { key: "category",          label: "Kategoria",        desc: "Ndrysho kategorinë (D1–D4, LEGAL)" },
   { key: "balance",           label: "Borgji",           desc: "Ndrysho borgjin aktual" },
   { key: "phone2",            label: "Tel. i Dytë",      desc: "Ndrysho numrin e dytë të telefonit" },
+  { key: "guarantor1",        label: "Garanti 1",        desc: "Shto/ndrysho emrin dhe tel. garantorit 1" },
+  { key: "guarantor2",        label: "Garanti 2",        desc: "Shto/ndrysho emrin dhe tel. garantorit 2" },
 ];
 
-function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; institutions: any[]; cities: any[] }) {
+function BulkUpdatePanel({ officers, institutions, cities, offices }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[] }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<BulkType>("officer");
   const [file, setFile] = useState<File | null>(null);
@@ -636,6 +787,23 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
     if (type === "phone2") {
       return <p className="text-[12px] text-gray-500 leading-relaxed">Vendosni numrin e dytë të telefonit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">044123456</span>) në kolonën e dytë të Excel.</p>;
     }
+    if (type === "office") {
+      return (
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+          {offices.map((o: any) => (
+            <div key={o.id} className="flex items-center px-3 py-1.5 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-14 font-mono font-bold text-brand-700">{o.code}</span>
+              <span className="flex-1 text-gray-800">{o.name}</span>
+              <CopyBtn text={o.code} />
+            </div>
+          ))}
+          {offices.length === 0 && <p className="px-3 py-2 text-[12px] text-gray-400">Duke ngarkuar…</p>}
+        </div>
+      );
+    }
+    if (type === "guarantor1" || type === "guarantor2") {
+      return <p className="text-[12px] text-gray-500 leading-relaxed">Kolona B: emri i plotë i garantorit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">Arben Gashi</span>). Kolona C (opsionale): numri i telefonit.</p>;
+    }
     // city
     return (
       <div className="divide-y divide-gray-50 border border-gray-100 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
@@ -656,7 +824,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
         className="w-full flex items-center justify-between px-5 py-4 text-left">
         <div>
           <div className="text-[14px] font-semibold text-gray-900">Ndryshime të Pjesshme</div>
-          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, institucion, qytet, kategori, borgji ose telefon me ngarkesë Excel</div>
+          <div className="text-[12px] text-gray-400 mt-0.5">Ndrysho zyrtar, zyrë, institucion, garantor, qytet, kategori, borgji ose telefon me ngarkesë Excel</div>
         </div>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
@@ -689,9 +857,18 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
               </p>
               <button
                 onClick={() => {
-                  const colB = type === "officer" ? "Kodi i Zyratarit" : type === "secondary_officer" ? "Kodi i Zyratarit Dytësor" : type === "institution" ? "Kodi i Institucionit" : type === "city" ? "Kodi i Qytetit" : type === "category" ? "Kategoria (D1/D2/D3/D4/LEGAL)" : type === "balance" ? "Borgji Aktual" : "Numri i Telefonit të Dytë";
-                  const ex1 = type === "officer" || type === "secondary_officer" ? 3 : type === "institution" ? 4 : type === "city" ? 19 : type === "category" ? "D2" : type === "balance" ? 4500.00 : "044123456";
-                  const ex2 = type === "officer" || type === "secondary_officer" ? 7 : type === "institution" ? 9 : type === "city" ? 5 : type === "category" ? "D3" : type === "balance" ? 1200.50 : "045654321";
+                  if (type === "guarantor1" || type === "guarantor2") {
+                    const rows = [
+                      { "Numri i Klientit (case_reference)": "Q71234567R", "Emri Mbiemri": "Arben Gashi", "Telefoni (opsional)": "+38344123456" },
+                      { "Numri i Klientit (case_reference)": "M31234567N", "Emri Mbiemri": "Vjosa Berisha", "Telefoni (opsional)": "+38344654321" },
+                      { "Numri i Klientit (case_reference)": "", "Emri Mbiemri": "", "Telefoni (opsional)": "" },
+                    ];
+                    downloadExcel(rows, `template-${type}`);
+                    return;
+                  }
+                  const colB = type === "officer" ? "Kodi i Zyratarit" : type === "secondary_officer" ? "Kodi i Zyratarit Dytësor" : type === "institution" ? "Kodi i Institucionit" : type === "city" ? "Kodi i Qytetit" : type === "office" ? "Kodi i Zyrës" : type === "category" ? "Kategoria (D1/D2/D3/D4/LEGAL)" : type === "balance" ? "Borgji Aktual" : "Numri i Telefonit të Dytë";
+                  const ex1 = type === "officer" || type === "secondary_officer" ? 3 : type === "institution" ? 4 : type === "city" ? 19 : type === "office" ? "PRK" : type === "category" ? "D2" : type === "balance" ? 4500.00 : "044123456";
+                  const ex2 = type === "officer" || type === "secondary_officer" ? 7 : type === "institution" ? 9 : type === "city" ? 5 : type === "office" ? "GJK" : type === "category" ? "D3" : type === "balance" ? 1200.50 : "045654321";
                   const rows = [
                     { "Numri i Klientit (case_reference)": "Q71234567R", [colB]: ex1 },
                     { "Numri i Klientit (case_reference)": "M31234567N", [colB]: ex2 },
@@ -709,7 +886,7 @@ function BulkUpdatePanel({ officers, institutions, cities }: { officers: any[]; 
                     template-{type}.xlsx
                   </div>
                   <div className="text-[11px] text-gray-400 mt-0.5">
-                    {type === "officer" ? "case_reference · kodi i zyratarit" : type === "secondary_officer" ? "case_reference · kodi i zyratarit dytësor" : type === "institution" ? "case_reference · kodi i institucionit" : type === "city" ? "case_reference · kodi i qytetit" : type === "category" ? "case_reference · kategoria (D1–D4/LEGAL)" : type === "balance" ? "case_reference · borgji aktual" : "case_reference · numri i telefonit të dytë"}
+                    {type === "officer" ? "case_reference · kodi i zyratarit" : type === "secondary_officer" ? "case_reference · kodi i zyratarit dytësor" : type === "office" ? "case_reference · kodi i zyrës" : type === "institution" ? "case_reference · kodi i institucionit" : type === "city" ? "case_reference · kodi i qytetit" : type === "category" ? "case_reference · kategoria (D1–D4/LEGAL)" : type === "balance" ? "case_reference · borgji aktual" : (type === "guarantor1" || type === "guarantor2") ? "case_reference · emri mbiemri · telefoni (opsional)" : "case_reference · numri i telefonit të dytë"}
                   </div>
                 </div>
                 <Download size={14} className="text-gray-400 group-hover:text-brand-500 shrink-0 transition-colors" />
@@ -810,6 +987,7 @@ export default function ImportPage() {
   const [officers, setOfficers]         = useState<any[]>([]);
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [cities, setCities]             = useState<any[]>([]);
+  const [offices, setOffices]           = useState<any[]>([]);
 
   useEffect(() => {
     importApi.jobs().then(setJobs).catch(() => {}).finally(() => setLoadingJobs(false));
@@ -817,6 +995,7 @@ export default function ImportPage() {
       setOfficers(d.officers);
       setInstitutions(d.institutions);
       setCities(d.cities);
+      setOffices(d.offices ?? []);
     }).catch(() => {});
   }, []);
 
@@ -966,8 +1145,47 @@ export default function ImportPage() {
         {/* ── Reference data ───────────────────────── */}
         <ReferencePanel />
 
+        {/* ── Historical import: Activities ────────── */}
+        <HistoricalImportPanel
+          title="Import Aktivitetesh"
+          subtitle="Importo aktivitete historike për rastet ekzistuese"
+          templateUrl={importApi.templateActivitiesUrl()}
+          templateFileName="dlr-template-aktivitetet.xlsx"
+          templateDesc="case_reference · activity_type · date · officer_code · outcome · notes · promise_amount"
+          onUpload={(file) => importApi.importActivities(file)}
+          typeNote={
+            <p className="text-[12px] text-gray-500 leading-relaxed">
+              <span className="font-medium">Llojet e vlefshme (activity_type):</span>{" "}
+              <span className="font-mono text-[11px]">CALL, VISIT, SMS, EMAIL, LETTER, PROMISE_TO_PAY, PAYMENT_RECEIVED, LEGAL_ACTION, NOTE, FIELD_VISIT, CALL_BORROWER, CALL_GUARANTOR, VISIT_BORROWER, VISIT_GUARANTOR, WARNING_LETTER, MEETING_BORROWER, MEETING_GUARANTOR</span>
+              <br />
+              <span className="font-medium">Rezultatet (outcome, opsionale):</span>{" "}
+              <span className="font-mono text-[11px]">CONTACTED, NO_ANSWER, PROMISE_RECEIVED, REFUSED, PARTIAL_PAYMENT, FULL_PAYMENT, DISPUTE, DECEASED, OTHER</span>
+            </p>
+          }
+        />
+
+        {/* ── Historical import: Payments ──────────── */}
+        <HistoricalImportPanel
+          title="Import Pagesash"
+          subtitle="Importo pagesa historike për rastet ekzistuese"
+          templateUrl={importApi.templatePaymentsUrl()}
+          templateFileName="dlr-template-pagesat.xlsx"
+          templateDesc="case_reference · amount · date · reference · officer_code · channel · notes"
+          onUpload={(file) => importApi.importPayments(file)}
+          typeNote={
+            <p className="text-[12px] text-gray-500 leading-relaxed">
+              <span className="font-medium">Kanalet (channel, opsionale):</span>{" "}
+              <span className="font-mono text-[11px]">BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER</span>
+              <br />
+              <span className="font-medium">reference:</span> nëse lihet bosh, gjenerohet automatikisht.
+              <br />
+              <span className="font-medium">officer_code:</span> kodi numerik i zyratarit (opsional — nëse mungon, regjistrohet nën llogarinë tuaj).
+            </p>
+          }
+        />
+
         {/* ── Bulk partial updates ─────────────────── */}
-        <BulkUpdatePanel officers={officers} institutions={institutions} cities={cities} />
+        <BulkUpdatePanel officers={officers} institutions={institutions} cities={cities} offices={offices} />
 
         {/* ── History ───────────────────────────────── */}
         <div>

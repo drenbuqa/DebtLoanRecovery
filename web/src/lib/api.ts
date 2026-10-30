@@ -283,7 +283,7 @@ async function importFetch(path: string, form: FormData) {
 
 export const importApi = {
   templateUrl: () => `${API_BASE}/import/template`,
-  referenceData: () => req<{ officers: any[]; institutions: any[]; cities: any[] }>('/import/reference-data'),
+  referenceData: () => req<{ officers: any[]; institutions: any[]; cities: any[]; offices: any[] }>('/import/reference-data'),
   fields: () => req<any[]>('/import/fields'),
   jobs: () => req<any[]>('/import/jobs'),
   preview: async (file: File) => {
@@ -303,6 +303,18 @@ export const importApi = {
     form.append('file', file);
     form.append('type', type);
     return importFetch('/import/bulk-update', form);
+  },
+  templateActivitiesUrl: () => `${API_BASE}/import/template-activities`,
+  templatePaymentsUrl: () => `${API_BASE}/import/template-payments`,
+  importActivities: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return importFetch('/import/activities', form);
+  },
+  importPayments: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return importFetch('/import/payments-bulk', form);
   },
   rollbackCheck: (jobId: string) => req<{ canRollback: boolean; reason: string | null; caseCount?: number; cases?: string[]; blockers?: string[] }>(`/import/jobs/${jobId}/rollback-check`),
   rollback: async (jobId: string) => {
@@ -407,4 +419,35 @@ export const reports = {
     if (!res.ok) throw new Error('Gjenerimi i raportit dështoi');
     return res.blob();
   },
+};
+
+// ── Leave Management ──────────────────────────────────────────────────────────
+
+export const leave = {
+  myBalance: () => req<any>('/leave/my-balance'),
+  myRequests: () => req<any[]>('/leave/my-requests'),
+  createRequest: (body: { leaveType: string; startDate: string; endDate: string; reason?: string }) =>
+    req<any>('/leave/request', { method: 'POST', body: JSON.stringify(body) }),
+  cancelRequest: (id: string) => req<any>(`/leave/request/${id}/cancel`, { method: 'PATCH' }),
+
+  // Admin
+  adminPending: () => req<any[]>('/leave/admin/pending'),
+  adminAllRequests: () => req<any[]>('/leave/admin/all-requests'),
+  adminStaff: () => req<any[]>('/leave/admin/staff'),
+  reviewRequest: (id: string, approved: boolean, note?: string) =>
+    req<any>(`/leave/admin/request/${id}/review`, { method: 'PATCH', body: JSON.stringify({ approved, note }) }),
+  setBalance: (userId: string, initialDays: number, initialDate: string) =>
+    req<any>('/leave/admin/balance', { method: 'POST', body: JSON.stringify({ userId, initialDays, initialDate }) }),
+  createAdjustment: (userId: string, days: number, note: string) =>
+    req<any>('/leave/admin/adjustment', { method: 'POST', body: JSON.stringify({ userId, days, note }) }),
+  listAdjustments: (userId: string) => req<any[]>(`/leave/admin/adjustments/${userId}`),
+};
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export const notifications = {
+  list: () => req<any[]>('/notifications'),
+  unreadCount: () => req<{ count: number }>('/notifications/unread-count'),
+  markRead: (id: string) => req<any>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllRead: () => req<any>('/notifications/read-all', { method: 'PATCH' }),
 };

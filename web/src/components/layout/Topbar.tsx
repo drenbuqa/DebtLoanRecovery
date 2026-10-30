@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, HelpCircle, X, FolderOpen, AlertCircle, CheckSquare, Scale, ChevronRight } from "lucide-react";
-import { cases as casesApi } from "@/lib/api";
+import { Search, Bell, HelpCircle, X, FolderOpen, AlertCircle, CheckSquare, Scale, ChevronRight, CalendarDays } from "lucide-react";
+import { cases as casesApi, notifications as notificationsApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 // ── Types ────────────────────────────────────────────────────
@@ -128,12 +128,13 @@ function GlobalSearch() {
 
 // ── Notifications ────────────────────────────────────────────
 function NotificationsPanel() {
-  const [open, setOpen]     = useState(false);
-  const [alerts, setAlerts] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const ref                 = useRef<HTMLDivElement>(null);
-  const router              = useRouter();
-  const { user, scopedToSelf } = useAuth();
+  const [open, setOpen]         = useState(false);
+  const [alerts, setAlerts]     = useState<any>(null);
+  const [notifs, setNotifs]     = useState<any[]>([]);
+  const [loading, setLoading]   = useState(false);
+  const ref                     = useRef<HTMLDivElement>(null);
+  const router                  = useRouter();
+  const { user, scopedToSelf }  = useAuth();
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -143,38 +144,47 @@ function NotificationsPanel() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  async function loadAlerts() {
-    if (!user || scopedToSelf) return;
-    try {
-      const stats = await casesApi.dashboardStats();
-      setAlerts(stats);
-    } catch {}
+  async function load() {
+    if (!user) return;
+    const promises: Promise<any>[] = [notificationsApi.list().catch(() => [])];
+    if (!scopedToSelf) promises.push(casesApi.dashboardStats().catch(() => null));
+    const [ns, stats] = await Promise.all(promises);
+    setNotifs(ns ?? []);
+    if (stats !== undefined) setAlerts(stats);
   }
 
-  useEffect(() => { loadAlerts(); }, [user, scopedToSelf]);
-
-  async function fetchAlerts() {
-    setLoading(true);
-    try { await loadAlerts(); }
-    finally { setLoading(false); }
-  }
+  useEffect(() => { load(); }, [user, scopedToSelf]);
 
   function toggle() {
-    if (!open) fetchAlerts();
+    if (!open) { setLoading(true); load().finally(() => setLoading(false)); }
     setOpen((o) => !o);
   }
 
-  const hasAlerts = !scopedToSelf && alerts && (
+  async function markRead(id: string) {
+    await notificationsApi.markRead(id).catch(() => {});
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
+  }
+
+  async function markAllRead() {
+    await notificationsApi.markAllRead().catch(() => {});
+    setNotifs(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
+  }
+
+  const unreadNotifs = notifs.filter(n => !n.readAt);
+  const hasBusinessAlerts = !scopedToSelf && alerts && (
     alerts.promisesToday > 0 || alerts.overdueInstallments > 0 || alerts.legalCases > 0
   );
+  const totalBadge = unreadNotifs.length + (hasBusinessAlerts ? 1 : 0);
 
   return (
     <div ref={ref} className="relative">
       <button onClick={toggle}
         className="relative w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
         <Bell size={18} />
-        {hasAlerts && (
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-600 rounded-full" />
+        {totalBadge > 0 && (
+          <span className="absolute top-1 right-1 min-w-[14px] h-[14px] bg-brand-600 rounded-full text-[9px] text-white font-bold flex items-center justify-center px-0.5">
+            {totalBadge > 9 ? "9+" : totalBadge}
+          </span>
         )}
       </button>
 
@@ -182,20 +192,38 @@ function NotificationsPanel() {
         <div className="absolute top-full right-0 mt-1.5 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-gray-900">Njoftimet</span>
-            <span className="text-[11px] text-gray-400">Sot</span>
+            {unreadNotifs.length > 0 && (
+              <button onClick={markAllRead} className="text-[11px] text-brand-600 hover:text-brand-700 font-medium">
+                Shëno të gjitha si të lexuara
+              </button>
+            )}
           </div>
 
           {loading ? (
             <div className="px-4 py-6 text-[12px] text-gray-400 text-center">Duke ngarkuar…</div>
           ) : (
-            <div className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
-              {scopedToSelf && (
-                <div className="px-4 py-8 text-center">
-                  <div className="text-[13px] font-medium text-gray-700 mb-1">Gjithçka në rregull</div>
-                  <div className="text-[12px] text-gray-400">Nuk ka njoftime për sot.</div>
-                </div>
-              )}
+            <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+              {/* Personal leave notifications */}
+              {notifs.slice(0, 10).map(n => (
+                <button key={n.id} onClick={() => { markRead(n.id); if (n.link) { router.push(n.link); setOpen(false); } }}
+                  className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${!n.readAt ? "bg-blue-50/40" : ""}`}>
+                  <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center shrink-0 mt-0.5">
+                    <CalendarDays size={13} className="text-brand-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[13px] text-gray-900 truncate ${!n.readAt ? "font-semibold" : "font-medium"}`}>
+                      {n.title}
+                    </div>
+                    {n.body && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{n.body}</div>}
+                    <div className="text-[10px] text-gray-300 mt-0.5">
+                      {new Date(n.createdAt).toLocaleDateString("sq-AL")}
+                    </div>
+                  </div>
+                  {!n.readAt && <span className="w-2 h-2 bg-brand-500 rounded-full shrink-0 mt-1.5" />}
+                </button>
+              ))}
 
+              {/* Business alerts */}
               {!scopedToSelf && alerts?.overdueInstallments > 0 && (
                 <button onClick={() => { router.push("/agreements"); setOpen(false); }}
                   className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
@@ -241,10 +269,10 @@ function NotificationsPanel() {
                 </button>
               )}
 
-              {!scopedToSelf && !loading && !hasAlerts && alerts && (
+              {notifs.length === 0 && !hasBusinessAlerts && (
                 <div className="px-4 py-8 text-center">
                   <div className="text-[13px] font-medium text-gray-700 mb-1">Gjithçka në rregull</div>
-                  <div className="text-[12px] text-gray-400">Nuk ka njoftime për sot.</div>
+                  <div className="text-[12px] text-gray-400">Nuk ka njoftime të reja.</div>
                 </div>
               )}
             </div>

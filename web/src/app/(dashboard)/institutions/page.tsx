@@ -192,8 +192,9 @@ function InstitutionsPageInner() {
       periodVisits:        acc.periodVisits        + i.periodVisits,
       periodLegal:         acc.periodLegal         + i.periodLegal,
       periodOther:         acc.periodOther         + i.periodOther,
+      legalProceedingsCount: acc.legalProceedingsCount + (i.legalProceedingsCount ?? 0),
     }),
-    { totalCases: 0, activeCases: 0, totalOutstanding: 0, totalOriginal: 0, periodPaymentsValue: 0, periodPaymentsCount: 0, periodPromisesValue: 0, periodPromisesCount: 0, periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0 },
+    { totalCases: 0, activeCases: 0, totalOutstanding: 0, totalOriginal: 0, periodPaymentsValue: 0, periodPaymentsCount: 0, periodPromisesValue: 0, periodPromisesCount: 0, periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0, legalProceedingsCount: 0 },
   ), [list]);
 
   // Period label for column headers — parse as local time to avoid UTC-offset day shift
@@ -346,7 +347,7 @@ function InstitutionsPageInner() {
                           {/* Activities */}
                           <td className={`${TD} ${GRP}`}><Num v={inst.periodCalls} /></td>
                           <td className={TD}><Num v={inst.periodVisits} /></td>
-                          <td className={TD}><Num v={inst.periodLegal} /></td>
+                          <td className={TD}><Num v={inst.legalProceedingsCount ?? 0} /></td>
                           <td className={TD}><Num v={inst.periodOther} /></td>
                           {can("institution:edit") && (
                             <td className="px-2 py-2.5 align-middle">
@@ -386,7 +387,7 @@ function InstitutionsPageInner() {
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodPromisesCount.toLocaleString()}</span></td>
                         <td className={`${TD} ${GRP}`}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodCalls.toLocaleString()}</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodVisits.toLocaleString()}</span></td>
-                        <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodLegal.toLocaleString()}</span></td>
+                        <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.legalProceedingsCount.toLocaleString()}</span></td>
                         <td className={TD}><span className="tabular-nums text-[12px] font-semibold text-gray-700">{totals.periodOther.toLocaleString()}</span></td>
                         <td />
                       </tr>
@@ -454,6 +455,7 @@ function InstitutionsPageInner() {
                           { label: "Premtime",   value: inst.periodPromisesCount > 0 ? `${inst.periodPromisesCount}` : "—" },
                           { label: "Aktivitete", value: (inst.periodCalls + inst.periodVisits + inst.periodLegal + inst.periodOther) > 0
                             ? (inst.periodCalls + inst.periodVisits + inst.periodLegal + inst.periodOther).toString() : "—" },
+                          { label: "Procedime Ligjore", value: (inst.legalProceedingsCount ?? 0) > 0 ? String(inst.legalProceedingsCount) : "—" },
                         ].map((s) => (
                           <div key={s.label} className="text-center">
                             <div className="text-[10px] text-gray-400">{s.label}</div>

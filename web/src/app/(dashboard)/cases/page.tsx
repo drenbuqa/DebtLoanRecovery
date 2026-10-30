@@ -430,7 +430,7 @@ const VIEWS = [
   { key: "all_promises",    label: "Premtimet" },
   { key: "vonesa",          label: "Vonesat" },
   { key: "premtime_thyera", label: "Dështimet" },
-  { key: "signal_90",       label: "Sinjal 90+", signal: true },
+  { key: "signal_90",       label: "Sinjal 90+" },
   { key: "inactive",        label: "Joaktive" },
 ];
 
@@ -563,7 +563,8 @@ function CasesPageInner() {
         const parties = c.loan?.relatedParties ?? [];
         const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
         const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
-        return {
+        const lastAct = c.latestActivity?.[0];
+        const row: Record<string, any> = {
           "Ref. Klientit": c.caseReference,
           "Emri i Plotë": b?.fullName ?? "",
           "Nr. Personal": b?.personalId?.startsWith("NOID-") ? "" : (b?.personalId ?? ""),
@@ -582,6 +583,19 @@ function CasesPageInner() {
           "Bashkëkreditues": coborrower?.person?.fullName ?? "",
           "Data Regjistrimit": c.createdAt ? new Date(c.createdAt).toLocaleDateString("sq-AL") : "",
         };
+        if (view === "ndjekja_radhes") {
+          row["Data e Aktivitetit të Fundit"] = lastAct?.occurredAt ? new Date(lastAct.occurredAt).toLocaleDateString("sq-AL") : "";
+          row["Shënimet"] = lastAct?.notes ?? "";
+          row["Data e Ndjekjes së Radhës"] = c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL") : "";
+        }
+        if (view === "all_promises" || view === "vonesa" || view === "premtime_thyera") {
+          const promise = c.promises?.[0];
+          row["Data e Aktivitetit të Fundit"] = lastAct?.occurredAt ? new Date(lastAct.occurredAt).toLocaleDateString("sq-AL") : "";
+          row["Shënimet"] = lastAct?.notes ?? "";
+          row["Data e Premtimit"] = promise?.promiseDate ? new Date(promise.promiseDate).toLocaleDateString("sq-AL") : "";
+          row["Vlera e Premtuar (€)"] = promise?.promisedAmount != null ? Number(promise.promisedAmount) : "";
+        }
+        return row;
       });
       const date = new Date().toISOString().slice(0, 10);
       downloadExcel(rows, `klientet-${date}`);
@@ -790,15 +804,10 @@ function CasesPageInner() {
               onClick={() => { setView(v.key); setPage(1); }}
               className={`px-3 py-2 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                 view === v.key
-                  ? v.signal
-                    ? "border-amber-500 text-amber-700"
-                    : "border-brand-600 text-brand-700"
-                  : v.signal
-                    ? "border-transparent text-amber-600 hover:text-amber-700 hover:border-amber-300"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-brand-600 text-brand-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              {v.signal && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 mb-px align-middle" />}
               {v.label}
             </button>
           ))}
@@ -830,13 +839,25 @@ function CasesPageInner() {
             </div>
           ) : (
             <div className={`flex-1 min-h-0 transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-auto`}>
-            <table className="w-full min-w-[1200px]">
+            <table className="w-full min-w-[1540px] table-fixed">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Emri / ID", "Telefon", "Adresa", "Banka", "Borxhi Aktual", "Zyrtari 1", "Zyrtari 2", "Qyteti", "Faza", "Garant 1", "Garant 2", "Bashkëkreditues", "Premtimi", "Ndjekja e Radhës"].map((h, i) => (
-                    <th key={i} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap bg-gray-50/50">{h}</th>
-                  ))}
-                  {can("case:delete") && <th className="px-2 py-2 bg-gray-50/50" />}
+                  {/* Fixed column widths — table-fixed layout enforces these */}
+                  <th className="w-[160px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Emri / ID</th>
+                  <th className="w-[105px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Telefon</th>
+                  <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Adresa</th>
+                  <th className="w-[115px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Banka</th>
+                  <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Borxhi Aktual</th>
+                  <th className="w-[115px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Zyrtari 1</th>
+                  <th className="w-[105px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Zyrtari 2</th>
+                  <th className="w-[80px]  px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Qyteti</th>
+                  <th className="w-[90px]  px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Faza</th>
+                  <th className="w-[120px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Garant 1</th>
+                  <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Garant 2</th>
+                  <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Bashkëkreditues</th>
+                  <th className="w-[120px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Premtimi</th>
+                  <th className="w-[130px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Ndjekja e Radhës</th>
+                  {can("case:delete") && <th className="w-[40px] px-2 py-2 bg-gray-50/50" />}
                 </tr>
               </thead>
               <tbody>
@@ -858,8 +879,8 @@ function CasesPageInner() {
                   })();
                   return (
                     <tr key={c.id} onClick={() => router.push(`/cases/${c.id}`)} className="border-b border-gray-50 hover:bg-gray-50/60 cursor-pointer transition-colors group">
-                      <td className="px-3 py-2 min-w-[160px]">
-                        <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[150px]">{b?.fullName ?? "—"}</div>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[12px] font-semibold text-gray-900 truncate" title={b?.fullName ?? undefined}>{b?.fullName ?? "—"}</div>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="text-[10px] text-gray-400 font-mono">{b?.personalId?.startsWith("NOID-") ? "—" : (b?.personalId ?? c.caseReference)}</span>
                           {c.status && c.status !== "ACTIVE" && (() => {
@@ -880,36 +901,36 @@ function CasesPageInner() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[11px] text-gray-600 font-mono">{phone ?? "—"}</span>
                       </td>
-                      <td className="px-3 py-2 max-w-[120px]">
-                        <span className="text-[11px] text-gray-500 truncate block">{b?.address ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-500 truncate" title={b?.address ?? undefined}>{b?.address ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="text-[11px] text-gray-600">{c.loan?.institution?.shortName ?? "—"}</div>
-                        <div className="text-[10px] text-gray-400 font-mono">{c.loan?.loanNumber ?? ""}</div>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-600 truncate" title={c.loan?.institution?.shortName ?? undefined}>{c.loan?.institution?.shortName ?? "—"}</div>
+                        <div className="text-[10px] text-gray-400 font-mono truncate">{c.loan?.loanNumber ?? ""}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[12px] font-bold text-gray-900 tabular-nums">{formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}</span>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-600">{c.assignedOfficer?.fullName ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-600 truncate" title={c.assignedOfficer?.fullName ?? undefined}>{c.assignedOfficer?.fullName ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-500">{c.secondaryOfficer?.fullName ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-500 truncate" title={c.secondaryOfficer?.fullName ?? undefined}>{c.secondaryOfficer?.fullName ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-500">{b?.city ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-500 truncate" title={b?.city ?? undefined}>{b?.city ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[10px] text-gray-600">{c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[10px] text-gray-600 truncate">{c.collectionStatus ? (fazaLabel[c.collectionStatus] ?? c.collectionStatus) : "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-600">{guarantors[0]?.person?.fullName ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-600 truncate" title={guarantors[0]?.person?.fullName ?? undefined}>{guarantors[0]?.person?.fullName ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-500">{guarantors[1]?.person?.fullName ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-500 truncate" title={guarantors[1]?.person?.fullName ?? undefined}>{guarantors[1]?.person?.fullName ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="text-[11px] text-gray-500">{coborrower?.person?.fullName ?? "—"}</span>
+                      <td className="px-3 py-2 overflow-hidden">
+                        <div className="text-[11px] text-gray-500 truncate" title={coborrower?.person?.fullName ?? undefined}>{coborrower?.person?.fullName ?? "—"}</div>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {latestPromise ? (
@@ -926,7 +947,7 @@ function CasesPageInner() {
                           </div>
                         ) : <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="px-3 py-2 overflow-hidden">
                         {showFollowUp ? (() => {
                           const overdue = new Date(c.nextActionDate) < new Date();
                           return (
@@ -935,7 +956,7 @@ function CasesPageInner() {
                                 {new Date(c.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
                               </div>
                               {c.nextActionNote && (
-                                <div className="text-[10px] text-gray-400 truncate max-w-[120px]">{c.nextActionNote}</div>
+                                <div className="text-[10px] text-gray-400 truncate" title={c.nextActionNote}>{c.nextActionNote}</div>
                               )}
                             </div>
                           );

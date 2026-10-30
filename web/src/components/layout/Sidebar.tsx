@@ -11,7 +11,7 @@ import {
   LayoutDashboard, FolderOpen, Activity,
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
-  LogOut, Menu, X, Upload,
+  LogOut, Menu, X, Upload, CalendarDays,
 } from "lucide-react";
 
 type NavItem = {
@@ -55,6 +55,12 @@ const nav: NavGroup[] = [
     items: [
       { href: "/reports",      label: "Raporte",       icon: BarChart3,    permission: "page:reports" },
       { href: "/performance",  label: "Performanca",   icon: TrendingUp,   permission: "page:performance" },
+    ],
+  },
+  {
+    label: "HR",
+    items: [
+      { href: "/leave", label: "Pushimet", icon: CalendarDays, permission: "page:leave" },
     ],
   },
   {

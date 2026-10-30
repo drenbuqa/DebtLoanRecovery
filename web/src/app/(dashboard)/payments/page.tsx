@@ -10,7 +10,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, Ban, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { downloadExcel } from "@/lib/exportExcel";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -243,52 +243,6 @@ function DeletePaymentModal({ payment, onClose, onDeleted }: { payment: any; onC
   );
 }
 
-function VoidModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
-  const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async () => {
-    if (!reason.trim()) { setError("Arsyeja është e detyrueshme."); return; }
-    setLoading(true); setError(null);
-    try {
-      await paymentsApi.void(payment.id, reason.trim());
-      onVoided();
-    } catch (e: any) { setError(e.message); setLoading(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        <div className="px-5 py-4 space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
-            Kjo do të anulojë <strong>{formatCurrency(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
-              placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
-        </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke anuluar…" : "Konfirmo Anulimin"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function PaymentCard({ p, onClick, scopedToSelf, onEdit, onDelete }: { p: any; onClick: () => void; scopedToSelf: boolean; onEdit?: () => void; onDelete?: () => void }) {
   const borrower = p.case?.loan?.borrower;
@@ -339,11 +293,9 @@ export default function PaymentsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [voidTarget, setVoidTarget] = useState<any>(null);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
-  const canVoid = user?.role === "ADMIN" || user?.role === "MANAGER";
   const canEdit = user?.role === "ADMIN" || user?.role === "MANAGER";
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -430,13 +382,7 @@ export default function PaymentsPage() {
           onSuccess={() => { setShowAddPayment(false); mutate(); toast("Pagesa u regjistrua me sukses"); }}
         />
       )}
-      {voidTarget && (
-        <VoidModal
-          payment={voidTarget}
-          onClose={() => setVoidTarget(null)}
-          onVoided={() => { setVoidTarget(null); mutate(); toast("Pagesa u anulua"); }}
-        />
-      )}
+
       {editTarget && (
         <EditPaymentModal
           payment={editTarget}
@@ -644,7 +590,7 @@ export default function PaymentsPage() {
                       <Th>Shuma</Th>
                       <Th>Data</Th>
                       {!scopedToSelf && <Th>Oficeri</Th>}
-                      {(canVoid || canEdit) && <Th />}
+                      {canEdit && <Th />}
                     </tr>
                   </Thead>
                   <Tbody>
@@ -667,7 +613,7 @@ export default function PaymentsPage() {
                           </span>
                         </Td>
                         {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{p.officer?.fullName ?? "—"}</span></Td>}
-                        {(canVoid || canEdit) && (
+                        {canEdit && (
                           <Td>
                             <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                               {canEdit && (
@@ -686,15 +632,6 @@ export default function PaymentsPage() {
                                   title="Fshi pagesën"
                                 >
                                   <Trash2 size={13} />
-                                </button>
-                              )}
-                              {canVoid && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setVoidTarget(p); }}
-                                  className="p-1.5 text-gray-300 hover:text-amber-500 transition-colors rounded"
-                                  title="Anulo pagesën"
-                                >
-                                  <Ban size={13} />
                                 </button>
                               )}
                             </div>
