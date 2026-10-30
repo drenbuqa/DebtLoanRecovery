@@ -140,11 +140,18 @@ function ResultPanel({ result, onReset }: { result: any; onReset: () => void }) 
 
 // ── History row ────────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, allSkipped }: { status: string; allSkipped?: boolean }) {
+  if (allSkipped && status === "COMPLETED") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Anashkaluar
+      </span>
+    );
+  }
   const map: Record<string, { label: string; color: string; dot: string }> = {
     COMPLETED:  { label: "Përfunduar",     color: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-    FAILED:     { label: "Anuluar",        color: "bg-gray-100 text-gray-500",      dot: "bg-gray-400" },
-    PROCESSING: { label: "Duke procesuar", color: "bg-amber-50 text-amber-700",     dot: "bg-amber-500" },
+    FAILED:     { label: "Dështuar",       color: "bg-red-50 text-red-600",         dot: "bg-red-400" },
+    PROCESSING: { label: "Duke procesuar", color: "bg-amber-50 text-amber-700",     dot: "bg-amber-500 animate-pulse" },
     PENDING:    { label: "Në pritje",      color: "bg-gray-100 text-gray-600",      dot: "bg-gray-400" },
   };
   const m = map[status] ?? map.PENDING;
@@ -325,7 +332,11 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
   const [open, setOpen] = useState(false);
   const [showRollback, setShowRollback] = useState(false);
   const hasErrors = job.errors?.length > 0;
+  const skippedRows = job.skippedRows ?? (job.totalRows - job.successfulRows - job.failedRows);
+  const allSkipped = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && skippedRows > 0 && (job.failedRows ?? 0) === 0;
+  const allFailed  = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && (job.failedRows ?? 0) > 0;
   const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0;
+  const canExpand = hasErrors || allSkipped || allFailed;
 
   return (
     <>
@@ -339,7 +350,7 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <div className="flex items-center gap-3 px-4 py-3 transition-colors">
           <FileSpreadsheet size={15} className="text-gray-400 shrink-0" />
-          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => hasErrors && setOpen(v => !v)}>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => canExpand && setOpen(v => !v)}>
             <div className="text-[13px] font-medium text-gray-900 truncate">{job.fileName}</div>
             <div className="text-[11px] text-gray-400 mt-0.5">
               {fmtDate(job.createdAt)} · {job.uploadedBy?.fullName ?? "—"}
@@ -347,11 +358,15 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <div className="hidden md:flex items-center gap-3 text-[12px]">
-              <span className="text-emerald-600 font-semibold">{fmt(job.successfulRows)} ✓</span>
-              {job.failedRows  > 0 && <span className="text-red-500 font-semibold">{fmt(job.failedRows)} ✗</span>}
-              {job.skippedRows > 0 && <span className="text-gray-400">{fmt(job.skippedRows)} ~</span>}
+              <span className="text-emerald-600 font-semibold" title="Importuar me sukses">{fmt(job.successfulRows)} ✓</span>
+              {(job.failedRows ?? 0) > 0 && (
+                <span className="text-red-500 font-semibold" title="Dështuan">{fmt(job.failedRows)} gabime</span>
+              )}
+              {skippedRows > 0 && (
+                <span className="text-amber-600" title="Ekzistonin tashmë — anashkaluar">{fmt(skippedRows)} anashkaluar</span>
+              )}
             </div>
-            <StatusBadge status={job.status} />
+            <StatusBadge status={job.status} allSkipped={allSkipped} />
             {canShowRollback && (
               <button
                 onClick={() => setShowRollback(true)}
@@ -360,24 +375,44 @@ function HistoryRow({ job, onRollback }: { job: any; onRollback: () => void }) {
                 <RotateCcw size={11} /> Anulo
               </button>
             )}
-            {hasErrors && (
+            {canExpand && (
               <button onClick={() => setOpen(v => !v)} className="text-gray-400 hover:text-gray-600 p-0.5">
                 {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
               </button>
             )}
           </div>
         </div>
-        {open && hasErrors && (
-          <div className="border-t border-red-100 divide-y divide-red-50 max-h-48 overflow-y-auto bg-red-50/30">
-            {job.errors.map((e: any, i: number) => (
-              <div key={i} className="px-4 py-2 flex items-start gap-2">
-                <span className="text-[11px] font-mono bg-red-100 text-red-600 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                  Rreshti {e.rowNumber}
-                </span>
-                <p className="text-[12px] text-gray-700">{e.errorMessage}</p>
+        {open && (
+          <>
+            {(allSkipped) && (
+              <div className="border-t border-amber-100 px-4 py-3 bg-amber-50/40 flex items-start gap-2">
+                <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-amber-800">
+                  Asnjë klient i ri nuk u shtua — të gjitha <strong>{fmt(skippedRows)}</strong> kreditë ekzistonin tashmë në sistem. Nëse ky nuk ishte rezultati i pritur, kontrolloni nëse keni importuar tashmë këtë skedar ose nëse numrat e kredive janë duplikatë.
+                </p>
               </div>
-            ))}
-          </div>
+            )}
+            {(allFailed) && (
+              <div className="border-t border-red-100 px-4 py-3 bg-red-50/40 flex items-start gap-2">
+                <XCircle size={13} className="text-red-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-red-800">
+                  Të gjitha <strong>{fmt(job.failedRows)}</strong> rreshtat dështuan. Shihni gabimet më poshtë dhe sigurohuni që po përdorni modelin e saktë të importit.
+                </p>
+              </div>
+            )}
+            {hasErrors && (
+              <div className="border-t border-red-100 divide-y divide-red-50 max-h-48 overflow-y-auto bg-red-50/30">
+                {job.errors.map((e: any, i: number) => (
+                  <div key={i} className="px-4 py-2 flex items-start gap-2">
+                    <span className="text-[11px] font-mono bg-red-100 text-red-600 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                      Rreshti {e.rowNumber}
+                    </span>
+                    <p className="text-[12px] text-gray-700">{e.errorMessage}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </>
