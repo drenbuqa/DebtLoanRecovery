@@ -5,10 +5,11 @@ import Topbar from "@/components/layout/Topbar";
 import { leave as leaveApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
 import {
   CalendarDays, Check, X, Settings, ChevronDown, ChevronUp,
   Plus, Minus, AlertTriangle, Users, Clock, CheckCircle,
-  ChevronLeft, Info,
+  Info,
 } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────
@@ -34,7 +35,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Review Modal ───────────────────────────────────────────────
 
-function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () => void; onDone: () => void }) {
+function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () => void; onDone: (approved?: boolean) => void }) {
   const [note, setNote]     = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
@@ -43,7 +44,7 @@ function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () =
     setSaving(true); setError("");
     try {
       await leaveApi.reviewRequest(request.id, approved, note || undefined);
-      onDone();
+      onDone(approved);
     } catch (e: any) {
       setError(e.message ?? "Gabim gjatë procesimit");
     } finally { setSaving(false); }
@@ -132,7 +133,7 @@ function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () =
 // ── Balance Modal ──────────────────────────────────────────────
 
 function BalanceModal({ userId, userName, current, onClose, onDone }: {
-  userId: string; userName: string; current: any; onClose: () => void; onDone: () => void;
+  userId: string; userName: string; current: any; onClose: () => void; onDone: (msg?: string) => void;
 }) {
   const [initialDays, setInitialDays] = useState(String(current?.initialDays ?? "0"));
   const [initialDate, setInitialDate] = useState(current?.initialDate?.split("T")[0] ?? "");
@@ -149,7 +150,7 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
     setSaving(true); setError("");
     try {
       await leaveApi.setBalance(userId, Number(initialDays), initialDate);
-      onDone();
+      onDone("Bilanci i pushimeve u ruajt");
     } catch (e: any) {
       setError(e.message ?? "Gabim gjatë ruajtjes");
     } finally { setSaving(false); }
@@ -162,7 +163,8 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
     setSaving(true); setError("");
     try {
       await leaveApi.createAdjustment(userId, d, adjNote);
-      onDone();
+      const sign = d > 0 ? "+" : "";
+      onDone(`Bilanci u rregullua (${sign}${d} ditë)`);
     } catch (e: any) {
       setError(e.message ?? "Gabim gjatë ruajtjes");
     } finally { setSaving(false); }
@@ -401,6 +403,7 @@ type Tab = "pending" | "staff";
 export default function LeaveAdminPage() {
   const { can }   = useAuth();
   const router    = useRouter();
+  const { toast } = useToast();
 
   const [pending, setPending]     = useState<any[]>([]);
   const [staff, setStaff]         = useState<any[]>([]);
@@ -427,15 +430,15 @@ export default function LeaveAdminPage() {
 
   return (
     <>
-      <Topbar title="Menaxhimi i Pushimeve" subtitle="Aprovo kërkesat dhe menaxho bilancet e stafit" />
+      <Topbar title="Menaxhimi i Pushimeve" subtitle="Aprovo kërkesat dhe menaxho bilancet e stafit" help={[
+        { title: "Si të aprovoni ose refuzoni një kërkesë", body: "Në seksionin 'Kërkesat në Pritje', klikoni butonin jeshil (✓) për të aprovuar ose butonin e kuq (✗) për të refuzuar. Do t'ju kërkohet një konfirmim. Punëtori njoftohet automatikisht me rezultatin e vendimit." },
+        { title: "Si të menaxhoni bilancin e pushimeve të një punëtori", body: "Klikoni butonin 'Menaxho Bilancin' pranë emrit të punëtorit. Mund të ndryshoni bilancin fillestar (ditët e caktuara për vitin) ose të bëni rregullime manuale (p.sh. shtoni ditë si bonus ose hiqni ditë si korrigjim). Çdo rregullim regjistrohet me arsyen e dhënë." },
+        { title: "Diferenca ndërmjet bilancit fillestar dhe rregullimeve", body: "Bilanci Fillestar = numri i ditëve të pushimit që punëtori ka të drejtë për vitin. Rregullimi = ndryshim manual sipas rastit (p.sh. +2 ditë si bonus ose -1 ditë si korrigjim). Të dyja llogariten bashkë për të dhënë totalin e disponueshëm." },
+        { title: "Si të shihni historikun e pushimeve të çdo punëtori", body: "Klikoni mbi emrin e punëtorit në listë ose seksionin e kërkesave të aprovuara. Do të shihni të gjitha pushimet e shfrytëzuara këtë vit, datat dhe llojet. E dobishme për llogaritjen e pagave ose raportimin." },
+        { title: "Ç'ndodh me ditët e pakonsumuara në fund të vitit?", body: "Ditët vjetore të pashfrytëzuara mbi kuotën (zakonisht 6 ditë) humbasin pas 30 qershorit. Punëtorët paralajmërohen automatikisht nga sistemi. Rekomandohet t'i planifikoni pushimet para kësaj date." },
+      ]} />
 
       <div className="p-4 md:p-6 space-y-5">
-
-        {/* Back link */}
-        <a href="/leave"
-          className="inline-flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors">
-          <ChevronLeft size={14} /> Kthehu te pushimet e mia
-        </a>
 
         {/* Stats row */}
         {!loading && (
@@ -577,7 +580,11 @@ export default function LeaveAdminPage() {
         <ReviewModal
           request={reviewing}
           onClose={() => setReviewing(null)}
-          onDone={() => { setReviewing(null); load(); }}
+          onDone={(approved?: boolean) => {
+            setReviewing(null);
+            load();
+            toast(approved ? "Kërkesa u aprovua" : "Kërkesa u refuzua", approved ? "success" : "warning");
+          }}
         />
       )}
 
@@ -587,7 +594,11 @@ export default function LeaveAdminPage() {
           userName={managing.user.fullName}
           current={managing.balance.hasBalance ? managing.balance : null}
           onClose={() => setManaging(null)}
-          onDone={() => { setManaging(null); load(); }}
+          onDone={(msg?: string) => {
+            setManaging(null);
+            load();
+            toast(msg ?? "Bilanci u ruajt");
+          }}
         />
       )}
     </>

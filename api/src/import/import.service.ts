@@ -678,6 +678,8 @@ export class ImportService {
 
     let updated = 0, skipped = 0;
     const errors: string[] = [];
+    // Track officer assignments for bulk notification (officerId → caseIds assigned)
+    const officerAssignments = new Map<string, string[]>();
 
     // Pre-load lookups from DB (by numeric code)
     let institutionByCode: Map<number, string> | null = null;
@@ -727,6 +729,10 @@ export class ImportService {
           const officerId = officerByCode!.get(code);
           if (!officerId) { errors.push(`${rowLabel}: kodi i zyrtatit ${code} nuk ekziston`); skipped++; continue; }
           await this.prisma.case.update({ where: { id: cas.id }, data: { assignedOfficerId: officerId } });
+          if (officerId !== performedById) {
+            if (!officerAssignments.has(officerId)) officerAssignments.set(officerId, []);
+            officerAssignments.get(officerId)!.push(cas.id);
+          }
           updated++;
         } else if (type === 'secondary_officer') {
           const code = parseInt(codeRaw);
@@ -817,6 +823,19 @@ export class ImportService {
         errors.push(`${rowLabel}: ${e.message}`);
         skipped++;
       }
+    }
+
+    // Send one notification per officer with summary of newly assigned cases
+    if (officerAssignments.size > 0) {
+      const notifs: { userId: string; title: string; body?: string; link: string }[] = [];
+      for (const [officerId, caseIds] of officerAssignments) {
+        if (caseIds.length === 1) {
+          notifs.push({ userId: officerId, title: 'Ti u caktove si oficer i një rasti të ri', link: `/cases/${caseIds[0]}` });
+        } else {
+          notifs.push({ userId: officerId, title: `Ti u caktove si oficer në ${caseIds.length} raste të reja`, link: `/cases` });
+        }
+      }
+      await this.prisma.notification.createMany({ data: notifs });
     }
 
     await this.prisma.importJob.update({
@@ -1116,17 +1135,16 @@ export class ImportService {
   }
 
   templatePaymentsXlsx(): Buffer {
-    const headers = ['case_reference', 'amount', 'date', 'reference', 'officer_code', 'channel', 'notes'];
+    const headers = ['case_reference', 'amount', 'date', 'reference', 'officer_code', 'notes'];
     const examples = [
-      ['DLR-2024-ABCDEF', 500.00, '2024-03-15', 'PAY-2024-001', 3, 'BANK_TRANSFER', 'Pagesa e parë e muajit mars'],
-      ['DLR-2024-GHIJKL', 1200.50, '2024-03-16', '', 3, 'CASH', ''],
-      ['DLR-2024-MNOPQR', 300.00, '2024-03-17', 'PAY-2024-003', '', '', 'Pagese e pjesshme'],
-      ['', '', '', '', '', '', 'Kanalet (channel): BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER (opsional)'],
-      ['', '', '', '', '', '', 'reference: nëse lihet bosh gjenerohet automatikisht'],
+      ['DLR-2024-ABCDEF', 500.00, '2024-03-15', 'PAY-2024-001', 3, 'Pagesa e parë e muajit mars'],
+      ['DLR-2024-GHIJKL', 1200.50, '2024-03-16', '', 3, ''],
+      ['DLR-2024-MNOPQR', 300.00, '2024-03-17', 'PAY-2024-003', '', 'Pagese e pjesshme'],
+      ['', '', '', '', '', 'reference: nëse lihet bosh gjenerohet automatikisht'],
     ];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
-    ws['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 50 }];
+    ws['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 50 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Pagesat');
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   }
@@ -1142,36 +1160,38 @@ export class ImportService {
       data: { uploadedById: importedById, importType: 'ACTIVITIES', fileName, status: 'PROCESSING', totalRows: raw.length, startedAt: new Date() },
     });
 
-    // Normalise column keys
     const rows = raw.map(r => {
       const out: Record<string, string> = {};
-      for (const [k, v] of Object.entries(r)) {
-        const norm = normaliseKey(k);
-        out[norm] = String(v ?? '').trim();
-      }
+      for (const [k, v] of Object.entries(r)) { out[normaliseKey(k)] = String(v ?? '').trim(); }
       return out;
     });
 
-    // Pre-load officers
-    const officers = await this.prisma.user.findMany({ select: { id: true, userCode: true, fullName: true } });
+    // Pre-load lookup tables in bulk
+    const officers = await this.prisma.user.findMany({ select: { id: true, userCode: true } });
     const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
 
-    let succeeded = 0, failed = 0;
+    const caseRefs = [...new Set(rows.map(r => (r['case_reference'] ?? r['caseref'] ?? r['ref'] ?? '').trim()).filter(Boolean))];
+    const cases = await this.prisma.case.findMany({ where: { caseReference: { in: caseRefs } }, select: { id: true, caseReference: true } });
+    const caseByRef = new Map(cases.map(c => [c.caseReference, c.id]));
+
     const errors: { row: number; ref: string; error: string }[] = [];
-    const CHUNK = 200;
+    type ActivityRecord = Parameters<typeof this.prisma.activity.createMany>[0]['data'][0];
+    const valid: ActivityRecord[] = [];
+    const CHUNK = 500;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2;
       const caseRef = (row['case_reference'] ?? row['caseref'] ?? row['ref'] ?? '').trim();
       const actTypeRaw = (row['activity_type'] ?? row['activitytype'] ?? row['tipi'] ?? row['type'] ?? '').trim();
+
+      if (!caseRef && !actTypeRaw) continue; // blank row
+
       const dateRaw = row['date'] ?? row['data'] ?? row['occurred_at'] ?? '';
       const notesRaw = row['notes'] ?? row['shenime'] ?? row['shenimet'] ?? row['pershkrimi'] ?? '';
       const outcomeRaw = row['outcome'] ?? row['rezultati'] ?? '';
       const promiseAmtRaw = row['promise_amount'] ?? row['shuma'] ?? row['vlera'] ?? '';
       const officerCodeRaw = row['officer_code'] ?? row['officer'] ?? row['zyrtari'] ?? '';
-
-      if (!caseRef && !actTypeRaw) { continue; } // blank row
 
       try {
         if (!caseRef) throw new Error('case_reference mungon');
@@ -1179,9 +1199,8 @@ export class ImportService {
         if (!actType) throw new Error(`activity_type "${actTypeRaw}" nuk njihet`);
         const occurredAt = parseDate(dateRaw);
         if (!occurredAt) throw new Error(`data "${dateRaw}" nuk mund të lexohet`);
-
-        const cas = await this.prisma.case.findUnique({ where: { caseReference: caseRef }, select: { id: true } });
-        if (!cas) throw new Error(`rasti "${caseRef}" nuk u gjet`);
+        const caseId = caseByRef.get(caseRef);
+        if (!caseId) throw new Error(`rasti "${caseRef}" nuk u gjet`);
 
         let officerId = importedById;
         if (officerCodeRaw) {
@@ -1190,29 +1209,32 @@ export class ImportService {
           if (found) officerId = found;
         }
 
-        const outcome = this.resolveActivityOutcome(outcomeRaw) ?? undefined;
-        const promiseAmount = promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined;
-
-        await this.prisma.activity.create({
-          data: {
-            caseId: cas.id,
-            officerId,
-            activityType: actType as any,
-            occurredAt,
-            notes: notesRaw || undefined,
-            outcome: outcome as any,
-            promiseAmount: promiseAmount ?? undefined,
-          },
+        valid.push({
+          caseId,
+          officerId,
+          activityType: actType as any,
+          occurredAt,
+          notes: notesRaw || undefined,
+          outcome: (this.resolveActivityOutcome(outcomeRaw) ?? undefined) as any,
+          promiseAmount: promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined,
         });
-        succeeded++;
       } catch (e: any) {
-        failed++;
         errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
       }
 
       if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
     }
 
+    // Bulk insert in chunks
+    let succeeded = 0;
+    for (let i = 0; i < valid.length; i += CHUNK) {
+      const chunk = valid.slice(i, i + CHUNK);
+      const res = await this.prisma.activity.createMany({ data: chunk });
+      succeeded += res.count;
+      if (i + CHUNK < valid.length) await new Promise<void>(r => setImmediate(r));
+    }
+
+    const failed = errors.length;
     await this.prisma.importJob.update({
       where: { id: job.id },
       data: { status: failed === rows.length ? 'FAILED' : 'COMPLETED', successfulRows: succeeded, failedRows: failed, completedAt: new Date() },
@@ -1234,37 +1256,39 @@ export class ImportService {
 
     const rows = raw.map(r => {
       const out: Record<string, string> = {};
-      for (const [k, v] of Object.entries(r)) {
-        const norm = normaliseKey(k);
-        out[norm] = String(v ?? '').trim();
-      }
+      for (const [k, v] of Object.entries(r)) { out[normaliseKey(k)] = String(v ?? '').trim(); }
       return out;
     });
 
+    // Pre-load lookup tables in bulk
     const officers = await this.prisma.user.findMany({ select: { id: true, userCode: true } });
     const officerByCode = new Map(officers.map(o => [o.userCode, o.id]));
 
-    // Pre-load existing references to avoid duplicates
+    const caseRefs = [...new Set(rows.map(r => (r['case_reference'] ?? r['caseref'] ?? r['ref'] ?? '').trim()).filter(Boolean))];
+    const cases = await this.prisma.case.findMany({ where: { caseReference: { in: caseRefs } }, select: { id: true, caseReference: true } });
+    const caseByRef = new Map(cases.map(c => [c.caseReference, c.id]));
+
     const existingRefs = new Set(
       (await this.prisma.payment.findMany({ select: { paymentReference: true } })).map(p => p.paymentReference),
     );
 
-    let succeeded = 0, failed = 0;
     const errors: { row: number; ref: string; error: string }[] = [];
-    const CHUNK = 200;
+    type PaymentRecord = Parameters<typeof this.prisma.payment.createMany>[0]['data'][0];
+    const valid: PaymentRecord[] = [];
+    const CHUNK = 500;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2;
       const caseRef = (row['case_reference'] ?? row['caseref'] ?? row['ref'] ?? '').trim();
       const amountRaw = row['amount'] ?? row['shuma'] ?? row['vlera'] ?? '';
+
+      if (!caseRef && !amountRaw) continue;
+
       const dateRaw = row['date'] ?? row['data'] ?? row['payment_date'] ?? '';
       const refRaw = (row['reference'] ?? row['payment_reference'] ?? row['referenca'] ?? '').trim();
       const officerCodeRaw = row['officer_code'] ?? row['officer'] ?? row['zyrtari'] ?? '';
-      const channelRaw = (row['channel'] ?? row['kanali'] ?? '').trim().toUpperCase();
       const notesRaw = row['notes'] ?? row['shenime'] ?? row['shenimet'] ?? '';
-
-      if (!caseRef && !amountRaw) { continue; }
 
       try {
         if (!caseRef) throw new Error('case_reference mungon');
@@ -1272,9 +1296,8 @@ export class ImportService {
         if (!amount || amount <= 0) throw new Error(`shuma "${amountRaw}" nuk është e vlefshme`);
         const paymentDate = parseDate(dateRaw);
         if (!paymentDate) throw new Error(`data "${dateRaw}" nuk mund të lexohet`);
-
-        const cas = await this.prisma.case.findUnique({ where: { caseReference: caseRef }, select: { id: true } });
-        if (!cas) throw new Error(`rasti "${caseRef}" nuk u gjet`);
+        const caseId = caseByRef.get(caseRef);
+        if (!caseId) throw new Error(`rasti "${caseRef}" nuk u gjet`);
 
         let officerId = importedById;
         if (officerCodeRaw) {
@@ -1283,36 +1306,29 @@ export class ImportService {
           if (found) officerId = found;
         }
 
-        // Build unique paymentReference
         let payRef = refRaw.slice(0, 50);
-        if (!payRef) {
-          payRef = `IMP-${caseRef.slice(-6)}-${i + 1}-${Date.now().toString(36)}`.slice(0, 50);
-        }
-        if (existingRefs.has(payRef)) {
-          payRef = `${payRef.slice(0, 40)}-${Date.now().toString(36)}`.slice(0, 50);
-        }
-
-        await this.prisma.payment.create({
-          data: {
-            caseId: cas.id,
-            officerId,
-            paymentReference: payRef,
-            amount,
-            paymentDate,
-            paymentChannel: channelRaw || undefined,
-            notes: notesRaw || undefined,
-          },
-        });
+        if (!payRef) payRef = `IMP-${caseRef.slice(-6)}-${i + 1}-${Date.now().toString(36)}`.slice(0, 50);
+        if (existingRefs.has(payRef)) payRef = `${payRef.slice(0, 40)}-${Date.now().toString(36)}`.slice(0, 50);
         existingRefs.add(payRef);
-        succeeded++;
+
+        valid.push({ caseId, officerId, paymentReference: payRef, amount, paymentDate, notes: notesRaw || undefined });
       } catch (e: any) {
-        failed++;
         errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
       }
 
       if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
     }
 
+    // Bulk insert in chunks
+    let succeeded = 0;
+    for (let i = 0; i < valid.length; i += CHUNK) {
+      const chunk = valid.slice(i, i + CHUNK);
+      const res = await this.prisma.payment.createMany({ data: chunk });
+      succeeded += res.count;
+      if (i + CHUNK < valid.length) await new Promise<void>(r => setImmediate(r));
+    }
+
+    const failed = errors.length;
     await this.prisma.importJob.update({
       where: { id: job.id },
       data: { status: failed === rows.length ? 'FAILED' : 'COMPLETED', successfulRows: succeeded, failedRows: failed, completedAt: new Date() },

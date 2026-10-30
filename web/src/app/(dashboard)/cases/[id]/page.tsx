@@ -947,9 +947,11 @@ export default function CaseDetailPage() {
       confirmLabel: "Fshi Klientin",
       variant: "danger",
       onConfirm: async () => {
-        await casesApi.delete(caseId);
-        router.push("/cases");
-        toast("Rasti u fshi");
+        try {
+          await casesApi.delete(caseId);
+          router.push("/cases");
+          toast("Rasti u fshi");
+        } catch (e: any) { toast(e.message ?? "Gabim gjatë fshirjes", "error"); }
       },
     });
   }
@@ -963,7 +965,7 @@ export default function CaseDetailPage() {
       setStatusForm({ status: "", collectionStage: "", collectionStatus: "", note: "" });
       await loadCase();
       toast("Statusi u përditësua");
-    } catch (e: any) { alert(e.message); } finally { setStatusSaving(false); }
+    } catch (e: any) { toast(e.message ?? "Gabim gjatë përditësimit të statusit", "error"); } finally { setStatusSaving(false); }
   }
 
   // Derived values

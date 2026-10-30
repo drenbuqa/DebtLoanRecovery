@@ -597,10 +597,10 @@ export class CasesService {
 
   async assignOfficer(id: string, officerId: string, assignedById: string) {
     // Inherit officer's officeId onto the case
-    const officer = await this.prisma.user.findUnique({
-      where: { id: officerId },
-      select: { officeId: true },
-    });
+    const [officer, cas] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: officerId }, select: { officeId: true } }),
+      this.prisma.case.findUnique({ where: { id }, select: { caseReference: true, assignedOfficerId: true, loan: { select: { borrower: { select: { fullName: true } } } } } }),
+    ]);
     const [updated] = await this.prisma.$transaction([
       this.prisma.case.update({
         where: { id },
@@ -614,6 +614,19 @@ export class CasesService {
         data: { caseId: id, officerId, assignedById },
       }),
     ]);
+
+    // Notify the newly assigned officer (skip if self-assignment)
+    if (officerId !== assignedById && cas?.assignedOfficerId !== officerId) {
+      const borrower = cas?.loan?.borrower?.fullName ?? cas?.caseReference ?? id;
+      await this.prisma.notification.create({
+        data: {
+          userId: officerId,
+          title: `Ti u caktove si oficer i rastit — ${borrower}`,
+          link: `/cases/${id}`,
+        },
+      });
+    }
+
     return updated;
   }
 

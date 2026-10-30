@@ -311,7 +311,12 @@ export default function LegalPage() {
           onCreated={() => { setShowNew(false); mutate(); toast("Procedimi gjyqësor u krijua"); }}
         />
       )}
-      <Topbar title="Procedime Gjyqësore" subtitle={scopedToSelf ? "Klientët tuaja në procedim gjyqësor" : "Procedime aktive dhe të mbyllura"} />
+      <Topbar title="Procedime Gjyqësore" subtitle={scopedToSelf ? "Klientët tuaja në procedim gjyqësor" : "Procedime aktive dhe të mbyllura"} help={[
+        { title: "Çfarë shfaq kjo faqe?", body: `Klientët e eskaluar në procedurë gjyqësore — gjykata, statusi i procedurës, datat e seancave dhe avokati/prokurori i caktuar.${scopedToSelf ? " Shihni vetëm rastet gjyqësore të klientëve tuaj." : ""}` },
+        { title: "Kur transferohet një klient te juridiku?", body: `Klienti transferohet te procedimi gjyqësor kur arkëtimi normal ka dështuar plotësisht — debitori refuzon kontaktin ose ka borxh të madh të parimëble.${can("legal:create") ? " Mund ta bëni këtë nga faqja e klientit, skeda 'Juridike'." : " Ky vendim merret nga menaxheri ose administratori."}` },
+        { title: "Çfarë do të thotë secili status?", body: "Aktiv = procedura po vazhdon. Vendim i Marrë = gjykata ka dhënë vendim por zbatimi është në vazhdim. I Ekzekutuar = vendimi është zbatuar (p.sh. sekuestro e llogarisë). Mbyllur = çështja është zgjidhur, borxhi është arkëtuar ose fshirë." },
+        ...(!scopedToSelf ? [{ title: "Si të ndryshoni statusin e procedurës", body: "Klikoni mbi rastin gjyqësor për të hapur detajet. Mund të ndryshoni statusin dhe të shtoni shënime nga seancat gjyqësore — p.sh. rezultati i seancës, data e radhës ose vendimi i marrë." }] : []),
+      ]} />
 
       <div className="sticky top-14 z-10 bg-[#F4F5F7] px-4 md:px-6 pt-4 pb-3">
         {/* Filter bar */}

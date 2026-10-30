@@ -937,10 +937,6 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh }: {
 
         <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2">
           <div>
-            <span className="text-[11px] font-semibold text-emerald-700">Kanalet (channel, opsionale):</span>
-            <p className="text-[11px] text-emerald-600 font-mono mt-0.5">BANK_TRANSFER, CASH, CHECK, ONLINE, OTHER</p>
-          </div>
-          <div>
             <span className="text-[11px] font-semibold text-emerald-700">reference:</span>
             <span className="text-[11px] text-emerald-600"> nëse lihet bosh, gjenerohet automatikisht.</span>
           </div>
@@ -963,7 +959,7 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh }: {
               </div>
               <div className="flex-1 text-left">
                 <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-pagesat.xlsx</div>
-                <div className="text-[11px] text-gray-400">case_reference · amount · date · reference · officer_code · channel</div>
+                <div className="text-[11px] text-gray-400">case_reference · amount · date · reference · officer_code</div>
               </div>
               <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
             </a>
@@ -1382,7 +1378,13 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Topbar title="Import Portofoli" subtitle="Menaxhoni importin e klientëve dhe ndryshimet në portofol" />
+      <Topbar title="Import Portofoli" subtitle="Menaxhoni importin e klientëve dhe ndryshimet në portofol" help={[
+        { title: "Si funksionon importi?", body: "Importi ju lejon të ngarkoni dhjetëra ose qindra klientë, aktivitete ose pagesa njëherësh nga një skedar Excel. Shkarkoni shabllonin e gatshëm, plotësoni të dhënat në Excel, pastaj ngarkoni skedarin duke e tërhequr në zonën e ngarkimit ose duke klikuar 'Zgjidhni Skedarin'." },
+        { title: "Si të shkarkoni shabllonet", body: "Çdo seksion (Klientë, Aktivitete, Pagesa) ka butonin e vet 'Shkarko Shabllon'. Hapeni në Excel — rreshti i parë është titulli i kolonave dhe nuk duhet ndryshuar. Rreshti i dytë është shembull — fshijeni përpara ngarkimit. Plotësoni të dhënat nga rreshti 2 e tutje." },
+        { title: "Gabime gjatë importit — çfarë bëj?", body: "Pasi të ngarkoni skedarin, sistemi kontrollon çdo rresht. Nëse ka gabime (p.sh. referencë e pavlefshme, datë e formatit të gabuar), shfaqet lista e gabimeve me numrin e rreshtit dhe problemin. Hapeni skedarin tuaj Excel, korrigjoni ato rreshta dhe ringarkoini skedarin." },
+        { title: "Si të anuloni një import të bërë gabimisht", body: "Importet e klientëve mund të anulohen nëse janë bërë gabimisht — klikoni ikonën e anulimit (⟲) pranë importit në historik. Kjo fshin të gjithë klientët e importuar nga ai skedar. Vini re: aktivitetet dhe pagesat e importuara nuk mund të anulohen automatikisht." },
+        { title: "Sa rreshta mund të importoj njëherësh?", body: "Nuk ka kufizim të fiks, por rekomandojmë maksimum 5,000 rreshta për skedar për performancë optimale. Për portofole të mëdha, ndajeni skedarin në disa pjesë. Sistemi tregon progresin gjatë importit." },
+      ]} />
 
       {/* Tab bar */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6">

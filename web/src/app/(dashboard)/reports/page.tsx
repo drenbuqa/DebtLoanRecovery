@@ -388,10 +388,10 @@ function ReportsPageInner() {
   return (
     <div className="flex flex-col">
       <Topbar title="Raporte" subtitle="Gjenero dhe shkarko raporte operacionale si CSV" help={[
-        { title: "Si të gjeneroj një raport", body: "Zgjidhni llojin e raportit nga lista, zgjidhni datën e fillimit dhe mbarimit, pastaj klikoni 'Ekzekuto Raportin'. Një pamje paraprake e të dhënave do të shfaqet në ekran për t'i kontrolluar para shkarkimit." },
-        { title: "Shkarkimi në Excel", body: "Pas ekzekutimit të raportit, klikoni 'Eksporto në Excel' për të shkarkuar skedarin. Ai hapet drejtpërdrejt në Microsoft Excel ose çdo aplikacion tabelar." },
-        { title: "Cilin raport duhet të përdor?", body: "Raporti i Arkëtimeve tregon të gjitha pagesat e arkëtuara në periudhë — përdoreni për përmbledhjet mujore. Regjistri i Aktiviteteve tregon çdo telefonatë, vizitë dhe tentativë kontakti — përdoreni për të rishikuar aktivitetin e oficerëve." },
-        { title: "Të dhënat duken të gabuara", body: "Sigurohuni që intervali kohor është i saktë — raporti përfshin vetëm rekordet brenda datave të zgjedhura. Nëse shikoni ende të dhëna të papritura, kontaktoni administratorin tuaj." },
+        { title: "Si të gjeneroj një raport hap pas hapi", body: "1) Klikoni mbi llojin e raportit që dëshironi. 2) Vendosni datën e fillimit dhe mbarimit — periudha ndikon drejtpërdrejt cilat rekorde përfshihen. 3) Klikoni 'Ekzekuto Raportin'. Sistemi ngarkon të dhënat dhe shfaq një pamje paraprake. 4) Klikoni 'Eksporto në Excel' për të shkarkuar skedarin." },
+        { title: "Cilin raport të përdor?", body: "Raporti i Arkëtimeve — për pagesat e marra: i dobishëm për llogaridhënien mujore dhe financiarin. Regjistri i Aktiviteteve — çdo kontakt i bërë: për rishikimin e punës së ekipit. Raporti i Klientëve — lista e plotë e portofolit me statusin aktual: për analizë portofoli. Raporti i Marrëveshjeve — planet e ripagimit aktive dhe thyera." },
+        { title: "Raporti im është bosh ose ka pak të dhëna", body: "Kontrolloni nëse datat janë vendosur saktë — raporti tregon vetëm rekorde brenda intervalit të zgjedhur. Nëse megjithatë pritet të ketë të dhëna dhe nuk shfaqen, sigurohuni që aktivitetet ose pagesat janë regjistruar gjatë asaj periudhe." },
+        { title: "Si të ndaj raportin me ekipin?", body: "Pas eksportit, skedari Excel ruhet automatikisht te 'Shkarkimet' e kompjuterit tuaj. Mund ta dërgoni me email, ta ngarkoni te SharePoint ose ta printoni. Skedari Excel mund të editorohet dhe formatohet sipas nevojës tuaj pa prekur të dhënat e sistemit." },
       ]} />
 
       {activeReport && <RunModal report={activeReport} onClose={() => setActiveReport(null)} />}

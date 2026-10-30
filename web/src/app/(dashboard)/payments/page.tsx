@@ -398,9 +398,11 @@ export default function PaymentsPage() {
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
-        { title: "Çfarë është kjo faqe?", body: "Çdo pagesë e marrë nga çdo debitor shfaqet këtu, në të gjitha klientët. Mund të shihni kush pagoi, sa dhe kur — e dobishme për kontrollin e arkëtimeve ditore ose përgatitjen e raportit mujor." },
-        { title: "Si të regjistroni një pagesë", body: "Shkoni te rasti i debitorit (kërkoni emrin e tyre në krye), pastaj klikoni 'Regjistro Pagesën' brenda klientit. Pagesa do të shfaqet këtu automatikisht pasi të ruhet." },
-        { title: "Filtrimi sipas datës", body: "Përdorni zgjedhësin e datave në krye për të shfaqur vetëm pagesat nga një periudhë e caktuar — për shembull, të gjitha pagesat e marra këtë javë ose këtë muaj." },
+        { title: "Çfarë shfaq kjo faqe?", body: `${scopedToSelf ? "Pagesat e regjistruara nga ju — sa arkëtuat sot dhe këtë muaj. Klikoni mbi çdo pagesë për të hapur klientin." : "Të gjitha pagesat e regjistruara — kush pagoi, sa, kur dhe nga cili oficer. Statistikat tregojnë totalin e arkëtimeve sot dhe këtë muaj."}` },
+        { title: "Si të regjistroni një pagesë të re", body: "Pagesat regjistrohen brenda faqes së klientit, jo nga kjo faqe. Kërkoni emrin e debitorit në shiritin e kërkimit në krye, hapni klientin, shkoni te skeda 'Pagesa' dhe klikoni 'Regjistro Pagesën'. Vendosni shumën, datën dhe referencën e transaksionit." },
+        { title: "Si të filtroni pagesat", body: `Klikoni ikonën e filtrave për të zgjedhur një periudhë specifike datash.${scopedToSelf ? "" : " Mund të filtroni edhe sipas oficerit për të parë arkëtimet e secilit anëtar të ekipit."}` },
+        { title: "Referenca e pagesës çfarë është?", body: "Referenca është numri i transaksionit ose faturës nga banka ose sistemi i pagesave. Nuk është e detyrueshme, por e rëndësishme për auditim dhe verifikim. Shkruajeni nëse e keni disponibël." },
+        ...(!scopedToSelf ? [{ title: "Si të anuloni një pagesë të gabuar", body: "Nëse një pagesë është regjistruar gabimisht, hapni klientin, shkoni te skeda 'Pagesa', gjeni pagesën dhe klikoni ikonën e anulimit (⊘). Pagesa mbetet si rekord por shënohet si e pavlefshme." }] : []),
       ]} />
 
       <div className="p-3 md:p-6 pb-0">

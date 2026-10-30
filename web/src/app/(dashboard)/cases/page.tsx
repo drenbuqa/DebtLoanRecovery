@@ -609,10 +609,11 @@ function CasesPageInner() {
       {showCreate && <CreateCaseModal onClose={() => setShowCreate(false)} onCreated={mutate} />}
       {deletingCaseId && <DeleteCaseModal caseId={deletingCaseId} onClose={() => setDeletingCaseId(null)} onDeleted={() => { setDeletingCaseId(null); mutate(); }} />}
       <Topbar title="Klientët" subtitle={scopedToSelf ? `${meta.total.toLocaleString()} caktuara tek ju` : `${meta.total.toLocaleString()} gjithsej klient`} help={[
-        { title: "Si të gjeni një klient", body: "Shkruani emrin e debitorit, numrin personal ose referencën e klientit në shiritin e kërkimit. Mund të përdorni edhe filtrat më poshtë për të shfaqur vetëm lloje të caktuara — p.sh. vetëm klientët me premtime të vonuara ose vetëm klientët juridike." },
-        { title: "Çfarë tregon statusi i koleksionit?", body: "Statusi i koleksionit tregon gjendjen e procesit të arkëtimit: I Pakontaktuar (klienti nuk është gjetur), Zotim Pagese (klienti ka dhënë zotim), Me Marrëveshje (ka marrëveshje aktive), Kontestim (klienti konteston borxhin), Nuk Pranon (refuzon marrëveshje), Të Tjera." },
-        { title: "Si të hapni një klient", body: "Klikoni çdo rresht për të hapur klientin e plotë — do të shihni të dhënat e debitorit, informacionin e kredisë, të gjitha thirrjet dhe vizitat e regjistruara, pagesat e marra dhe çdo procedurë juridike." },
-        { title: "Statusi i klientit i shpjeguar", body: "Aktive nënkupton se rasti është në punë. Juridike nënkupton se është eskaluar në procedura gjyqësore. Mbyllur nënkupton se është zgjidhur, shlyer ose paguar plotësisht." },
+        { title: "Si të gjeni një klient", body: `Shkruani emrin e debitorit, numrin personal ose referencën e rastit (p.sh. DLR-00123) në shiritin e kërkimit. Rezultatet shfaqen ndërsa shkruani. Mund të kombinoni kërkimin me filtrat e fazës dhe statusit.${scopedToSelf ? " Shihni vetëm klientët e caktuar tek ju." : " Mund të filtroni edhe sipas oficerit përgjegjës."}` },
+        { title: "Si të hapni dhe punoni me një klient", body: "Klikoni mbi çdo rresht të listës për të hapur faqen e plotë të klientit. Atje do të gjeni të gjitha të dhënat, aktivitetet, pagesat, marrëveshjet dhe dokumentet. Nga faqja e klientit mund të regjistroni kontakte, pagesa dhe të ndryshoni statusin." },
+        { title: "Fazat e arkëtimit të shpjeguara", body: "I Pakontaktuar — klienti nuk është gjetur ende. Kontakt i Bërë — është folur por pa rezultat. Zotim Pagese — klienti ka premtuar pagesë. Me Marrëveshje — ka plan pagese aktiv. Kontestim — klienti konteston borxhin. Nuk Pranon — refuzon çdo marrëveshje. Procedura Ligjore — rasti i është dërguar departamentit juridik." },
+        { title: "Statusi aktiv, juridik ose mbyllur", body: `Aktiv = rasti është në proces aktiv arkëtimi. Juridik = i kaluar departamentit ligjor. Mbyllur = zgjidhur (pagesa e plotë ose fshirje).${can("case:assign") ? " Mund të ndryshoni statusin dhe të caktoni oficerë nga faqja e klientit." : " Ndryshimi i statusit bëhet nga menaxheri ose administratori."}` },
+        ...( can("case:create") ? [{ title: "Si të regjistroni një klient të ri", body: "Klikoni butonin 'Regjistro' në krye djathtas. Plotësoni emrin e debitorit, referencën, shumën e borxhit dhe ofcerin përgjegjës. Pas ruajtjes, klienti shfaqet menjëherë në listë." }] : [] ),
       ]} />
 
       {/* ── Mobile layout ── */}
@@ -854,8 +855,8 @@ function CasesPageInner() {
                   <th className="w-[90px]  px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Faza</th>
                   <th className="w-[120px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Garant 1</th>
                   <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Garant 2</th>
-                  <th className="w-[110px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Bashkëkreditues</th>
-                  <th className="w-[120px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Premtimi</th>
+                  <th className="w-[120px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50">Bashkëkreditues</th>
+                  <th className="w-[130px] pl-5 pr-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Premtimi</th>
                   <th className="w-[130px] px-3 py-2 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap">Ndjekja e Radhës</th>
                   {can("case:delete") && <th className="w-[40px] px-2 py-2 bg-gray-50/50" />}
                 </tr>
@@ -932,7 +933,7 @@ function CasesPageInner() {
                       <td className="px-3 py-2 overflow-hidden">
                         <div className="text-[11px] text-gray-500 truncate" title={coborrower?.person?.fullName ?? undefined}>{coborrower?.person?.fullName ?? "—"}</div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="pl-5 pr-3 py-2 whitespace-nowrap">
                         {latestPromise ? (
                           <div>
                             <div className="text-[11px] font-medium text-gray-700">

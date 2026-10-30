@@ -317,10 +317,10 @@ function NotificationsPanel() {
 
 // ── Help panel ───────────────────────────────────────────────
 const DEFAULT_HELP: HelpItem[] = [
-  { title: "Si të lëvizni në platformë", body: "Përdorni menunë në të majtë për të kaluar ndërmjet seksioneve. Nëse jeni me telefon ose tablet, shtypni ikonën e menusë në krye për ta hapur atë." },
-  { title: "Si të gjeni një debitor ose klient", body: "Shkruani emrin e debitorit, numrin personal ose numrin e klientit në shiritin e kërkimit në krye. Rezultatet shfaqen menjëherë ndërsa shkruani — klikoni mbi të dhënën për të hapur klientin." },
-  { title: "Navigim i shpejtë", body: "Shtypni / në tastierë për të kaluar direkt te shiriti i kërkimit. Përdorni g pastaj d për Ballinën, c për Klientët, a për Aktivitetet, ose b për t'u kthyer mbrapa." },
-  { title: "Nuk dini çfarë të bëni?", body: "Pyesni menaxherin tuaj ose administratorin e sistemit. Mund të klikoni gjithashtu butonin ? në çdo faqe për të parë udhëzime specifike për atë seksion." },
+  { title: "Si të gjeni një klient shpejt", body: "Klikoni shiritin e kërkimit në krye (ose shtypni / në tastierë) dhe filloni të shkruani emrin e debitorit, numrin personal ose referencën. Rezultatet shfaqen menjëherë — klikoni mbi klientin për të hapur faqen e plotë." },
+  { title: "Si të lëvizni midis seksioneve", body: "Përdorni menunë anësore në të majtë (ose menunë e poshtme nëse jeni në celular). Çdo seksion ka funksionin e vet: Klientë për portofolinë, Aktivitete për regjistrimin e kontakteve, Pagesa për arkëtimet, Marrëveshje për planet e ripagimit." },
+  { title: "Si të regjistroni punën tuaj ditore", body: "Pas çdo kontakti me debitorin, shkoni te klienti dhe klikoni 'Regjistro Aktivitet' — zgjidhni llojin (telefonatë, vizitë), rezultatin dhe nëse klienti dha premtim pagese. Kjo mban gjurmë të punës suaj dhe njofton ekipin." },
+  { title: "Njoftimet — çfarë do të thotë?", body: "Ikona e ziles në krye tregon njoftimet tuaja. Njoftoheni kur: caktohet një klient i ri tek ju, një premtim pagese kalon datën pa pagesë, ose një marrëveshje thyhet. Klikoni njoftimin për të shkuar direkt te klienti." },
 ];
 
 function HelpPanel({ items }: { items: HelpItem[] }) {
@@ -348,7 +348,7 @@ function HelpPanel({ items }: { items: HelpItem[] }) {
             <span className="text-[13px] font-semibold text-gray-900">Ndihmë — Si të përdorni këtë faqe</span>
             <button onClick={() => setOpen(false)} className="modal-close-btn"><X size={14} /></button>
           </div>
-          <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+          <div className="p-4 space-y-4 max-h-[480px] overflow-y-auto">
             {items.map((item, i) => (
               <div key={i}>
                 <div className="text-[12px] font-semibold text-gray-800 mb-1">{item.title}</div>

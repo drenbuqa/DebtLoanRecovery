@@ -250,7 +250,13 @@ export default function AgreementsPage() {
   return (
     <div className="flex flex-col">
       {showNew && <NewAgreementModal onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); mutate(); toast("Marrëveshja u krijua"); }} />}
-      <Topbar title="Marrëveshjet" subtitle={scopedToSelf ? "Marrëveshjet tuaja aktive të ripagimit" : "Marrëveshjet e ripagimit dhe oraret e kësteve"} />
+      <Topbar title="Marrëveshjet" subtitle={scopedToSelf ? "Marrëveshjet tuaja aktive të ripagimit" : "Marrëveshjet e ripagimit dhe oraret e kësteve"} help={[
+        { title: "Çfarë është një marrëveshje ripagimi?", body: `Një marrëveshje është plan formal pagese me debitorin — sa do të paguhet çdo muaj dhe deri kur. Orari i kësteve gjenerohet automatikisht.${scopedToSelf ? " Shihni vetëm marrëveshjet e klientëve tuaj." : " Mund të filtroni sipas oficerit ose statusit."}` },
+        { title: "Si të krijoni një marrëveshje të re", body: "Klikoni 'Marrëveshje e Re' në krye. Kërkoni klientin, vendosni shumën totale, numrin e kësteve dhe datën e parë të pagesës. Sistemi llogarit shumën e çdo kësti automatikisht. Ruajeni dhe orari gjenerohet menjëherë." },
+        { title: "Si të shënoni një këst si të paguar", body: "Hapni marrëveshjen duke klikuar mbi të, gjeni këstin përkatës dhe klikoni 'Shëno si të Paguar'. Kjo regjistron automatikisht edhe pagesën te klienti. Vendosni datën reale të pagesës nëse ndryshon nga e planifikuara." },
+        { title: "Statuset e marrëveshjes", body: "Aktive = plani po zbatohet. E Zbatuar = të gjitha këstit janë paguar. E Thyer = debitori ka humbur 1+ këst — sistemi e shënon automatikisht çdo natë dhe ju njofton. E Anuluar = u ndal manualisht." },
+        { title: "Çfarë bëj kur një marrëveshje thyhet?", body: "Kur merrni njoftim për marrëveshje të thyer, hapni klientin dhe kontaktojeni menjëherë debitorin. Mund të riaktivizoni marrëveshjen nëse debitori është dakord, ose ta eskaloni rastin te menaxheri nëse debitori refuzon." },
+      ]} />
 
       <div className="sticky top-14 z-10 bg-[#F4F5F7] px-4 md:px-6 pt-4 pb-3">
         {/* Filter bar */}

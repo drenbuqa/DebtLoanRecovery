@@ -223,7 +223,12 @@ function PerformancePageInner() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Performanca" subtitle="KPI-të e oficerëve dhe zyrave" />
+      <Topbar title="Performanca" subtitle="KPI-të e oficerëve dhe zyrave" help={[
+        { title: "Çfarë tregon kjo faqe?", body: isOfficer ? "Statistikat tuaja personale — aktivitetet e bëra, pagesat e arkëtuara, premtimet dhe marrëveshjet. Kjo është pasqyra e punës suaj për periudhën e zgjedhur." : "Pasqyrë e performancës së çdo ofceri dhe zyre — aktivitetet, arkëtimet, premtimet dhe marrëveshjet. Krahasoni oficerët ose zyrat për të identifikuar trendët." },
+        { title: "Çfarë janë KPI-të?", body: "Kontakte = numri i debitorëve të kontaktuar. Premtime = premtime pagese të marra. Arkëtime = shuma totale e arkëtuar. Marrëveshje = plane pagese të lidhura. Vizita = vizita fizike në terren." },
+        { title: "Si të ndryshoni periudhën kohore", body: "Përdorni butonat e shpejtë (Sot, Kjo Javë, Ky Muaj) ose zgjedhësin e datave në krye. Krahasimi muaj me muaj ndihmon të identifikoni nëse performanca është duke u përmirësuar ose ulur." },
+        ...(!isOfficer ? [{ title: "Skedat Oficerë dhe Zyra", body: "Skeda 'Oficerë' tregon secilin anëtar të ekipit veç e veç. Skeda 'Zyra' tregon performancën të grupuar sipas degës. Klikoni mbi emrin e një ofceri për të parë detajet e tij." }] : []),
+      ]} />
       <div className="p-4 md:p-6 space-y-4">
 
         {/* 1. Filters */}

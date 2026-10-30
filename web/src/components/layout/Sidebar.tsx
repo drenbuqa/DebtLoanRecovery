@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Permission } from "@/lib/permissions";
@@ -69,25 +70,31 @@ const nav: NavGroup[] = [
 
 function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
   const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ left: 0, top: 0 });
   const ref = useRef<HTMLDivElement>(null);
+
+  function handleEnter() {
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setPos({ left: r.right + 8, top: r.top + r.height / 2 });
+    }
+    setShow(true);
+  }
 
   return (
     <div ref={ref} className="relative"
-      onMouseEnter={() => setShow(true)}
+      onMouseEnter={handleEnter}
       onMouseLeave={() => setShow(false)}>
       {children}
-      {show && (
-        <div className="fixed z-[200] pointer-events-none"
-          style={{
-            left: (ref.current?.getBoundingClientRect().right ?? 0) + 8,
-            top: (ref.current?.getBoundingClientRect().top ?? 0) + (ref.current?.offsetHeight ?? 0) / 2,
-            transform: "translateY(-50%)",
-          }}>
+      {show && typeof document !== "undefined" && createPortal(
+        <div className="fixed z-[9999] pointer-events-none"
+          style={{ left: pos.left, top: pos.top, transform: "translateY(-50%)" }}>
           <div className="px-2.5 py-1.5 bg-gray-900 text-white text-[12px] font-medium rounded-lg shadow-lg whitespace-nowrap">
             {label}
             <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

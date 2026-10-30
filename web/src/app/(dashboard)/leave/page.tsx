@@ -5,6 +5,7 @@ import Topbar from "@/components/layout/Topbar";
 import { leave as leaveApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
 import {
   CalendarDays, Plus, X, Clock, CheckCircle, XCircle, Ban,
   AlertTriangle, ChevronRight, Info,
@@ -307,6 +308,7 @@ const FILTER_OPTIONS = [
 export default function LeavePage() {
   const { can, user } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [balance, setBalance]     = useState<any>(null);
   const [requests, setRequests]   = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -331,7 +333,8 @@ export default function LeavePage() {
     try {
       await leaveApi.cancelRequest(id);
       load();
-    } catch (e: any) { alert(e.message); }
+      toast("Kërkesa u anulua");
+    } catch (e: any) { toast(e.message ?? "Gabim gjatë anulimit", "error"); }
   }
 
   const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter);
@@ -343,7 +346,13 @@ export default function LeavePage() {
 
   return (
     <>
-      <Topbar title="Pushimet e Mia" subtitle="Apliko dhe shiko gjendjen e pushimeve vjetore" />
+      <Topbar title="Pushimet e Mia" subtitle="Apliko dhe shiko gjendjen e pushimeve vjetore" help={[
+        { title: "Sa ditë pushim kam të disponueshme?", body: "Kartela në krye tregon ditët e mbetura, ditët e shfrytëzuara dhe bilancin e plotë. Ditët 'në pritje' janë rezervuara nga kërkesat tuaja aktive që nuk janë aprovuar ende — nuk i keni ende, por janë mbajtur si rezervë." },
+        { title: "Si të aplikoni për pushim", body: "Klikoni butonin 'Kërko Pushim' në krye. Zgjidhni llojin (vjetor, mjekësor etj.), datën e fillimit dhe mbarimit, dhe shtoni arsyen nëse dëshironi. Pas dërgimit, kërkesa shkon te menaxheri/administratori për aprovim — nuk mund të filloni pushimin pa aprovim." },
+        { title: "Statuset e kërkesës", body: "Në Pritje = kërkesa u dërgua dhe pret vendim. E Aprovuar = aprovuar, mund të shkoni në pushim. E Refuzuar = nuk u aprovuar — menaxheri mund të ketë lënë një shënim me arsyen. E Anuluar = ju vetë e keni anuluar para aprovimit." },
+        { title: "Si të anuloni një kërkesë", body: "Nëse keni ndryshuar mendim dhe kërkesa është ende 'Në Pritje', klikoni butonin 'Anulo' pranë kërkesës. Nuk mund të anuloni një kërkesë tashmë të aprovuar — kontaktoni menaxherin direkt." },
+        { title: "Paralajmërimi i qershorit", body: "Nëse po afrohemi fundit të qershorit dhe keni mbi 6 ditë pushim të pashfrytëzuara, sistemi ju paralajmëron. Kjo është sepse ditët e tepërta mbi 6 mund të humbasin pas datës 30 qershor — planifikoni pushimet tuaja në kohë." },
+      ]} />
 
       <div className="p-4 md:p-6 space-y-5">
 
@@ -485,7 +494,7 @@ export default function LeavePage() {
         <RequestModal
           balance={balance}
           onClose={() => setShowModal(false)}
-          onSuccess={() => { setShowModal(false); load(); }}
+          onSuccess={() => { setShowModal(false); load(); toast("Kërkesa u dërgua me sukses"); }}
         />
       )}
     </>

@@ -299,6 +299,13 @@ function OfficerDashboard({ user }: { user: any }) {
       <Topbar
         title="Ballina Ime"
         subtitle={`${greeting}, ${firstName} · ${MONTHS[mo]} ${now.getDate()}, ${yr}`}
+        help={[
+          { title: "Çfarë shfaq ballina juaj?", body: "Pamja e përditshme e punës suaj: klientët me veprime të planifikuara sot, premtimet e vonuara, premtimet afër skadencës dhe statistikat tuaja të muajit. Klikoni çdo rresht për të hapur klientin direkt." },
+          { title: "Klientë me veprim sot", body: "Klientët që kanë datën e ndjekjes ose takimit sot. Duhet t'i kontaktoni ose vizitoni gjatë ditës. Klikoni mbi ta për të parë detajet dhe regjistruar aktivitetin pas kontaktit." },
+          { title: "Premtime me vonesë", body: "Klientët që kanë dhënë premtim pagese por data ka kaluar pa pagesë. Kontaktojini menjëherë — premtimet e thyera ndikojnë drejtpërdrejt në performancën tuaj. Klikoni 'Shiko të gjitha' për listën e plotë." },
+          { title: "Premtime afër skadencës", body: "Klientët me premtim aktiv që skadon brenda 7 ditëve. Kontaktojini para se premtimi të bjerë dhe konfirmoni nëse pagesa do të bëhet. Kjo parandalon kalimin e tyre te 'Premtime të Thyera'." },
+          { title: "Si të regjistroni një aktivitet pas kontaktit", body: "Shkoni te klienti (klikoni mbi të ose kërkoni emrin në krye), hapni skedën 'Aktivitete' dhe klikoni 'Regjistro Aktivitet'. Zgjidhni llojin (telefonatë, vizitë), rezultatin dhe vendosni premtim pagese nëse klienti ka premtuar." },
+        ]}
       />
       <div className="p-4 md:p-6 space-y-5">
 
@@ -493,7 +500,12 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Ballina" subtitle={subtitle} />
+      <Topbar title="Ballina" subtitle={subtitle} help={[
+        { title: "Çfarë shfaq ballina?", body: `Pasqyrë e gjendjes së portofolit${isAdmin ? "" : " të ekipit tuaj"} — arkëtimet e muajit, klientët aktiv, premtimet dhe marrëveshjet. Statistikat përditësohen në kohë reale.` },
+        { title: "Klientë me premtime të vonuara", body: "Lista tregon klientët që kanë dhënë premtim pagese por data ka kaluar pa pagesë. Duhet kontaktuar menjëherë. Klikoni mbi ta për të hapur klientin dhe regjistruar kontaktin." },
+        { title: "Si të gjeni shpejt një klient", body: "Shkruani emrin ose referencën e debitorit në shiritin e kërkimit në krye. Ose shkoni te seksioni 'Klientë' nga menyja anësore për listën e plotë me filtra." },
+        ...( isAdmin ? [{ title: "Menaxhimi i sistemit", body: "Si administrator keni akses te 'Import Portofoli' për ngarkimin e klientëve me shumicë, 'Raporte' për eksportin e të dhënave, dhe 'Admin' për menaxhimin e stafit dhe zyrave." }] : [] ),
+      ]} />
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Onboarding */}

@@ -332,7 +332,6 @@ model Payment {
   amount            Decimal       @db.Decimal(18, 2)
   currency          String        @default("EUR") @db.VarChar(3)
   paymentDate       DateTime      @map("payment_date") @db.Date
-  paymentChannel    String?       @map("payment_channel") @db.VarChar(30)
   notes             String?       @db.VarChar(500)
   // Void — payments are never deleted, only voided with a reason and who did it
   voidedAt          DateTime?     @map("voided_at") @db.Timestamptz(6)

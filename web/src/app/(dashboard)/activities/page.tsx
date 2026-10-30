@@ -361,8 +361,11 @@ export default function ActivitiesPage() {
         title="Aktivitete"
         subtitle={loading ? "Duke ngarkuar…" : `${total.toLocaleString()} ndërveprime të regjistruara`}
         help={[
-          { title: "Çfarë është kjo faqe?", body: "Regjistri i plotë i çdo kontakti me debitorët — telefonata, email, vizita, premtime pagese. Klikoni çdo rresht për të hapur klientin." },
-          { title: "Vizita në Terren", body: "Filtro sipas 'Vizita Terren' për të parë vetëm vizitat fizike. Butonin 'Regjistro Vizitë' e keni në krye për të shtuar vizitë të re." },
+          { title: "Çfarë shfaq kjo faqe?", body: `Regjistri i çdo kontakti me debitorët — telefonata, vizita, email, premtime pagese dhe rezultate.${scopedToSelf ? " Shihni vetëm aktivitetet tuaja." : " Mund të filtroni sipas oficerit për të parë punën e secilit anëtar të ekipit."} Klikoni mbi çdo rresht për të hapur klientin.` },
+          { title: "Llojet e aktiviteteve të shpjeguara", body: "Telefonatë Hyrëse/Dalëse — kontakti telefonik. Vizitë Terren — vizitë fizike te debitori. Premtim Pagese — debitori premton pagesë deri në një datë. Email/SMS — komunikim me shkrim. Aktivitet Juridik — veprim ligjor i regjistruar." },
+          { title: "Si të regjistroni një aktivitet", body: "Klikoni 'Regjistro Aktivitet' në krye. Kërkoni emrin e klientit, zgjidhni llojin e kontaktit dhe rezultatin (p.sh. 'Premtim i Marrë', 'Nuk Përgjigjet', 'Refuzon'). Nëse klienti premton pagesë, zgjidhni 'Premtim Pagese' dhe vendosni datën — sistemi ju njofton kur ajo datë kalon pa pagesë." },
+          { title: "Si të filtroni aktivitetet", body: `Përdorni filtrat në krye: sipas llojit (telefonatë, vizitë etj.), sipas datës${scopedToSelf ? "" : ", ose sipas oficerit"}. Mund të kombinoni disa filtra njëkohësisht. Filtri 'Sot' tregon vetëm aktivitetet e ditës.` },
+          { title: "Rezultati i aktivitetit çfarë do të thotë?", body: "Premtim i Marrë — debitori ka rënë dakord për pagesë. Nuk Përgjigjet — nuk u gjet me asnjë mjet. Refuzon — kontakti u bë por debitori refuzon. Pajtim Pagese — u arrit marrëveshje. Rezultati ndikon drejtpërdrejt në fazën e arkëtimit të klientit." },
         ]}
       />
 
