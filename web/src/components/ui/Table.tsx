@@ -37,7 +37,7 @@ export function Td({
   className?: string;
 }) {
   return (
-    <td className={cn("px-4 py-3 text-gray-700 align-top", className)}>{children}</td>
+    <td className={cn("px-4 py-3 text-gray-700 align-middle", className)}>{children}</td>
   );
 }
 

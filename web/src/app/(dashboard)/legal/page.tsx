@@ -448,52 +448,49 @@ export default function LegalPage() {
                     const dotCls = STATUS_DOT[lp.status] ?? "bg-gray-300";
                     return (
                       <Tr key={lp.id} className="group" onClick={() => window.location.href = `/cases/${lp.case?.id}?tab=Legal`}>
-                        <Td>
+                        <Td className="whitespace-nowrap">
                           <span className="font-mono text-[12px] text-brand-600">{lp.case?.caseReference ?? "—"}</span>
-                          {lp.legalCaseNumber && <div className="text-[11px] text-gray-400 mt-0.5">{lp.legalCaseNumber}</div>}
+                          {lp.legalCaseNumber && <div className="text-[11px] text-gray-400 mt-0.5 font-mono">{lp.legalCaseNumber}</div>}
                         </Td>
-                        <Td>
-                          <span className="font-medium text-gray-900">
-                            {lp.case?.loan?.borrower
-                              ? `${lp.case.loan.borrower.fullName}`
-                              : "—"}
-                          </span>
+                        <Td className="max-w-[200px]">
+                          <div className="font-medium text-gray-900 truncate" title={lp.case?.loan?.borrower?.fullName ?? ""}>
+                            {lp.case?.loan?.borrower?.fullName ?? "—"}
+                          </div>
                           {lp.case?.loan?.borrower?.personalId && !lp.case.loan.borrower.personalId.startsWith("NOID-") && (
-                            <div className="text-[11px] text-gray-400 tabular">{lp.case.loan.borrower.personalId}</div>
-                          )}
-                          {lp.notes && (
-                            <div className="text-[11px] text-gray-400 italic mt-0.5 line-clamp-1">{lp.notes}</div>
+                            <div className="text-[11px] text-gray-400 tabular mt-0.5">{lp.case.loan.borrower.personalId}</div>
                           )}
                         </Td>
-                        <Td><span className="text-gray-500">{lp.case?.loan?.institution?.shortName ?? "—"}</span></Td>
-                        <Td><span className="text-gray-500 text-[12px]">{lp.court ?? "—"}</span></Td>
-                        <Td>
+                        <Td className="whitespace-nowrap"><span className="text-gray-500">{lp.case?.loan?.institution?.shortName ?? "—"}</span></Td>
+                        <Td className="max-w-[160px]">
+                          <span className="text-gray-500 text-[12px] truncate block" title={lp.court ?? ""}>{lp.court ?? "—"}</span>
+                        </Td>
+                        <Td className="whitespace-nowrap">
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.initiationDate ? new Date(lp.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+                            {lp.initiationDate ? new Date(lp.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                           </span>
                         </Td>
-                        <Td>
+                        <Td className="whitespace-nowrap">
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+                            {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                           </span>
                         </Td>
-                        <Td>
+                        <Td className="whitespace-nowrap">
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+                            {lp.nextHearingDate ? new Date(lp.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                           </span>
                         </Td>
-                        <Td>
+                        <Td className="whitespace-nowrap">
                           {lp.judgmentAmount != null
                             ? <span className="font-semibold text-gray-800 tabular">{formatCurrency(Number(lp.judgmentAmount))}</span>
                             : <span className="text-gray-300">—</span>}
                         </Td>
-                        <Td>
+                        <Td className="whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gray-600">
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
                             {statusLabel}
                           </span>
                         </Td>
-                        {!scopedToSelf && <Td><span className="text-gray-500 text-[12px]">{lp.case?.assignedOfficer?.fullName ?? "—"}</span></Td>}
+                        {!scopedToSelf && <Td className="whitespace-nowrap"><span className="text-gray-500 text-[12px]">{lp.case?.assignedOfficer?.fullName ?? "—"}</span></Td>}
                         <Td>
                           <button onClick={(e) => { e.stopPropagation(); openEdit(lp); }}
                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100">
