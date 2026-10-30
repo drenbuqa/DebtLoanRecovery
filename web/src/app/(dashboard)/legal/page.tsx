@@ -75,18 +75,19 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
   }
 
   const filingDateError = fieldError("filingDate", filingDate, { required: true });
+  const courtError = fieldError("court", court, { required: true });
   const caseError = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një klient" : null;
 
   async function submit() {
     setCaseAttempted(true);
-    touchAll(["filingDate"]);
-    if (!selectedCase || filingDateError) return;
+    touchAll(["filingDate", "court"]);
+    if (!selectedCase || filingDateError || courtError) return;
 
     setSaving(true); setSubmitError("");
     try {
       const lp: any = await legalApi.create({
         caseId: selectedCase.id,
-        court: court.trim() || undefined,
+        court: court.trim(),
         legalCaseNumber: legalCaseNumber.trim() || undefined,
         filingDate,
         initiationDate: initiationDate || undefined,
@@ -161,9 +162,9 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
               <input value={legalCaseNumber} onChange={(e) => setLegalCaseNumber(e.target.value)}
                 placeholder="p.sh. C.nr.123/2026" className={inp(false)} />
             </LF>
-            <LF label="Gjykata / Juridiksioni">
-              <input value={court} onChange={(e) => setCourt(e.target.value)}
-                placeholder="p.sh. Gjykata Themelore e Prishtinës" className={inp(false)} />
+            <LF label="Gjykata/Përmbaruesi" required error={courtError}>
+              <input value={court} onChange={(e) => { setCourt(e.target.value); touch("court"); }}
+                placeholder="p.sh. Gjykata Themelore e Prishtinës" className={inp(!!courtError)} />
             </LF>
           </div>
 
@@ -432,7 +433,8 @@ export default function LegalPage() {
                     <Th>Ref. Klientit</Th>
                     <Th>Debitor</Th>
                     <Th>Institucioni</Th>
-                    <Th>Gjykata</Th>
+                    <Th>Gjykata/Përmbaruesi</Th>
+                    <Th>Data e Inicimit</Th>
                     <Th>Data e Depozitimit</Th>
                     <Th>Seanca Tjetër</Th>
                     <Th>Vendimi</Th>
@@ -465,6 +467,11 @@ export default function LegalPage() {
                         </Td>
                         <Td><span className="text-gray-500">{lp.case?.loan?.institution?.shortName ?? "—"}</span></Td>
                         <Td><span className="text-gray-500 text-[12px]">{lp.court ?? "—"}</span></Td>
+                        <Td>
+                          <span className="tabular text-gray-500 text-[12px]">
+                            {lp.initiationDate ? new Date(lp.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+                          </span>
+                        </Td>
                         <Td>
                           <span className="tabular text-gray-500 text-[12px]">
                             {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
