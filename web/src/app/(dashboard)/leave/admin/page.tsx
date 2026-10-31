@@ -208,8 +208,10 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
             <>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data Fillestare e Akumulimit</label>
-                <input type="date" value={initialDate} onChange={e => setInitialDate(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+                <div className="relative">
+                  <input type="date" value={initialDate} onChange={e => setInitialDate(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+                </div>
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë Fillestare</label>

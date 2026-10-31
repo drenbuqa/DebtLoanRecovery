@@ -235,13 +235,17 @@ function RequestModal({ balance, onClose, onSuccess }: { balance: any; onClose: 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Fillimit</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+              <div className="relative">
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+              </div>
             </div>
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Mbarimit</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+              <div className="relative">
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+              </div>
             </div>
           </div>
 

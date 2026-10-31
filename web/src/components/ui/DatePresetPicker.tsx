@@ -10,7 +10,7 @@ function useMounted() {
 }
 import { ChevronDown, Check, Calendar } from "lucide-react";
 
-export type DatePreset = "" | "today" | "week" | "month" | "last_month" | "3months" | "6months" | "year";
+export type DatePreset = "" | "today" | "yesterday" | "week" | "last_week" | "month" | "last_month" | "3months" | "6months" | "year" | "last_year";
 
 interface DateRange { from: string; to: string; }
 
@@ -22,10 +22,19 @@ export function presetToRange(preset: DatePreset): DateRange {
   const today = fmt(now);
 
   if (preset === "today")      return { from: today, to: today };
+  if (preset === "yesterday") {
+    const y = new Date(now); y.setDate(now.getDate() - 1); return { from: fmt(y), to: fmt(y) };
+  }
   if (preset === "week") {
     const start = new Date(now);
     start.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
     return { from: fmt(start), to: today };
+  }
+  if (preset === "last_week") {
+    const end = new Date(now);
+    end.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1) - 1);
+    const start = new Date(end); start.setDate(end.getDate() - 6);
+    return { from: fmt(start), to: fmt(end) };
   }
   if (preset === "month")      return { from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), to: today };
   if (preset === "last_month") {
@@ -38,24 +47,48 @@ export function presetToRange(preset: DatePreset): DateRange {
     const s = new Date(now); s.setMonth(now.getMonth() - 6); return { from: fmt(s), to: today };
   }
   if (preset === "year")       return { from: fmt(new Date(now.getFullYear(), 0, 1)), to: today };
+  if (preset === "last_year")  return { from: fmt(new Date(now.getFullYear() - 1, 0, 1)), to: fmt(new Date(now.getFullYear() - 1, 11, 31)) };
   return { from: "", to: "" };
 }
 
+// Operational pages: activities, payments — daily/weekly view
 const DEFAULT_PRESETS: { key: DatePreset; label: string }[] = [
   { key: "",           label: "Të gjitha" },
   { key: "today",      label: "Sot" },
+  { key: "yesterday",  label: "Dje" },
   { key: "week",       label: "Kjo javë" },
+  { key: "last_week",  label: "Java e kaluar" },
   { key: "month",      label: "Ky muaj" },
-  { key: "last_month", label: "Muaji kaluar" },
-  { key: "3months",    label: "3 muajt e fundit" },
+  { key: "last_month", label: "Muaji i kaluar" },
 ];
 
-export const PERFORMANCE_PRESETS: { key: DatePreset; label: string }[] = [
+// Trend pages: agreements — monthly/quarterly view
+export const TREND_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: "",           label: "Të gjitha" },
   { key: "month",      label: "Ky muaj" },
-  { key: "last_month", label: "Muaji kaluar" },
+  { key: "last_month", label: "Muaji i kaluar" },
   { key: "3months",    label: "3 muajt e fundit" },
   { key: "6months",    label: "6 muajt e fundit" },
   { key: "year",       label: "Ky vit" },
+];
+
+// Performance pages: officers/offices KPI
+export const PERFORMANCE_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: "month",      label: "Ky muaj" },
+  { key: "last_month", label: "Muaji i kaluar" },
+  { key: "3months",    label: "3 muajt e fundit" },
+  { key: "6months",    label: "6 muajt e fundit" },
+  { key: "year",       label: "Ky vit" },
+];
+
+// Report preset buttons (used inline in reports modal)
+export const REPORT_PRESETS: { key: DatePreset; label: string }[] = [
+  { key: "month",      label: "Ky muaj" },
+  { key: "last_month", label: "Muaji i kaluar" },
+  { key: "3months",    label: "3 muajt e fundit" },
+  { key: "6months",    label: "6 muajt e fundit" },
+  { key: "year",       label: "Ky vit" },
+  { key: "last_year",  label: "Viti i kaluar" },
 ];
 
 interface Props {

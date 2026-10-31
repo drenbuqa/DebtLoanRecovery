@@ -458,9 +458,9 @@ export default function PaymentsPage() {
                 options: [
                   { value: "today",      label: "Sot" },
                   { value: "yesterday",  label: "Dje" },
-                  { value: "this_week",  label: "Kjo Javë" },
+                  { value: "week",       label: "Kjo Javë" },
                   { value: "last_week",  label: "Java e Kaluar" },
-                  { value: "this_month", label: "Ky Muaj" },
+                  { value: "month",      label: "Ky Muaj" },
                   { value: "last_month", label: "Muaji i Kaluar" },
                 ],
               },

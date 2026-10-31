@@ -12,7 +12,7 @@ import { useRefreshing } from "@/lib/useRefreshing";
 import { RefreshCw, FileText, Search, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
-import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
+import { DatePresetPicker, DatePreset, presetToRange, TREND_PRESETS } from "@/components/ui/DatePresetPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useFormErrors } from "@/lib/form";
 import { useToast } from "@/components/ui/Toast";
@@ -292,14 +292,7 @@ export default function AgreementsPage() {
                   value: datePreset,
                   onChange: (v) => { const p = v as DatePreset; setDatePreset(p); const r = p ? presetToRange(p) : { from: "", to: "" }; setDateFrom(r.from); setDateTo(r.to); },
                   allLabel: "Të gjitha datat",
-                  options: [
-                    { value: "today",      label: "Sot" },
-                    { value: "yesterday",  label: "Dje" },
-                    { value: "this_week",  label: "Kjo Javë" },
-                    { value: "last_week",  label: "Java e Kaluar" },
-                    { value: "this_month", label: "Ky Muaj" },
-                    { value: "last_month", label: "Muaji i Kaluar" },
-                  ],
+                  options: TREND_PRESETS.filter(p => p.key !== "").map(p => ({ value: p.key, label: p.label })),
                 },
               ]} />
             </div>
@@ -313,7 +306,7 @@ export default function AgreementsPage() {
                   placeholder="Kërko debitor ose klient…"
                   className="w-full pl-9 pr-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400" />
               </div>
-              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} />
+              <DatePresetPicker label="Periudha" value={datePreset} onChange={(p, r) => { setDatePreset(p); setDateFrom(r.from); setDateTo(r.to); }} presets={TREND_PRESETS} />
               {can("agreement:create") && (
                 <button onClick={() => setShowNew(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-[13px] font-medium hover:bg-brand-700 transition-colors ml-auto shrink-0">
