@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth";
 import {
   BookOpen, Upload, Trash2, FileText, FileSpreadsheet,
   File, Download, Eye, Plus, X, Loader2, AlertCircle,
-  FilePdf,
 } from "lucide-react";
 
 // ── Helpers ────────────────────────────────────────────────────

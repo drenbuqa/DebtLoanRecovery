@@ -192,7 +192,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
               <input value={legalCaseNumber} onChange={(e) => { if (!legalCaseNumberLocked) setLegalCaseNumber(e.target.value); }}
                 placeholder="p.sh. C.nr.123/2026"
                 readOnly={legalCaseNumberLocked}
-                className={legalCaseNumberLocked ? `${inp(false)} bg-gray-50 text-gray-500 cursor-not-allowed` : inp(!!legalCaseNumberError)} />
+                className={legalCaseNumberLocked ? `${inp(false)} bg-gray-50 text-gray-500 cursor-not-allowed` : inp(false)} />
             </LF>
             <LF label="Gjykata/Përmbaruesi" required error={courtError}>
               <input value={court} onChange={(e) => { if (!courtLocked) { setCourt(e.target.value); touch("court"); } }}
