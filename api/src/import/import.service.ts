@@ -1285,7 +1285,7 @@ export class ImportService {
           activityType: { notIn: ['PROMISE_TO_PAY'] as any[] },
           outcome: { not: 'PROMISE_RECEIVED' as any },
         },
-        orderBy: { activityDate: 'desc' },
+        orderBy: { occurredAt: 'desc' },
         select: { nextActionDate: true },
       });
       await this.prisma.case.update({
