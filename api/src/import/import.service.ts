@@ -1178,7 +1178,8 @@ export class ImportService {
 
     const errors: { row: number; ref: string; error: string }[] = [];
     type ActivityRecord = import('@prisma/client').Prisma.ActivityCreateManyInput;
-    const valid: ActivityRecord[] = [];
+    type ValidActivity = { row: ActivityRecord; isPromise: boolean; promiseDate?: Date; promiseAmount?: number; caseId: string; officerId: string };
+    const valid: ValidActivity[] = [];
     const CHUNK = 500;
 
     for (let i = 0; i < rows.length; i++) {
@@ -1216,15 +1217,25 @@ export class ImportService {
         const promiseDate = promiseDateRaw ? parseDate(promiseDateRaw) : undefined;
         const nextActionDate = nextActionDateRaw ? parseDate(nextActionDateRaw) : undefined;
 
+        const isPromise = actType === 'PROMISE_TO_PAY' || this.resolveActivityOutcome(outcomeRaw) === 'PROMISE_RECEIVED';
+        const resolvedPromiseDate = promiseDate ?? nextActionDate;
+
         valid.push({
+          row: {
+            caseId,
+            officerId,
+            activityType: actType as any,
+            occurredAt,
+            notes: notesRaw || undefined,
+            outcome: (this.resolveActivityOutcome(outcomeRaw) ?? undefined) as any,
+            promiseAmount: promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined,
+            nextActionDate: nextActionDate ?? (promiseDate ?? undefined),
+          },
+          isPromise,
+          promiseDate: resolvedPromiseDate,
+          promiseAmount: promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined,
           caseId,
           officerId,
-          activityType: actType as any,
-          occurredAt,
-          notes: notesRaw || undefined,
-          outcome: (this.resolveActivityOutcome(outcomeRaw) ?? undefined) as any,
-          promiseAmount: promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined,
-          nextActionDate: nextActionDate ?? (promiseDate ?? undefined),
         });
       } catch (e: any) {
         errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
@@ -1233,12 +1244,34 @@ export class ImportService {
       if (i > 0 && i % CHUNK === 0) await new Promise<void>(r => setImmediate(r));
     }
 
-    // Bulk insert in chunks
+    // Bulk insert in chunks, then create PromiseToPay records for promise activities
     let succeeded = 0;
     for (let i = 0; i < valid.length; i += CHUNK) {
       const chunk = valid.slice(i, i + CHUNK);
-      const res = await this.prisma.activity.createMany({ data: chunk });
-      succeeded += res.count;
+      // createMany doesn't return ids, so insert promises one by one to get ids
+      const promiseRows = chunk.filter(v => v.isPromise && v.promiseDate);
+      const plainRows = chunk.filter(v => !v.isPromise || !v.promiseDate);
+
+      if (plainRows.length > 0) {
+        const res = await this.prisma.activity.createMany({ data: plainRows.map(v => v.row) });
+        succeeded += res.count;
+      }
+
+      for (const v of promiseRows) {
+        const act = await this.prisma.activity.create({ data: v.row });
+        succeeded++;
+        await this.prisma.promiseToPay.create({
+          data: {
+            caseId: v.caseId,
+            activityId: act.id,
+            createdById: v.officerId,
+            promisedAmount: v.promiseAmount ?? 0,
+            currency: 'EUR',
+            promiseDate: v.promiseDate!,
+          },
+        });
+      }
+
       if (i + CHUNK < valid.length) await new Promise<void>(r => setImmediate(r));
     }
 
