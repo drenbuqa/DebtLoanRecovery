@@ -1275,6 +1275,25 @@ export class ImportService {
       if (i + CHUNK < valid.length) await new Promise<void>(r => setImmediate(r));
     }
 
+    // Update each case's nextActionDate to the soonest upcoming next_action_date from its activities
+    const affectedCaseIds = [...new Set(valid.map(v => v.caseId))];
+    for (const caseId of affectedCaseIds) {
+      const ndjekja = await this.prisma.activity.findFirst({
+        where: {
+          caseId,
+          nextActionDate: { gte: new Date() },
+          activityType: { notIn: ['PROMISE_TO_PAY'] as any[] },
+          outcome: { not: 'PROMISE_RECEIVED' as any },
+        },
+        orderBy: { nextActionDate: 'asc' },
+        select: { nextActionDate: true },
+      });
+      await this.prisma.case.update({
+        where: { id: caseId },
+        data: { nextActionDate: ndjekja?.nextActionDate ?? null },
+      });
+    }
+
     const failed = errors.length;
     await this.prisma.importJob.update({
       where: { id: job.id },
