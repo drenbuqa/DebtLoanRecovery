@@ -448,12 +448,12 @@ export default function AgreementsPage() {
                 <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                   <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
                   <div className="flex items-center gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
+                    <button disabled={meta.page <= 1} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
                     <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
-                    <button disabled={meta.page >= meta.pages} onClick={() => { document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
+                    <button disabled={meta.page >= meta.pages} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>

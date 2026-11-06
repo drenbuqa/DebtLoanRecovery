@@ -213,7 +213,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <div className="flex h-screen overflow-hidden bg-[#F4F5F7]">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-y-auto mobile-nav-pad md:pb-0">
+          <main id="main-scroll" className="flex-1 overflow-y-auto mobile-nav-pad md:pb-0">
             <PageWrapper>{children}</PageWrapper>
           </main>
         </div>
