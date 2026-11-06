@@ -304,7 +304,6 @@ export class CasesService {
       ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90);
       where.status = 'ACTIVE';
       if (!where.AND) where.AND = [];
-      where.AND.push({ createdAt: { lt: ninetyDaysAgo } });
       where.AND.push({ NOT: { activities: { some: { occurredAt: { gte: ninetyDaysAgo } } } } });
       where.AND.push({ NOT: { payments: { some: { paymentDate: { gte: ninetyDaysAgo }, voidedAt: null } } } });
     }
