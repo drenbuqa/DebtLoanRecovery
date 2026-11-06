@@ -726,7 +726,7 @@ function CasesPageInner() {
               ))}
               {meta.pages > 1 && !paging && (
                 <div className="flex items-center justify-center gap-3 pt-1 pb-2">
-                  <button onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
+                  <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronLeft size={16} />
                   </button>
@@ -734,7 +734,7 @@ function CasesPageInner() {
                     {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
                     {page} / {meta.pages}
                   </span>
-                  <button onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
+                  <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 disabled:opacity-30">
                     <ChevronRight size={16} />
                   </button>
@@ -989,7 +989,7 @@ function CasesPageInner() {
                 {((page - 1) * 50) + 1}–{Math.min(page * 50, meta.total)} nga {meta.total.toLocaleString()}
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
+                <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronLeft size={15} />
                 </button>
@@ -997,7 +997,7 @@ function CasesPageInner() {
                   {paging ? <RefreshCw size={12} className="animate-spin text-gray-400" /> : null}
                   {page} / {meta.pages}
                 </span>
-                <button onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
+                <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronRight size={15} />
                 </button>

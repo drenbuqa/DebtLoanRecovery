@@ -512,7 +512,7 @@ export default function PaymentsPage() {
                 ))}
                 {pages > 1 && (
                   <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1 || paging} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
+                    <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronLeft size={15} />
                     </button>
@@ -520,7 +520,7 @@ export default function PaymentsPage() {
                       {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
                       {page} / {pages}
                     </span>
-                    <button disabled={page >= pages || paging} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
+                    <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                       <ChevronRight size={15} />
                     </button>
@@ -648,7 +648,7 @@ export default function PaymentsPage() {
                   <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
                     <div className="flex items-center gap-2">
-                      <button disabled={page <= 1 || paging} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p - 1); }}
+                      <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronLeft size={15} />
                       </button>
@@ -656,7 +656,7 @@ export default function PaymentsPage() {
                         {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
                         {page} / {pages}
                       </span>
-                      <button disabled={page >= pages || paging} onClick={() => { document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" }); setPage(p => p + 1); }}
+                      <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                         <ChevronRight size={15} />
                       </button>
