@@ -458,7 +458,17 @@ export default function LeaveAdminPage() {
       <div className="p-4 md:p-6 space-y-5">
 
         {/* Stats row */}
-        {!loading && (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 px-5 py-4 animate-pulse"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div className="h-2.5 w-24 bg-gray-100 rounded mb-3" />
+                <div className="h-7 w-10 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: "Kërkesa në Pritje",  val: pending.length,                                            icon: Clock },
@@ -509,7 +519,17 @@ export default function LeaveAdminPage() {
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+                  <div key={i} className="flex items-center gap-4 px-4 py-4 border border-gray-100 rounded-xl animate-pulse">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-36 bg-gray-100 rounded" />
+                      <div className="h-2.5 w-48 bg-gray-100 rounded" />
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100" />
+                      <div className="w-20 h-8 rounded-lg bg-gray-100" />
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : tab === "pending" ? (
