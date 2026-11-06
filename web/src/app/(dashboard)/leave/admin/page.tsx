@@ -573,7 +573,7 @@ export default function LeaveAdminPage() {
                   ))}
                 </div>
 
-                {/* Approved requests — admin can cancel */}
+                {/* Approved requests - admin can cancel */}
                 {approved.length > 0 && (
                   <div className="mt-5">
                     <div className="flex items-center gap-2 mb-3">
