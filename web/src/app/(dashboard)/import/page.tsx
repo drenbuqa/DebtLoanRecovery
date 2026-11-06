@@ -55,6 +55,57 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
+// ── Field guide ────────────────────────────────────────────────────────────────
+
+type FieldDef = { name: string; required: boolean; desc: string };
+
+function FieldGuide({ fields, color = "gray" }: { fields: FieldDef[]; color?: "blue" | "emerald" | "brand" | "gray" }) {
+  const [open, setOpen] = useState(false);
+  const accent = {
+    blue:    { btn: "text-blue-600 hover:bg-blue-50",    badge: "bg-blue-50 text-blue-700 border-blue-200",    opt: "bg-gray-100 text-gray-500" },
+    emerald: { btn: "text-emerald-600 hover:bg-emerald-50", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", opt: "bg-gray-100 text-gray-500" },
+    brand:   { btn: "text-brand-600 hover:bg-brand-50",  badge: "bg-brand-50 text-brand-700 border-brand-200", opt: "bg-gray-100 text-gray-500" },
+    gray:    { btn: "text-gray-600 hover:bg-gray-50",    badge: "bg-gray-100 text-gray-600 border-gray-200",   opt: "bg-gray-100 text-gray-500" },
+  }[color];
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button onClick={() => setOpen(v => !v)}
+        className={`w-full flex items-center justify-between px-4 py-2.5 text-left bg-white transition-colors ${accent.btn}`}>
+        <div className="flex items-center gap-2">
+          <Info size={13} className="shrink-0" />
+          <span className="text-[12px] font-semibold">Udhëzues i fushave</span>
+          <span className="text-[11px] text-gray-400 hidden sm:inline">— çfarë shkruhet në secilën kolonë</span>
+        </div>
+        {open ? <ChevronUp size={13} className="text-gray-400 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+      </button>
+      {open && (
+        <div className="border-t border-gray-100">
+          <div className="grid grid-cols-1 divide-y divide-gray-50">
+            {fields.map(f => (
+              <div key={f.name} className="flex items-start gap-3 px-4 py-2.5 bg-white hover:bg-gray-50/60 transition-colors">
+                <code className="text-[11px] font-mono font-semibold text-gray-700 mt-0.5 shrink-0 min-w-[140px]">{f.name}</code>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 shrink-0 ${f.required ? accent.badge : accent.opt}`}>
+                  {f.required ? "E detyrueshme" : "Opsionale"}
+                </span>
+                <span className="text-[12px] text-gray-500 leading-snug">{f.desc}</span>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center gap-1.5">
+            <span className="text-[11px] text-gray-400">Formati i datave:</span>
+            <code className="text-[11px] font-mono text-gray-600">YYYY-MM-DD</code>
+            <span className="text-[11px] text-gray-400">ose</span>
+            <code className="text-[11px] font-mono text-gray-600">DD/MM/YYYY</code>
+            <span className="text-[11px] text-gray-400">· p.sh.</span>
+            <code className="text-[11px] font-mono text-gray-600">2024-03-15</code>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Upload zone ────────────────────────────────────────────────────────────────
 
 function UploadZone({ onFile }: { onFile: (f: File) => void }) {
@@ -752,6 +803,12 @@ function ImportTab({
                 </div>
               ))}
             </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] text-gray-400">Formati i datave:</span>
+              <code className="text-[11px] font-mono text-gray-600">YYYY-MM-DD</code>
+              <span className="text-[11px] text-gray-400">ose</span>
+              <code className="text-[11px] font-mono text-gray-600">DD/MM/YYYY</code>
+            </div>
             <p className="text-[11px] text-gray-400">Kreditë ekzistuese anashkalohen automatikisht.</p>
           </div>
         </div>
@@ -837,9 +894,11 @@ function ImportTab({
 
 // ── TAB 2: Import Aktivitete ───────────────────────────────────────────────────
 
-function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh }: {
+function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh, refData }: {
   jobs: any[]; loadingJobs: boolean; onRollback: () => void; onRefresh: () => void;
+  refData: { officers: any[]; institutions: any[]; cities: any[] } | null;
 }) {
+  const [showOfficers, setShowOfficers] = useState(false);
   return (
     <div className="space-y-6">
       <p className="text-[13px] text-gray-500">
@@ -858,22 +917,53 @@ function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh }: {
           </div>
         </div>
 
-        <div className="p-3.5 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
-          <div>
-            <span className="text-[11px] font-semibold text-blue-700">Llojet (activity_type):</span>
-            <p className="text-[11px] text-blue-600 font-mono mt-0.5 leading-relaxed">
-              CALL, VISIT, SMS, EMAIL, LETTER, PROMISE_TO_PAY, PAYMENT_RECEIVED,<br />
-              LEGAL_ACTION, NOTE, FIELD_VISIT, CALL_BORROWER, CALL_GUARANTOR,<br />
-              VISIT_BORROWER, VISIT_GUARANTOR, WARNING_LETTER, MEETING_BORROWER, MEETING_GUARANTOR
-            </p>
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-blue-700">Rezultatet (outcome, opsionale):</span>
-            <p className="text-[11px] text-blue-600 font-mono mt-0.5">
-              CONTACTED, NO_ANSWER, PROMISE_RECEIVED, REFUSED,<br />
-              PARTIAL_PAYMENT, FULL_PAYMENT, DISPUTE, DECEASED, OTHER
-            </p>
-          </div>
+        <FieldGuide color="blue" fields={[
+          { name: "case_reference", required: true,  desc: "Numri i klientit në sistem — p.sh. DLR-2024-ABCDEF" },
+          { name: "activity_type",  required: true,  desc: "Lloji i aktivitetit. Vlerat e lejuara: CALL (thirrje), VISIT (vizitë), SMS, EMAIL, LETTER (letër), PROMISE_TO_PAY (premtim pagese), PAYMENT_RECEIVED (pagesë e marrë), LEGAL_ACTION (veprim juridik), NOTE (shënim), FIELD_VISIT (vizitë në terren), CALL_BORROWER (thirrje huamarrës), CALL_GUARANTOR (thirrje garanti), VISIT_BORROWER (vizitë huamarrës), VISIT_GUARANTOR (vizitë garanti), WARNING_LETTER (letër paralajmëruese), MEETING_BORROWER (takim huamarrës), MEETING_GUARANTOR (takim garanti)" },
+          { name: "date",           required: true,  desc: "Data kur ndodhi aktiviteti — p.sh. 2024-03-15" },
+          { name: "officer_code",   required: false, desc: "Kodi numerik i zyrtarit — shiko listën e kodeve më poshtë. Nëse lihet bosh, regjistrohet nën llogarinë tuaj." },
+          { name: "outcome",        required: false, desc: "Rezultati i aktivitetit: CONTACTED (kontaktuar), NO_ANSWER (nuk u përgjigj), PROMISE_RECEIVED (premtim i marrë), REFUSED (refuzoi), PARTIAL_PAYMENT (pagesë e pjesshme), FULL_PAYMENT (pagesë e plotë), DISPUTE (kundërshtim), DECEASED (i ndjerë), OTHER (tjetër)" },
+          { name: "notes",          required: false, desc: "Shënime të lira rreth aktivitetit" },
+          { name: "promise_amount", required: false, desc: "Shuma e premtimit si numër (vetëm për PROMISE_TO_PAY) — p.sh. 500" },
+          { name: "promise_date",   required: false, desc: "Data e premtimit të pagesës (vetëm për PROMISE_TO_PAY) — p.sh. 2024-03-30" },
+          { name: "next_action_date", required: false, desc: "Data e ndjekjes — kur duhet kontaktuar klienti sërish" },
+        ]} />
+
+        {/* Mini officer lookup */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <button onClick={() => setShowOfficers(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-left bg-white text-blue-600 hover:bg-blue-50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Info size={13} className="shrink-0" />
+              <span className="text-[12px] font-semibold">Kodet e zyrtarëve</span>
+              <span className="text-[11px] text-gray-400 hidden sm:inline">— për kolonën officer_code</span>
+            </div>
+            {showOfficers ? <ChevronUp size={13} className="text-gray-400 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+          </button>
+          {showOfficers && (
+            <div className="border-t border-gray-100 p-4 max-h-56 overflow-y-auto">
+              {!refData ? (
+                <p className="text-[12px] text-gray-400">Duke ngarkuar…</p>
+              ) : refData.officers.length === 0 ? (
+                <p className="text-[12px] text-gray-400">Nuk ka zyrtarë të regjistruar.</p>
+              ) : (
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+                  {refData.officers.map((o, idx) => (
+                    <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                        <span className="text-blue-700 text-[11px] font-bold tabular">{o.userCode ?? idx + 1}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
+                        <div className="text-[11px] text-gray-400">{o.office?.name ?? ""} · {o.role}</div>
+                      </div>
+                      <CopyBtn text={String(o.userCode ?? idx + 1)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -889,7 +979,7 @@ function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh }: {
               </div>
               <div className="flex-1 text-left">
                 <div className="text-[13px] font-semibold text-gray-700 group-hover:text-brand-700">dlr-template-aktivitetet.xlsx</div>
-                <div className="text-[11px] text-gray-400">case_reference · activity_type · date · officer_code · outcome · notes</div>
+                <div className="text-[11px] text-gray-400">case_reference · activity_type · date · officer_code · outcome · notes · promise_amount · promise_date · next_action_date</div>
               </div>
               <Download size={13} className="text-gray-400 group-hover:text-brand-500 shrink-0" />
             </a>
@@ -914,9 +1004,11 @@ function ActivitiesTab({ jobs, loadingJobs, onRollback, onRefresh }: {
 
 // ── TAB 3: Import Pagesa ───────────────────────────────────────────────────────
 
-function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh }: {
+function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh, refData }: {
   jobs: any[]; loadingJobs: boolean; onRollback: () => void; onRefresh: () => void;
+  refData: { officers: any[]; institutions: any[]; cities: any[] } | null;
 }) {
+  const [showOfficers, setShowOfficers] = useState(false);
   return (
     <div className="space-y-6">
       <p className="text-[13px] text-gray-500">
@@ -935,15 +1027,50 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh }: {
           </div>
         </div>
 
-        <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2">
-          <div>
-            <span className="text-[11px] font-semibold text-emerald-700">reference:</span>
-            <span className="text-[11px] text-emerald-600"> nëse lihet bosh, gjenerohet automatikisht.</span>
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-emerald-700">officer_code:</span>
-            <span className="text-[11px] text-emerald-600"> opsional — nëse mungon, regjistrohet nën llogarinë tuaj.</span>
-          </div>
+        <FieldGuide color="emerald" fields={[
+          { name: "case_reference", required: true,  desc: "Numri i klientit në sistem — p.sh. DLR-2024-ABCDEF" },
+          { name: "amount",         required: true,  desc: "Shuma e pagesës si numër — p.sh. 500.00" },
+          { name: "date",           required: true,  desc: "Data e pagesës — p.sh. 2024-03-15" },
+          { name: "reference",      required: false, desc: "Referenca e pagesës — p.sh. PAY-2024-001. Nëse lihet bosh, gjenerohet automatikisht." },
+          { name: "officer_code",   required: false, desc: "Kodi numerik i zyrtarit — shiko listën e kodeve më poshtë. Nëse lihet bosh, regjistrohet nën llogarinë tuaj." },
+          { name: "notes",          required: false, desc: "Shënime të lira rreth pagesës" },
+        ]} />
+
+        {/* Mini officer lookup */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <button onClick={() => setShowOfficers(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-left bg-white text-emerald-600 hover:bg-emerald-50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Info size={13} className="shrink-0" />
+              <span className="text-[12px] font-semibold">Kodet e zyrtarëve</span>
+              <span className="text-[11px] text-gray-400 hidden sm:inline">— për kolonën officer_code</span>
+            </div>
+            {showOfficers ? <ChevronUp size={13} className="text-gray-400 shrink-0" /> : <ChevronDown size={13} className="text-gray-400 shrink-0" />}
+          </button>
+          {showOfficers && (
+            <div className="border-t border-gray-100 p-4 max-h-56 overflow-y-auto">
+              {!refData ? (
+                <p className="text-[12px] text-gray-400">Duke ngarkuar…</p>
+              ) : refData.officers.length === 0 ? (
+                <p className="text-[12px] text-gray-400">Nuk ka zyrtarë të regjistruar.</p>
+              ) : (
+                <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+                  {refData.officers.map((o, idx) => (
+                    <div key={o.id} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                        <span className="text-emerald-700 text-[11px] font-bold tabular">{o.userCode ?? idx + 1}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-gray-800">{o.fullName}</div>
+                        <div className="text-[11px] text-gray-400">{o.office?.name ?? ""} · {o.role}</div>
+                      </div>
+                      <CopyBtn text={String(o.userCode ?? idx + 1)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1434,6 +1561,7 @@ export default function ImportPage() {
             loadingJobs={loadingJobs}
             onRollback={refreshJobs}
             onRefresh={refreshJobs}
+            refData={refData}
           />
         )}
         {tab === "payments" && (
@@ -1442,6 +1570,7 @@ export default function ImportPage() {
             loadingJobs={loadingJobs}
             onRollback={refreshJobs}
             onRefresh={refreshJobs}
+            refData={refData}
           />
         )}
         {tab === "updates" && (

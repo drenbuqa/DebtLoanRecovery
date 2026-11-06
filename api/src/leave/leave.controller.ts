@@ -57,6 +57,12 @@ export class LeaveController {
     return this.svc.listStaffBalances();
   }
 
+  @Patch('admin/request/:id/cancel')
+  @RequireRoles('ADMIN')
+  adminCancelRequest(@Param('id') id: string, @Request() req: any) {
+    return this.svc.adminCancelRequest(id, req.user.id);
+  }
+
   @Patch('admin/request/:id/review')
   @RequireRoles('ADMIN')
   reviewRequest(

@@ -407,12 +407,14 @@ export default function LeaveAdminPage() {
   const router    = useRouter();
   const { toast } = useToast();
 
-  const [pending, setPending]     = useState<any[]>([]);
-  const [staff, setStaff]         = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [tab, setTab]             = useState<Tab>("pending");
-  const [reviewing, setReviewing] = useState<any>(null);
-  const [managing, setManaging]   = useState<any>(null);
+  const [pending, setPending]         = useState<any[]>([]);
+  const [approved, setApproved]       = useState<any[]>([]);
+  const [staff, setStaff]             = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [tab, setTab]                 = useState<Tab>("pending");
+  const [reviewing, setReviewing]     = useState<any>(null);
+  const [managing, setManaging]       = useState<any>(null);
+  const [cancelling, setCancelling]   = useState<string | null>(null);
 
   useEffect(() => {
     if (!can("leave:admin")) { router.push("/leave"); return; }
@@ -422,10 +424,22 @@ export default function LeaveAdminPage() {
   async function load() {
     setLoading(true);
     try {
-      const [p, s] = await Promise.all([leaveApi.adminPending(), leaveApi.adminStaff()]);
+      const [p, all, s] = await Promise.all([leaveApi.adminPending(), leaveApi.adminAllRequests(), leaveApi.adminStaff()]);
       setPending(p);
+      setApproved(all.filter((r: any) => r.status === "APPROVED"));
       setStaff(s);
     } catch {} finally { setLoading(false); }
+  }
+
+  async function handleAdminCancel(id: string) {
+    setCancelling(id);
+    try {
+      await leaveApi.adminCancelRequest(id);
+      toast("Kërkesa u anulua dhe ditët u rikthyen");
+      load();
+    } catch (e: any) {
+      toast(e.message ?? "Gabim gjatë anulimit", "error");
+    } finally { setCancelling(null); }
   }
 
   const noBalance = staff.filter(s => !s.balance.hasBalance).length;
@@ -437,7 +451,8 @@ export default function LeaveAdminPage() {
         { title: "Si të menaxhoni bilancin e pushimeve të një punëtori", body: "Klikoni butonin 'Menaxho Bilancin' pranë emrit të punëtorit. Mund të ndryshoni bilancin fillestar (ditët e caktuara për vitin) ose të bëni rregullime manuale (p.sh. shtoni ditë si bonus ose hiqni ditë si korrigjim). Çdo rregullim regjistrohet me arsyen e dhënë." },
         { title: "Diferenca ndërmjet bilancit fillestar dhe rregullimeve", body: "Bilanci Fillestar = numri i ditëve të pushimit që punëtori ka të drejtë për vitin. Rregullimi = ndryshim manual sipas rastit (p.sh. +2 ditë si bonus ose -1 ditë si korrigjim). Të dyja llogariten bashkë për të dhënë totalin e disponueshëm." },
         { title: "Si të shihni historikun e pushimeve të çdo punëtori", body: "Klikoni mbi emrin e punëtorit në listë ose seksionin e kërkesave të aprovuara. Do të shihni të gjitha pushimet e shfrytëzuara këtë vit, datat dhe llojet. E dobishme për llogaritjen e pagave ose raportimin." },
-        { title: "Ç'ndodh me ditët e pakonsumuara në fund të vitit?", body: "Ditët vjetore të pashfrytëzuara mbi kuotën (zakonisht 6 ditë) humbasin pas 30 qershorit. Punëtorët paralajmërohen automatikisht nga sistemi. Rekomandohet t'i planifikoni pushimet para kësaj date." },
+        { title: "Ç'ndodh me ditët e pakonsumuara në fund të vitit?", body: "Ditët vjetore të pashfrytëzuara mbi kuotën (9 ditë) humbasin pas 30 qershorit. Punëtorët paralajmërohen automatikisht nga sistemi. Rekomandohet t'i planifikoni pushimet para kësaj date." },
+        { title: "Si të anuloni një pushim të aprovuar?", body: "Shkoni te skeda 'Kërkesat' dhe shikoni seksionin 'Pushime të Aprovuara'. Klikoni butonin e kuq 'Anulo' pranë pushimit. Nëse ishte pushim vjetor, ditët rikthehen automatikisht në bilancin e punëtorit." },
       ]} />
 
       <div className="p-4 md:p-6 space-y-5">
@@ -557,6 +572,46 @@ export default function LeaveAdminPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Approved requests — admin can cancel */}
+                {approved.length > 0 && (
+                  <div className="mt-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle size={13} className="text-emerald-500" />
+                      <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Pushime të Aprovuara</span>
+                      <span className="text-[11px] text-gray-400">({approved.length})</span>
+                    </div>
+                    <div className="space-y-2">
+                      {approved.map(r => (
+                        <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
+                          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-700 text-[11px] font-bold">
+                            {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
+                              <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded border border-emerald-200 text-[11px] font-medium bg-emerald-50 text-emerald-700">
+                                {LEAVE_TYPE_LABELS[r.leaveType]}
+                              </span>
+                            </div>
+                            <div className="text-[12px] text-gray-500 mt-0.5">
+                              {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
+                              <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => { if (window.confirm(`Anulo pushimin e aprovuar të ${r.user.fullName}? Nëse është pushim vjetor, ditët rikthehen automatikisht.`)) handleAdminCancel(r.id); }}
+                            disabled={cancelling === r.id}
+                            className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0">
+                            {cancelling === r.id ? "Duke anuluar…" : <><X size={12} /> Anulo</>}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               )
             ) : (
               /* Staff tab */

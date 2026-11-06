@@ -1749,7 +1749,7 @@ export default function CaseDetailPage() {
                     {[
                       { label: "Numri i Lëndës", val: p.legalCaseNumber ?? "—" },
                       { label: "Data e Inicimit", val: p.initiationDate ? new Date(p.initiationDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
-                      { label: "Data e Depozitimit", val: p.filingDate ? new Date(p.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
+                      { label: "Data e Seancës", val: p.hearingDate ? new Date(p.hearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                       { label: "Seanca Tjetër", val: p.nextHearingDate ? new Date(p.nextHearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                       { label: "Data e Vendimit", val: p.judgmentDate ? new Date(p.judgmentDate).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) : "—" },
                       { label: "Shuma e Vendimit", val: p.judgmentAmount ? formatCurrency(Number(p.judgmentAmount)) : "—" },

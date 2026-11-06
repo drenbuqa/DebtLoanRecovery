@@ -48,7 +48,11 @@ export type Permission =
   | "report:export"
   // Leave actions
   | "page:leave"
-  | "leave:admin";
+  | "leave:admin"
+  // HR actions
+  | "page:hr"
+  | "hr-document:upload"
+  | "hr-document:delete";
 
 // ── Per-role permission sets ─────────────────────────────────
 const ADMIN_PERMS: Permission[] = [
@@ -57,6 +61,7 @@ const ADMIN_PERMS: Permission[] = [
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings", "page:import",
   "page:leave", "leave:admin",
+  "page:hr", "hr-document:upload", "hr-document:delete",
   "case:create", "case:edit", "case:assign",
   "activity:create",
   "payment:create",
@@ -77,6 +82,7 @@ const MANAGER_PERMS: Permission[] = [
   "page:institutions", "page:reports", "page:performance",
   "page:admin:users", "page:admin:offices", "page:settings",
   "page:leave",
+  "page:hr", "hr-document:upload",
   "case:create", "case:edit", "case:assign",
   "activity:create",
   "payment:create",
@@ -96,6 +102,7 @@ const OFFICER_PERMS: Permission[] = [
   "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:performance",
   "page:settings", "page:leave",
+  "page:hr",
   "activity:create",
   "payment:create",
   "agreement:create",
@@ -109,7 +116,7 @@ const VIEWER_PERMS: Permission[] = [
   "page:dashboard", "page:cases", "page:activities",
   "page:payments", "page:agreements", "page:legal",
   "page:institutions", "page:reports", "page:performance",
-  "page:settings",
+  "page:settings", "page:hr",
   "report:export",
 ];
 

@@ -69,7 +69,7 @@ export class ReportsService {
           include: { officer: { select: { fullName: true } } },
         },
         agreements: { orderBy: { createdAt: 'desc' }, take: 5 },
-        legalProceedings: { orderBy: { filingDate: 'desc' }, take: 5 },
+        legalProceedings: { orderBy: { hearingDate: 'desc' }, take: 5 },
       },
     });
     if (!c) throw new NotFoundException('Case not found');
@@ -139,8 +139,8 @@ export class ReportsService {
     if (c.legalProceedings.length) {
       this.sectionTitle(doc, 'Legal Proceedings');
       this.table(doc,
-        ['Reference', 'Status', 'Filing Date', 'Court'],
-        c.legalProceedings.map(l => [l.proceedingRef, l.status, date(l.filingDate), l.court ?? '—']),
+        ['Reference', 'Status', 'Hearing Date', 'Court'],
+        c.legalProceedings.map(l => [l.proceedingRef, l.status, date(l.hearingDate), l.court ?? '—']),
       );
     }
 
@@ -907,7 +907,7 @@ export class ReportsService {
     const headers = [
       // Legal proceeding-specific
       'proceeding_reference', 'legal_status', 'court', 'legal_case_number',
-      'filing_date', 'initiation_date', 'next_hearing_date',
+      'hearing_date', 'initiation_date', 'next_hearing_date',
       'judgment_date', 'judgment_amount',
       'notes',
       // Borrower & loan (migration format)
@@ -942,7 +942,7 @@ export class ReportsService {
         lp.status,
         lp.court ?? '',
         lp.legalCaseNumber ?? '',
-        d(lp.filingDate),
+        d(lp.hearingDate),
         d(lp.initiationDate),
         d(lp.nextHearingDate),
         d(lp.judgmentDate),

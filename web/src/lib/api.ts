@@ -190,6 +190,7 @@ export const legal = {
     return req<{ data: any[]; meta: any; stats: any }>(`/legal${qs ? `?${qs}` : ''}`);
   },
   get: (id: string) => req<any>(`/legal/${id}`),
+  getByCaseId: (caseId: string) => req<{ legalCaseNumber: string; court: string | null; initiationDate: string } | null>(`/legal/by-case/${caseId}`),
   create: (data: any) => req('/legal', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => req(`/legal/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
@@ -434,6 +435,8 @@ export const leave = {
   adminPending: () => req<any[]>('/leave/admin/pending'),
   adminAllRequests: () => req<any[]>('/leave/admin/all-requests'),
   adminStaff: () => req<any[]>('/leave/admin/staff'),
+  adminCancelRequest: (id: string) =>
+    req<any>(`/leave/admin/request/${id}/cancel`, { method: 'PATCH' }),
   reviewRequest: (id: string, approved: boolean, note?: string) =>
     req<any>(`/leave/admin/request/${id}/review`, { method: 'PATCH', body: JSON.stringify({ approved, note }) }),
   setBalance: (userId: string, initialDays: number, initialDate: string) =>
@@ -441,6 +444,37 @@ export const leave = {
   createAdjustment: (userId: string, days: number, note: string) =>
     req<any>('/leave/admin/adjustment', { method: 'POST', body: JSON.stringify({ userId, days, note }) }),
   listAdjustments: (userId: string) => req<any[]>(`/leave/admin/adjustments/${userId}`),
+};
+
+// ── HR Documents ──────────────────────────────────────────────────────────────
+
+export const hrDocuments = {
+  list: () => req<any[]>('/hr-documents'),
+  fileUrl: (id: string) => `${API_BASE}/hr-documents/${id}/file`,
+  upload: async (file: File, title: string, description?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('title', title);
+    if (description) form.append('description', description);
+    const res = await fetch(`${API_BASE}/hr-documents`, {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message ?? 'Ndodhi një gabim');
+    }
+    return res.json();
+  },
+  delete: (id: string) => req<any>(`/hr-documents/${id}`, { method: 'DELETE' }),
+};
+
+// ── Confidentiality ───────────────────────────────────────────────────────────
+
+export const confidentiality = {
+  status: () => req<{ accepted: boolean; currentVersion: string }>('/confidentiality/status'),
+  accept: () => req<any>('/confidentiality/accept', { method: 'POST' }),
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────

@@ -156,7 +156,7 @@ const CASE_DETAIL_EXTRA = {
     select: {
       id: true, proceedingRef: true, status: true, court: true,
       legalCaseNumber: true, initiationDate: true,
-      filingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, notes: true,
+      hearingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, notes: true,
     },
   },
 };

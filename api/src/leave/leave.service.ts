@@ -116,10 +116,10 @@ export class LeaveService {
         const existingCap = adjustments.find(a => a.type === 'JUNE_CAP' && a.capYear === capYear);
         if (existingCap) {
           balance += existingCap.days; // negative
-        } else if (balance > 6) {
-          const excess = balance - 6;
+        } else if (balance > 9) {
+          const excess = balance - 9;
           newCaps.push({ year: capYear, days: -excess });
-          balance = 6;
+          balance = 9;
         }
       }
 
@@ -169,7 +169,7 @@ export class LeaveService {
                 userId,
                 days: cap.days,
                 type: 'JUNE_CAP',
-                note: `Automatikisht: bilanci ka kaluar 6 ditë në Qershor ${cap.year}`,
+                note: `Automatikisht: bilanci ka kaluar 9 ditë në Qershor ${cap.year}`,
                 date: new Date(`${cap.year}-06-01`),
                 capYear: cap.year,
                 createdById: capCreatorId,
@@ -309,6 +309,40 @@ export class LeaveService {
     if (req.userId !== userId) throw new ForbiddenException('Nuk keni leje');
     if (req.status !== 'PENDING') throw new BadRequestException('Vetëm kërkesat në pritje mund të anulohen');
     return this.prisma.leaveRequest.update({ where: { id: requestId }, data: { status: 'CANCELLED' } });
+  }
+
+  /** Admin: cancel any request (PENDING or APPROVED), restoring balance if needed */
+  async adminCancelRequest(requestId: string, adminId: string) {
+    const req = await this.prisma.leaveRequest.findUnique({ where: { id: requestId } });
+    if (!req) throw new NotFoundException('Kërkesa nuk u gjet');
+    if (req.status === 'CANCELLED') throw new BadRequestException('Kërkesa është tashmë e anuluar');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.leaveRequest.update({ where: { id: requestId }, data: { status: 'CANCELLED' } });
+
+      // If APPROVED annual leave — restore working days back to balance
+      if (req.status === 'APPROVED' && req.leaveType === 'ANNUAL') {
+        await tx.leaveAdjustment.create({
+          data: {
+            userId: req.userId,
+            days: req.workingDays,
+            type: 'MANUAL',
+            note: `Rikthim: kërkesa e pushimit u anulua nga admin (${req.startDate.toLocaleDateString('sq-AL')} – ${req.endDate.toLocaleDateString('sq-AL')})`,
+            date: new Date(),
+            createdById: adminId,
+          },
+        });
+      }
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: req.userId,
+        title: 'Kërkesa për pushim u anulua',
+        body: `Pushimi i planifikuar (${req.startDate.toLocaleDateString('sq-AL')} – ${req.endDate.toLocaleDateString('sq-AL')}) u anulua nga administratori.`,
+        link: '/leave',
+      },
+    });
   }
 
   /** Admin: approve or reject a request */

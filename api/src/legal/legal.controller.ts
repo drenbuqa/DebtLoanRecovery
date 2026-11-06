@@ -16,6 +16,9 @@ export class LegalController {
     return this.svc.findAll({ page: +q.page || 1, limit: +q.limit || 25, status: q.status, view: q.view, officeId, officerId });
   }
 
+  @Get('by-case/:caseId')
+  findByCaseId(@Param('caseId') caseId: string) { return this.svc.findByCaseId(caseId); }
+
   @Get(':id')
   findOne(@Param('id') id: string) { return this.svc.findOne(id); }
 

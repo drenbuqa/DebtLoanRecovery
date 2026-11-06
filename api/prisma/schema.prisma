@@ -51,6 +51,8 @@ model User {
   leaveAdjustmentsMade     LeaveAdjustment[]       @relation("LeaveAdjCreator")
   leaveBalancesCreated     LeaveBalance[]          @relation("LeaveBalanceCreatedBy")
   notifications            Notification[]
+  hrDocuments              HrDocument[]
+  confidentialityAcceptance ConfidentialityAcceptance?
 
   @@map("users")
 }
@@ -407,8 +409,8 @@ model LegalProceeding {
   legalCaseNumber  String?               @map("legal_case_number") @db.VarChar(100)
   status           LegalProceedingStatus @default(INITIATED)
   court            String?               @db.VarChar(150)
-  filingDate       DateTime              @map("filing_date") @db.Date
-  initiationDate   DateTime?             @map("initiation_date") @db.Date
+  hearingDate      DateTime              @map("hearing_date") @db.Date
+  initiationDate   DateTime              @map("initiation_date") @db.Date
   nextHearingDate  DateTime?             @map("next_hearing_date") @db.Date
   judgmentDate     DateTime?             @map("judgment_date") @db.Date
   judgmentAmount   Decimal?              @map("judgment_amount") @db.Decimal(18, 2)
@@ -798,4 +800,35 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   @@map("notifications")
+}
+
+// ─────────────────────────────────────────────
+// HR
+// ─────────────────────────────────────────────
+
+model HrDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  title        String   @db.VarChar(200)
+  description  String?  @db.VarChar(500)
+  fileName     String   @map("file_name") @db.VarChar(255)
+  mimeType     String   @map("mime_type") @db.VarChar(100)
+  fileSize     Int      @map("file_size")
+  fileData     Bytes    @map("file_data")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@map("hr_documents")
+}
+
+model ConfidentialityAcceptance {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @map("user_id") @db.Uuid
+  acceptedAt DateTime @default(now()) @map("accepted_at") @db.Timestamptz(6)
+  version    String   @default("1.0") @db.VarChar(20)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("confidentiality_acceptances")
 }

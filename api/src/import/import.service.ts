@@ -1117,19 +1117,21 @@ export class ImportService {
   }
 
   templateActivitiesXlsx(): Buffer {
-    const headers = ['case_reference', 'activity_type', 'date', 'officer_code', 'outcome', 'notes', 'promise_amount'];
+    const headers = ['case_reference', 'activity_type', 'date', 'officer_code', 'outcome', 'notes', 'promise_amount', 'promise_date', 'next_action_date'];
     const types = ['CALL','VISIT','SMS','EMAIL','LETTER','PROMISE_TO_PAY','PAYMENT_RECEIVED','LEGAL_ACTION','NOTE','FIELD_VISIT','CALL_BORROWER','CALL_GUARANTOR','VISIT_BORROWER','VISIT_GUARANTOR','WARNING_LETTER','MEETING_BORROWER','MEETING_GUARANTOR'].join(', ');
     const outcomes = ['CONTACTED','NO_ANSWER','PROMISE_RECEIVED','REFUSED','PARTIAL_PAYMENT','FULL_PAYMENT','DISPUTE','DECEASED','OTHER'].join(', ');
     const examples = [
-      ['DLR-2024-ABCDEF', 'CALL', '2024-03-15', 3, 'CONTACTED', 'Klienti u kontaktua, premtoi pagesë brenda javës', ''],
-      ['DLR-2024-GHIJKL', 'PROMISE_TO_PAY', '2024-03-16', 3, 'PROMISE_RECEIVED', 'Premtim pagese', 500],
-      ['DLR-2024-MNOPQR', 'VISIT', '2024-03-17', '', 'NO_ANSWER', 'Nuk u gjet në shtëpi', ''],
-      ['', '', '', '', '', `Llojet e aktivitetit (activity_type): ${types}`, ''],
-      ['', '', '', '', '', `Rezultatet (outcome): ${outcomes}`, ''],
+      ['DLR-2024-ABCDEF', 'CALL', '2024-03-15', 3, 'CONTACTED', 'Klienti u kontaktua, premtoi pagesë brenda javës', '', '', '2024-03-22'],
+      ['DLR-2024-GHIJKL', 'PROMISE_TO_PAY', '2024-03-16', 3, 'PROMISE_RECEIVED', 'Premtim pagese', 500, '2024-03-30', ''],
+      ['DLR-2024-MNOPQR', 'VISIT', '2024-03-17', '', 'NO_ANSWER', 'Nuk u gjet në shtëpi', '', '', ''],
+      ['', '', '', '', '', `Llojet e aktivitetit (activity_type): ${types}`, '', '', ''],
+      ['', '', '', '', '', `Rezultatet (outcome): ${outcomes}`, '', '', ''],
+      ['', '', '', '', '', 'promise_date: data e premtimit (për PROMISE_TO_PAY)', '', '', ''],
+      ['', '', '', '', '', 'next_action_date: data e ndjekjes së radhës', '', '', ''],
     ];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...examples]);
-    ws['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 50 }, { wch: 16 }];
+    ws['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 50 }, { wch: 16 }, { wch: 16 }, { wch: 18 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Aktivitetet');
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   }
@@ -1192,6 +1194,8 @@ export class ImportService {
       const outcomeRaw = row['outcome'] ?? row['rezultati'] ?? '';
       const promiseAmtRaw = row['promise_amount'] ?? row['shuma'] ?? row['vlera'] ?? '';
       const officerCodeRaw = row['officer_code'] ?? row['officer'] ?? row['zyrtari'] ?? '';
+      const promiseDateRaw = row['promise_date'] ?? row['data_premtimit'] ?? row['datapremtimit'] ?? '';
+      const nextActionDateRaw = row['next_action_date'] ?? row['data_ndjekjes'] ?? row['datandardjekjes'] ?? row['followup'] ?? row['follow_up'] ?? '';
 
       try {
         if (!caseRef) throw new Error('case_reference mungon');
@@ -1209,6 +1213,9 @@ export class ImportService {
           if (found) officerId = found;
         }
 
+        const promiseDate = promiseDateRaw ? parseDate(promiseDateRaw) : undefined;
+        const nextActionDate = nextActionDateRaw ? parseDate(nextActionDateRaw) : undefined;
+
         valid.push({
           caseId,
           officerId,
@@ -1217,6 +1224,7 @@ export class ImportService {
           notes: notesRaw || undefined,
           outcome: (this.resolveActivityOutcome(outcomeRaw) ?? undefined) as any,
           promiseAmount: promiseAmtRaw ? parseDecimal(promiseAmtRaw) || undefined : undefined,
+          nextActionDate: nextActionDate ?? (promiseDate ?? undefined),
         });
       } catch (e: any) {
         errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });

@@ -54,9 +54,12 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [caseAttempted, setCaseAttempted] = useState(false);
   const [court, setCourt] = useState("");
+  const [courtLocked, setCourtLocked] = useState(false);
   const [legalCaseNumber, setLegalCaseNumber] = useState("");
-  const [filingDate, setFilingDate] = useState("");
+  const [legalCaseNumberLocked, setLegalCaseNumberLocked] = useState(false);
+  const [hearingDate, setHearingDate] = useState("");
   const [initiationDate, setInitiationDate] = useState("");
+  const [initiationDateLocked, setInitiationDateLocked] = useState(false);
   const [nextHearing, setNextHearing] = useState("");
   const [notes, setNotes] = useState("");
   const [docFile, setDocFile] = useState<File | null>(null);
@@ -74,14 +77,41 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
     } catch {}
   }
 
-  const filingDateError = fieldError("filingDate", filingDate, { required: true });
+  async function selectCase(c: any) {
+    setSelectedCase(c);
+    setCaseSearch("");
+    setCaseResults([]);
+    // Fetch existing proceeding for this case to auto-fill locked fields
+    try {
+      const existing = await legalApi.getByCaseId(c.id);
+      if (existing) {
+        setLegalCaseNumber(existing.legalCaseNumber ?? "");
+        setLegalCaseNumberLocked(true);
+        setCourt(existing.court ?? "");
+        setCourtLocked(!!existing.court);
+        setInitiationDate(existing.initiationDate ? existing.initiationDate.slice(0, 10) : "");
+        setInitiationDateLocked(!!existing.initiationDate);
+      } else {
+        setLegalCaseNumberLocked(false);
+        setCourtLocked(false);
+        setInitiationDateLocked(false);
+      }
+    } catch {
+      setLegalCaseNumberLocked(false);
+      setCourtLocked(false);
+      setInitiationDateLocked(false);
+    }
+  }
+
+  const hearingDateError = fieldError("hearingDate", hearingDate, { required: true });
   const courtError = fieldError("court", court, { required: true });
+  const initiationDateError = fieldError("initiationDate", initiationDate, { required: true });
   const caseError = caseAttempted && !selectedCase ? "Ju lutem zgjidhni një klient" : null;
 
   async function submit() {
     setCaseAttempted(true);
-    touchAll(["filingDate", "court"]);
-    if (!selectedCase || filingDateError || courtError) return;
+    touchAll(["hearingDate", "court", "initiationDate"]);
+    if (!selectedCase || hearingDateError || courtError || initiationDateError) return;
 
     setSaving(true); setSubmitError("");
     try {
@@ -89,8 +119,8 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
         caseId: selectedCase.id,
         court: court.trim(),
         legalCaseNumber: legalCaseNumber.trim() || undefined,
-        filingDate,
-        initiationDate: initiationDate || undefined,
+        hearingDate,
+        initiationDate,
         nextHearingDate: nextHearing || undefined,
         notes: notes.trim() || undefined,
       });
@@ -131,7 +161,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
                     {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.fullName}` : ""}
                   </span>
                 </div>
-                <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); }}
+                <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); setLegalCaseNumber(""); setCourt(""); setInitiationDate(""); setLegalCaseNumberLocked(false); setCourtLocked(false); setInitiationDateLocked(false); }}
                   className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
               </div>
             ) : (
@@ -142,7 +172,7 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
                 {caseResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
                     {caseResults.map((c) => (
-                      <button key={c.id} onClick={() => { setSelectedCase(c); setCaseSearch(""); setCaseResults([]); }}
+                      <button key={c.id} onClick={() => selectCase(c)}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
                         <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
                         <span className="text-[12px] text-gray-700">
@@ -159,21 +189,31 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
           <div className="grid grid-cols-2 gap-3">
             <LF label="Numri i Lëndës">
-              <input value={legalCaseNumber} onChange={(e) => setLegalCaseNumber(e.target.value)}
-                placeholder="p.sh. C.nr.123/2026" className={inp(false)} />
+              <input value={legalCaseNumber} onChange={(e) => { if (!legalCaseNumberLocked) setLegalCaseNumber(e.target.value); }}
+                placeholder="p.sh. C.nr.123/2026"
+                readOnly={legalCaseNumberLocked}
+                className={legalCaseNumberLocked ? `${inp(false)} bg-gray-50 text-gray-500 cursor-not-allowed` : inp(!!legalCaseNumberError)} />
             </LF>
             <LF label="Gjykata/Përmbaruesi" required error={courtError}>
-              <input value={court} onChange={(e) => { setCourt(e.target.value); touch("court"); }}
-                placeholder="p.sh. Gjykata Themelore e Prishtinës" className={inp(!!courtError)} />
+              <input value={court} onChange={(e) => { if (!courtLocked) { setCourt(e.target.value); touch("court"); } }}
+                placeholder="p.sh. Gjykata Themelore e Prishtinës"
+                readOnly={courtLocked}
+                className={courtLocked ? `${inp(false)} bg-gray-50 text-gray-500 cursor-not-allowed` : inp(!!courtError)} />
             </LF>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <LF label="Data e Inicimit">
-              <DatePicker value={initiationDate} onChange={setInitiationDate} placeholder="Zgjidhni datën" />
+            <LF label="Data e Inicimit" required error={initiationDateError}>
+              {initiationDateLocked ? (
+                <div className={`${inp(false)} bg-gray-50 text-gray-500 cursor-not-allowed`}>
+                  {initiationDate ? new Date(initiationDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                </div>
+              ) : (
+                <DatePicker value={initiationDate} onChange={(v) => { setInitiationDate(v); touch("initiationDate"); }} placeholder="Zgjidhni datën" />
+              )}
             </LF>
-            <LF label="Data e Depozitimit" required error={filingDateError}>
-              <DatePicker value={filingDate} onChange={(v) => { setFilingDate(v); touch("filingDate"); }} placeholder="Zgjidhni datën" />
+            <LF label="Data e Seancës" required error={hearingDateError}>
+              <DatePicker value={hearingDate} onChange={(v) => { setHearingDate(v); touch("hearingDate"); }} placeholder="Zgjidhni datën" />
             </LF>
           </div>
 
@@ -440,7 +480,7 @@ export default function LegalPage() {
                     <Th>Institucioni</Th>
                     <Th>Gjykata/Përmbaruesi</Th>
                     <Th>Data e Inicimit</Th>
-                    <Th>Data e Depozitimit</Th>
+                    <Th>Data e Seancës</Th>
                     <Th>Seanca Tjetër</Th>
                     <Th>Vendimi</Th>
                     <Th>Statusi</Th>
@@ -476,7 +516,7 @@ export default function LegalPage() {
                         </Td>
                         <Td className="whitespace-nowrap">
                           <span className="tabular text-gray-500 text-[12px]">
-                            {lp.filingDate ? new Date(lp.filingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                            {lp.hearingDate ? new Date(lp.hearingDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                           </span>
                         </Td>
                         <Td className="whitespace-nowrap">

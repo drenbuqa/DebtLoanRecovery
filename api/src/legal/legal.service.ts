@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 const LP_SELECT = {
   id: true, caseId: true, proceedingRef: true, court: true,
   legalCaseNumber: true, initiationDate: true,
-  filingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, status: true,
+  hearingDate: true, nextHearingDate: true, judgmentDate: true, judgmentAmount: true, status: true,
   notes: true, createdAt: true,
   case: {
     select: {
@@ -87,12 +87,20 @@ export class LegalService {
     return lp;
   }
 
+  async findByCaseId(caseId: string) {
+    return this.prisma.legalProceeding.findFirst({
+      where: { caseId },
+      orderBy: { createdAt: 'asc' },
+      select: { legalCaseNumber: true, court: true, initiationDate: true },
+    });
+  }
+
   async create(dto: {
     caseId: string;
     court?: string;
     legalCaseNumber?: string;
-    filingDate: string;
-    initiationDate?: string;
+    hearingDate: string;
+    initiationDate: string;
     nextHearingDate?: string;
     notes?: string;
   }) {
@@ -107,9 +115,9 @@ export class LegalService {
           caseId: dto.caseId,
           proceedingRef: ref,
           court: dto.court,
-          legalCaseNumber: dto.legalCaseNumber,
-          filingDate: new Date(dto.filingDate),
-          initiationDate: dto.initiationDate ? new Date(dto.initiationDate) : undefined,
+          legalCaseNumber: dto.legalCaseNumber || undefined,
+          hearingDate: new Date(dto.hearingDate),
+          initiationDate: new Date(dto.initiationDate),
           nextHearingDate: dto.nextHearingDate ? new Date(dto.nextHearingDate) : undefined,
           notes: dto.notes,
         },
@@ -122,6 +130,7 @@ export class LegalService {
     status?: string;
     court?: string;
     legalCaseNumber?: string;
+    hearingDate?: string;
     initiationDate?: string;
     nextHearingDate?: string;
     judgmentDate?: string;
@@ -134,6 +143,7 @@ export class LegalService {
         ...(dto.status && { status: dto.status as any }),
         ...(dto.court !== undefined && { court: dto.court }),
         ...(dto.legalCaseNumber !== undefined && { legalCaseNumber: dto.legalCaseNumber }),
+        ...(dto.hearingDate && { hearingDate: new Date(dto.hearingDate) }),
         ...(dto.initiationDate && { initiationDate: new Date(dto.initiationDate) }),
         ...(dto.nextHearingDate && { nextHearingDate: new Date(dto.nextHearingDate) }),
         ...(dto.judgmentDate && { judgmentDate: new Date(dto.judgmentDate) }),

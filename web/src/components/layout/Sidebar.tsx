@@ -12,7 +12,7 @@ import {
   LayoutDashboard, FolderOpen, Activity,
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
-  LogOut, X, Upload, CalendarDays, ChevronsLeft, ChevronsRight,
+  LogOut, X, Upload, CalendarDays, ChevronsLeft, ChevronsRight, BookOpen,
 } from "lucide-react";
 
 // ── Nav config ─────────────────────────────────────────────────
@@ -53,7 +53,8 @@ const nav: NavGroup[] = [
   {
     label: "HR",
     items: [
-      { href: "/leave", label: "Pushimet", icon: CalendarDays, permission: "page:leave" },
+      { href: "/leave",    label: "Pushimet",  icon: CalendarDays, permission: "page:leave" },
+      { href: "/hr",       label: "Manualet",  icon: BookOpen,     permission: "page:hr" },
     ],
   },
   {
