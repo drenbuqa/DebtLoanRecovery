@@ -279,19 +279,10 @@ export class CasesService {
       where.AND.push({ NOT: { promises: { some: { status: { in: ['PENDING', 'BROKEN'] as any[] }, promiseDate: { lt: today } } } } });
       where.AND.push({ NOT: { agreements: { some: { status: { in: ['ACTIVE', 'BROKEN'] as any[] }, installments: { some: { dueDate: { lt: today }, status: { in: ['PENDING', 'OVERDUE'] as any[] } } } } } } });
     } else if (query.view === 'ndjekja_radhes') {
-      // Show only cases that have at least one non-promise activity with a future nextActionDate
-      // (the "Ndjekja e Radhës" optional field on the activity form).
-      // We do NOT use case.nextActionDate because old records may have had it set by promises.
+      // Show cases with a nextActionDate set (past or future) on any non-promise activity.
+      // Overdue ones show at the top (sorted asc), future ones towards the end.
       if (!where.AND) where.AND = [];
-      where.AND.push({
-        activities: {
-          some: {
-            nextActionDate: { gte: today },
-            activityType: { notIn: ['PROMISE_TO_PAY'] as any[] },
-            outcome: { not: 'PROMISE_RECEIVED' as any },
-          },
-        },
-      });
+      where.AND.push({ nextActionDate: { not: null } });
     } else if (query.view === 'inactive' || query.view === 'inactive_30d') {
       where.status = { in: ['CLOSED', 'SUSPENDED', 'ANKES', 'AKTGJYKIM'] };
     } else if (query.view === 'legal') {

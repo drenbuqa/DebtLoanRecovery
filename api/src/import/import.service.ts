@@ -1281,7 +1281,7 @@ export class ImportService {
       const ndjekja = await this.prisma.activity.findFirst({
         where: {
           caseId,
-          nextActionDate: { gte: new Date() },
+          nextActionDate: { not: null },
           activityType: { notIn: ['PROMISE_TO_PAY'] as any[] },
           outcome: { not: 'PROMISE_RECEIVED' as any },
         },
