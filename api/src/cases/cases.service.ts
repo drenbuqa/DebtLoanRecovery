@@ -363,12 +363,20 @@ export class CasesService {
       return { ...rest, latestPromise };
     });
 
-    // Sort promise-related views by promiseDate ascending (closest/least-overdue first)
-    if (['all_promises', 'promises_today', 'promises_soon', 'vonesa', 'premtime_thyera'].includes(query.view as string)) {
+    // Sort promise-related views by promiseDate
+    // Upcoming: ascending (soonest due first)
+    // Late (vonesa/deshtimet): descending (least late first, most late at bottom)
+    if (['all_promises', 'promises_today', 'promises_soon'].includes(query.view as string)) {
       data.sort((a: any, b: any) => {
         const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : Infinity;
         const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : Infinity;
         return da - db;
+      });
+    } else if (['vonesa', 'premtime_thyera'].includes(query.view as string)) {
+      data.sort((a: any, b: any) => {
+        const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : -Infinity;
+        const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : -Infinity;
+        return db - da;
       });
     }
 
