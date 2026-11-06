@@ -522,6 +522,7 @@ export default function LeaveAdminPage() {
                   <p className="text-[12px] text-gray-400 mt-1">Të gjitha kërkesat janë procesuar</p>
                 </div>
               ) : (
+                <>
                 <div className="space-y-3">
                   {pending.map(r => (
                     <div key={r.id} className="flex items-center gap-4 px-4 py-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors bg-white"
@@ -612,6 +613,7 @@ export default function LeaveAdminPage() {
                     </div>
                   </div>
                 )}
+                </>
               )
             ) : (
               /* Staff tab */
