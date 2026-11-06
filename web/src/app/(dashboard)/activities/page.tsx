@@ -656,7 +656,7 @@ export default function ActivitiesPage() {
                 </button>
               ))}
               <div className="ml-auto flex items-center gap-2 pb-px shrink-0">
-                <span className="text-[12px] text-gray-400">{!loading && `${filtered.length} ${filtered.length === 1 ? "aktivitet" : "aktivitete"}`}</span>
+                <span className="text-[12px] text-gray-400">{!loading && `${total.toLocaleString()} ${total === 1 ? "aktivitet" : "aktivitete"}`}</span>
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 </button>
