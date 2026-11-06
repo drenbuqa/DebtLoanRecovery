@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { HrDocumentsService } from './hr-documents.service';
 import { RequireRoles } from '../auth/roles.guard';
 
