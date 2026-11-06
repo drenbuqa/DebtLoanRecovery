@@ -308,6 +308,10 @@ export class CasesService {
       ];
     }
 
+    // Views that sort by promiseDate must fetch all rows so sorting is global across pages
+    const promiseSortViews = ['all_promises', 'promises_today', 'promises_soon', 'vonesa', 'premtime_thyera'];
+    const needsPromiseSort = promiseSortViews.includes(query.view as string);
+
     const [total, items] = await Promise.all([
       this.prisma.case.count({ where }),
       this.prisma.case.findMany({
@@ -321,13 +325,10 @@ export class CasesService {
           if (query.view === 'ndjekja_radhes') {
             return [{ nextActionDate: 'asc' as const }, { loan: { currentOutstandingBalance: 'desc' as const } }];
           }
-          if (query.view === 'vonesa' || query.view === 'premtime_thyera') {
-            return [{ loan: { currentOutstandingBalance: 'desc' as const } }];
-          }
           return byBalance;
         })(),
-        skip,
-        take: limit,
+        // For promise-sorted views fetch all so we can sort globally before paginating
+        ...(needsPromiseSort ? {} : { skip, take: limit }),
       }),
     ]);
 
@@ -363,21 +364,24 @@ export class CasesService {
       return { ...rest, latestPromise };
     });
 
-    // Sort promise-related views by promiseDate
-    // Upcoming: ascending (soonest due first)
-    // Late (vonesa/deshtimet): descending (least late first, most late at bottom)
-    if (['all_promises', 'promises_today', 'promises_soon'].includes(query.view as string)) {
-      data.sort((a: any, b: any) => {
-        const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : Infinity;
-        const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : Infinity;
-        return da - db;
-      });
-    } else if (['vonesa', 'premtime_thyera'].includes(query.view as string)) {
-      data.sort((a: any, b: any) => {
-        const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : -Infinity;
-        const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : -Infinity;
-        return db - da;
-      });
+    // Sort promise-related views by promiseDate across ALL records, then paginate
+    if (needsPromiseSort) {
+      if (['all_promises', 'promises_today', 'promises_soon'].includes(query.view as string)) {
+        // Upcoming: ascending (soonest due first)
+        data.sort((a: any, b: any) => {
+          const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : Infinity;
+          const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : Infinity;
+          return da - db;
+        });
+      } else {
+        // Late (vonesa/deshtimet): descending (least late first, most late at bottom)
+        data.sort((a: any, b: any) => {
+          const da = a.latestPromise?.promiseDate ? new Date(a.latestPromise.promiseDate).getTime() : -Infinity;
+          const db = b.latestPromise?.promiseDate ? new Date(b.latestPromise.promiseDate).getTime() : -Infinity;
+          return db - da;
+        });
+      }
+      return { data: data.slice(skip, skip + limit), meta: { total, page, limit, pages: Math.ceil(total / limit) } };
     }
 
     return { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
