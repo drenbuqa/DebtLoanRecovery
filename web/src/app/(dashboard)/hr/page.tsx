@@ -245,18 +245,19 @@ export default function HrPage() {
           { title: "Çfarë gjenden këtu?", body: "Manualet dhe rregulloret e brendshme të DLR — dokumentet që stafi duhet të njohë dhe t'i ndjekë gjatë punës. Kliko 'Hap' tek çdo dokument për ta lexuar drejtpërdrejt." },
           { title: "Si të shtohet një dokument i ri?", body: "Administratorët dhe menaxherët mund të ngarkojnë dokumente të reja duke klikuar butonin 'Shto Dokument'. Pranohen formatet PDF, Word, Excel dhe PowerPoint." },
         ]}
-      >
-        {can("hr-document:upload") && (
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
-            <Plus size={15} />
-            Shto Dokument
-          </button>
-        )}
-      </Topbar>
+      />
 
-      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+      <div className="p-4 md:p-6 space-y-4">
+        {can("hr-document:upload") && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
+              <Plus size={15} />
+              Shto Dokument
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-3">
