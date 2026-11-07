@@ -786,6 +786,11 @@ export default function CaseDetailPage() {
   const [statusForm, setStatusForm] = useState({ status: "", collectionStage: "", collectionStatus: "", note: "" });
   const [statusSaving, setStatusSaving] = useState(false);
 
+  const [showArchive, setShowArchive] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveSaving, setArchiveSaving] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
+
   const [showEditCase, setShowEditCase] = useState(false);
   const [editOfficers, setEditOfficers] = useState<any[]>([]);
   const [editOffices, setEditOffices] = useState<any[]>([]);
@@ -940,20 +945,18 @@ export default function CaseDetailPage() {
     });
   }
 
-  function deleteCase() {
-    openConfirm({
-      title: "Fshi klientin",
-      message: `Rasti ${caseData?.caseReference} dhe të gjitha të dhënat e saj (aktivitete, dokumente, pagesa) do të fshihen përgjithmonë. Ky veprim nuk mund të zhbëhet.`,
-      confirmLabel: "Fshi Klientin",
-      variant: "danger",
-      onConfirm: async () => {
-        try {
-          await casesApi.delete(caseId);
-          router.push("/cases");
-          toast("Rasti u fshi");
-        } catch (e: any) { toast(e.message ?? "Gabim gjatë fshirjes", "error"); }
-      },
-    });
+  async function handleArchiveCase() {
+    if (!archiveReason.trim()) { setArchiveError("Arsyeja është e detyrueshme."); return; }
+    setArchiveSaving(true);
+    setArchiveError("");
+    try {
+      await casesApi.archive(caseId, archiveReason.trim());
+      toast("Klienti u arkivua me sukses.", "success");
+      router.push("/cases");
+    } catch (e: any) {
+      setArchiveError(e.message ?? "Gabim gjatë arkivimit.");
+      setArchiveSaving(false);
+    }
   }
 
   async function submitStatusUpdate() {
@@ -1183,7 +1186,7 @@ export default function CaseDetailPage() {
               onEdit={can("case:edit") ? openEditCase : undefined}
               onStatusUpdate={can("case:edit") ? () => { setStatusForm({ status: status, collectionStage: stage, collectionStatus: caseData?.collectionStatus ?? "", note: "" }); setShowStatusUpdate(true); } : undefined}
               onAgreement={can("agreement:create") ? () => setShowAgreement(true) : undefined}
-              onDelete={can("case:delete") ? deleteCase : undefined}
+              onDelete={can("case:delete") ? () => { setArchiveReason(""); setArchiveError(""); setShowArchive(true); } : undefined}
             />
           )}
           {can("payment:create") && (
@@ -1870,6 +1873,56 @@ export default function CaseDetailPage() {
         )}
 
       </div>
+
+      {/* ── Archive modal ─────────────────────────────────────── */}
+      {showArchive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && !archiveSaving && setShowArchive(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Trash2 size={15} className="text-red-500" />
+                </div>
+                <span className="text-[14px] font-semibold text-gray-900">Hiq Klientin</span>
+              </div>
+              <button onClick={() => setShowArchive(false)} disabled={archiveSaving} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-[13px] text-gray-500 leading-relaxed">
+                Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
+              </p>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={archiveReason}
+                  onChange={(e) => { setArchiveReason(e.target.value); setArchiveError(""); }}
+                  placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
+                  rows={3}
+                  className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+                />
+              </div>
+              {archiveError && <p className="text-[12px] text-red-600">{archiveError}</p>}
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setShowArchive(false)} disabled={archiveSaving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Anulo
+              </button>
+              <button
+                onClick={handleArchiveCase}
+                disabled={archiveSaving || !archiveReason.trim()}
+                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {archiveSaving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                {archiveSaving ? "Duke hequr..." : "Hiq Klientin"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

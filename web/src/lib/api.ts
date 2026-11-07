@@ -115,8 +115,7 @@ export const cases = {
   create: (data: any) => req('/cases', { method: 'POST', body: JSON.stringify(data) }),
   searchPerson: (personalId: string) => req<any>(`/cases/search-person?personalId=${encodeURIComponent(personalId)}`),
   update: (id: string, data: any) => req(`/cases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deletePreview: (id: string) => req<any>(`/cases/${id}/delete-preview`),
-  delete: (id: string) => req(`/cases/${id}`, { method: 'DELETE' }),
+  archive: (id: string, reason: string) => req(`/cases/${id}/archive`, { method: 'POST', body: JSON.stringify({ reason }) }),
   updateStatus: (id: string, data: any) => req(`/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
   history: (id: string) => req<any[]>(`/cases/${id}/history`),
   dashboardStats: (officeId?: string, officerId?: string) => {

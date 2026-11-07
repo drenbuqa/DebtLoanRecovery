@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatEnum } from "@/lib/utils";
 import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle, FileSpreadsheet, Archive } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -20,115 +20,72 @@ import { useRefreshing } from "@/lib/useRefreshing";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 
-// ── Delete Case Modal ────────────────────────────────────────
+// ── Archive Case Modal ────────────────────────────────────────
 function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClose: () => void; onDeleted: () => void }) {
-  const [preview, setPreview] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [deleting, setDeleting] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    (casesApi as any).deletePreview(caseId)
-      .then((p: any) => setPreview(p))
-      .catch(() => setError("Nuk mund të lexohen të dhënat e klientit."))
-      .finally(() => setLoading(false));
-  }, [caseId]);
-
-  async function handleDelete() {
-    setDeleting(true);
+  async function handleArchive() {
+    if (!reason.trim()) { setError("Arsyeja është e detyrueshme."); return; }
+    setSaving(true);
     setError(null);
     try {
-      await casesApi.delete(caseId);
-      toast("Rasti u fshi me sukses.", "success");
+      await casesApi.archive(caseId, reason.trim());
+      toast("Klienti u arkivua me sukses.", "success");
       onDeleted();
     } catch {
-      setError("Fshirja dështoi. Provoni përsëri.");
-      setDeleting(false);
+      setError("Arkivimi dështoi. Provoni përsëri.");
+      setSaving(false);
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
               <Trash2 size={15} className="text-red-500" />
             </div>
-            <span className="text-[14px] font-semibold text-gray-900">Fshi Klientin</span>
+            <span className="text-[14px] font-semibold text-gray-900">Hiq Klientin</span>
           </div>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
             <X size={15} />
           </button>
         </div>
 
-        <div className="px-6 py-5">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw size={18} className="animate-spin text-gray-400" />
-            </div>
-          ) : error && !preview ? (
-            <p className="text-[13px] text-red-600">{error}</p>
-          ) : preview ? (
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                <div className="text-[13px] font-semibold text-gray-900">{preview.borrowerName}</div>
-                <div className="flex items-center gap-3 text-[12px] text-gray-500">
-                  <span className="font-mono">{preview.caseReference}</span>
-                  <span>·</span>
-                  <span className="font-mono">{preview.loanNumber}</span>
-                </div>
-              </div>
-
-              {preview.hasPayments && (
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5">
-                  <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />
-                  <p className="text-[12px] text-amber-800 leading-relaxed">
-                    Kjo klient ka <strong>{preview.counts.payments} pagesë</strong> të regjistruar. Pagesat gjithashtu do të fshihen.
-                  </p>
-                </div>
-              )}
-
-              <div className="text-[12px] text-gray-500 leading-relaxed">
-                Kjo veprim është <strong className="text-gray-800">i pakthyeshëm</strong>. Do të fshihen:
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  ["Aktivitete", preview.counts.activities],
-                  ["Pagesa", preview.counts.payments],
-                  ["Marrëveshje", preview.counts.agreements],
-                  ["Procedura Ligjore", preview.counts.legalProceedings],
-                  ["Dokumente", preview.counts.documents],
-                  ["Premtime Pagese", preview.counts.promises],
-                ].filter(([, v]) => Number(v) > 0).map(([label, count]) => (
-                  <div key={label as string} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                    <span className="text-[11px] text-gray-500">{label}</span>
-                    <span className="text-[11px] font-semibold text-gray-800">{count}</span>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2 col-span-2">
-                  <span className="text-[11px] text-red-600">Klienti (personi)</span>
-                  <span className="text-[11px] font-semibold text-red-700">{preview.willDeletePerson ? "Do të fshihet" : "Do të ruhet"}</span>
-                </div>
-              </div>
-
-              {error && <p className="text-[12px] text-red-600">{error}</p>}
-            </div>
-          ) : null}
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-[13px] text-gray-500 leading-relaxed">
+            Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
+          </p>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+              Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => { setReason(e.target.value); setError(null); }}
+              placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
+              rows={3}
+              className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+            />
+          </div>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={deleting} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
+          <button onClick={onClose} disabled={saving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
             Anulo
           </button>
           <button
-            onClick={handleDelete}
-            disabled={loading || deleting || (!preview && !error)}
+            onClick={handleArchive}
+            disabled={saving || !reason.trim()}
             className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
-            {deleting ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-            {deleting ? "Duke fshirë..." : "Fshi Klientin"}
+            {saving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+            {saving ? "Duke hequr..." : "Hiq Klientin"}
           </button>
         </div>
       </div>

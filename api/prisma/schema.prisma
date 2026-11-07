@@ -44,6 +44,7 @@ model User {
   agreementsCreated        Agreement[]
   legalProceedingsCreated  LegalProceeding[]
   importJobs               ImportJob[]
+  casesArchived            Case[]               @relation("ArchivedBy")
   leaveBalance             LeaveBalance?
   leaveRequests            LeaveRequest[]          @relation("LeaveRequestUser")
   leaveRequestsReviewed    LeaveRequest[]          @relation("LeaveRequestReviewer")
@@ -218,10 +219,13 @@ model Case {
   nextActionDate      DateTime?       @map("next_action_date") @db.Timestamptz(6)
   nextActionNote      String?         @map("next_action_note") @db.VarChar(500)
   closedAt            DateTime?       @map("closed_at") @db.Timestamptz(6)
-  deletedAt           DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  archivedAt          DateTime?       @map("archived_at") @db.Timestamptz(6)
+  archivedById        String?         @map("archived_by_id") @db.Uuid
+  archiveReason       String?         @map("archive_reason") @db.VarChar(500)
   createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  archivedBy       User?               @relation("ArchivedBy", fields: [archivedById], references: [id])
   assignedOfficer  User?               @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
   secondaryOfficer User?               @relation("SecondaryOfficer", fields: [secondaryOfficerId], references: [id])
   loan             Loan                @relation(fields: [loanId], references: [id])
@@ -241,7 +245,8 @@ model Case {
   @@index([collectionStatus])
   @@index([officeId])
   @@index([assignedOfficerId])
-  @@index([deletedAt])
+  @@index([archivedAt])
+  @@index([nextActionDate])
   @@index([status, officeId])
   @@map("cases")
 }

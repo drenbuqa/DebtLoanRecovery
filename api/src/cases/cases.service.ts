@@ -183,7 +183,7 @@ export class CasesService {
     const limit = Math.min(query.limit ?? 25, 5000);
     const skip = (page - 1) * limit;
 
-    const where: any = { deletedAt: null };
+    const where: any = { archivedAt: null };
     if (query.status) where.status = query.status;
     if (query.stage) where.collectionStage = query.stage;
     if (query.collectionStatus) where.collectionStatus = query.collectionStatus;
@@ -406,7 +406,7 @@ export class CasesService {
     }
 
     const c = await this.prisma.case.findFirst({
-      where: { OR: [{ id }, { caseReference: id }], deletedAt: null },
+      where: { OR: [{ id }, { caseReference: id }], archivedAt: null },
       select: { ...CASE_LIST_SELECT, ...CASE_DETAIL_EXTRA },
     });
     if (!c) throw new NotFoundException('Dosja nuk u gjet');
@@ -514,93 +514,24 @@ export class CasesService {
     return { id };
   }
 
-  async deletePreview(id: string) {
+  async archiveCase(id: string, archivedById: string, reason: string) {
     const c = await this.prisma.case.findUnique({
-      where: { id },
+      where: { id, archivedAt: null },
       select: {
         id: true, caseReference: true,
-        loan: { select: { id: true, loanNumber: true, borrowerId: true, borrower: { select: { fullName: true, personalId: true } } } },
-        _count: {
-          select: {
-            activities: true, agreements: true, payments: true,
-            legalProceedings: true, documents: true, assignments: true,
-            statusHistory: true, promises: true,
-          },
-        },
+        loan: { select: { borrower: { select: { fullName: true } }, loanNumber: true } },
       },
     });
-    if (!c) throw new Error('Dosja nuk u gjet');
+    if (!c) throw new Error('Klienti nuk u gjet');
+    if (!reason?.trim()) throw new Error('Arsyeja e arkivimit është e detyrueshme');
 
-    const otherLoans = c.loan ? await this.prisma.loan.count({ where: { borrowerId: c.loan.borrowerId, id: { not: c.loan.id } } }) : 0;
-    const otherParties = c.loan ? await this.prisma.loanParty.count({ where: { personId: c.loan.borrowerId, loanId: { not: c.loan.id } } }) : 0;
-    const willDeletePerson = otherLoans === 0 && otherParties === 0;
-
-    return {
-      caseReference: c.caseReference,
-      borrowerName: c.loan?.borrower.fullName,
-      loanNumber: c.loan?.loanNumber,
-      counts: c._count,
-      willDeletePerson,
-      hasPayments: c._count.payments > 0,
-    };
-  }
-
-  async deleteCase(id: string) {
-    const c = await this.prisma.case.findUnique({
+    await this.prisma.case.update({
       where: { id },
-      select: { id: true, loan: { select: { id: true, borrowerId: true } } },
-    });
-    if (!c) throw new Error('Dosja nuk u gjet');
-
-    const loanId = c.loan?.id;
-    const borrowerId = c.loan?.borrowerId;
-
-    await this.prisma.$transaction(async (tx) => {
-      // 1. Legal branch
-      const proceedings = await tx.legalProceeding.findMany({ where: { caseId: id }, select: { id: true } });
-      if (proceedings.length) {
-        await tx.legalActivity.deleteMany({ where: { legalProceedingId: { in: proceedings.map(p => p.id) } } });
-        await tx.legalProceeding.deleteMany({ where: { caseId: id } });
-      }
-
-      // 2. Agreements branch
-      const agreements = await tx.agreement.findMany({ where: { caseId: id }, select: { id: true } });
-      if (agreements.length) {
-        await tx.agreementInstallment.deleteMany({ where: { agreementId: { in: agreements.map(a => a.id) } } });
-        await tx.agreement.deleteMany({ where: { caseId: id } });
-      }
-
-      // 3. Promises (case-level and via activities)
-      await tx.promiseToPay.deleteMany({ where: { caseId: id } });
-
-      // 4. Activities
-      await tx.activity.deleteMany({ where: { caseId: id } });
-
-      // 5. Case housekeeping
-      await tx.caseAssignment.deleteMany({ where: { caseId: id } });
-      await tx.caseStatusHistory.deleteMany({ where: { caseId: id } });
-      await tx.document.deleteMany({ where: { caseId: id } });
-      await tx.payment.deleteMany({ where: { caseId: id } });
-
-      // 6. Case itself
-      await tx.case.delete({ where: { id } });
-
-      if (loanId) {
-        // 7. Loan related
-        await tx.loanBalanceHistory.deleteMany({ where: { loanId } });
-        await tx.loanParty.deleteMany({ where: { loanId } });
-        await tx.loan.delete({ where: { id: loanId } });
-      }
-
-      if (borrowerId) {
-        // 8. Delete person only if they have no other loans or party relationships
-        const otherLoans = await tx.loan.count({ where: { borrowerId } });
-        const otherParties = await tx.loanParty.count({ where: { personId: borrowerId } });
-        if (otherLoans === 0 && otherParties === 0) {
-          await tx.personPhone.deleteMany({ where: { personId: borrowerId } });
-          await tx.person.delete({ where: { id: borrowerId } });
-        }
-      }
+      data: {
+        archivedAt: new Date(),
+        archivedById,
+        archiveReason: reason.trim(),
+      },
     });
 
     return { success: true };
