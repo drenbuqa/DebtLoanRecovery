@@ -535,28 +535,9 @@ export default function PaymentsPage() {
             <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
-                <p className="text-[12px] text-gray-400">
-                  {!loading && pages > 1 ? `${((page - 1) * 100) + 1}–${Math.min(page * 100, total)} nga ${total.toLocaleString()} transaksione` : (meta ? `${total} transaksion${total !== 1 ? "e" : ""}` : "")}
-                </p>
+                {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
               </div>
-              <div className="flex items-center gap-1.5">
-                {!loading && pages > 1 && (
-                  <>
-                    <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
-                      <ChevronLeft size={14} />
-                    </button>
-                    <span className="text-[12px] text-gray-500 tabular-nums flex items-center gap-1 justify-center">
-                      {paging && <RefreshCw size={11} className="animate-spin text-gray-400" />}
-                      {page}/{pages}
-                    </span>
-                    <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
-                      <ChevronRight size={14} />
-                    </button>
-                    <div className="w-px h-4 bg-gray-200" />
-                  </>
-                )}
+              <div className="flex items-center gap-2">
                 <button onClick={exportToExcel} disabled={exporting || loading}
                   className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                   <FileSpreadsheet size={13} />
@@ -664,7 +645,7 @@ export default function PaymentsPage() {
                 </Table>
 
                 {pages > 1 && (
-                  <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                  <div className="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
                     <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
                     <div className="flex items-center gap-2">
                       <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
