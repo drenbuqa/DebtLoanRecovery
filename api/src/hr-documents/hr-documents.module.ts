@@ -9,3 +9,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   controllers: [HrDocumentsController],
 })
 export class HrDocumentsModule {}
+

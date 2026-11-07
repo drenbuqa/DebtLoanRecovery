@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 
 const DOC_META = {
   id: true, title: true, description: true,
@@ -10,7 +11,7 @@ const DOC_META = {
 
 @Injectable()
 export class HrDocumentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private storage: StorageService) {}
 
   async findAll() {
     return this.prisma.hrDocument.findMany({
@@ -25,9 +26,10 @@ export class HrDocumentsService {
     fileName: string;
     mimeType: string;
     fileSize: number;
-    fileData: Buffer;
+    fileBuffer: Buffer;
     uploadedById: string;
   }) {
+    const fileKey = await this.storage.upload(dto.fileBuffer, dto.fileName, dto.mimeType);
     return this.prisma.hrDocument.create({
       data: {
         title: dto.title,
@@ -35,25 +37,26 @@ export class HrDocumentsService {
         fileName: dto.fileName,
         mimeType: dto.mimeType,
         fileSize: dto.fileSize,
-        fileData: dto.fileData,
+        fileKey,
         uploadedById: dto.uploadedById,
       },
       select: DOC_META,
     });
   }
 
-  async getFile(id: string): Promise<{ fileData: Buffer; fileName: string; mimeType: string }> {
+  async getSignedUrl(id: string): Promise<string> {
     const doc = await this.prisma.hrDocument.findUnique({
       where: { id },
-      select: { fileData: true, fileName: true, mimeType: true },
+      select: { fileKey: true },
     });
     if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
-    return { fileData: doc.fileData as Buffer, fileName: doc.fileName, mimeType: doc.mimeType };
+    return this.storage.getSignedUrl(doc.fileKey);
   }
 
   async delete(id: string) {
-    const doc = await this.prisma.hrDocument.findUnique({ where: { id } });
+    const doc = await this.prisma.hrDocument.findUnique({ where: { id }, select: { fileKey: true } });
     if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
+    await this.storage.delete(doc.fileKey);
     await this.prisma.hrDocument.delete({ where: { id } });
     return { deleted: true };
   }

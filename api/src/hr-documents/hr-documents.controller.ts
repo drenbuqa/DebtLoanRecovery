@@ -31,18 +31,15 @@ export class HrDocumentsController {
       fileName: file.originalname,
       mimeType: file.mimetype,
       fileSize: file.size,
-      fileData: file.buffer,
+      fileBuffer: file.buffer,
       uploadedById: req.user.id,
     });
   }
 
   @Get(':id/file')
   async getFile(@Param('id') id: string, @Res() res: Response) {
-    const { fileData, fileName, mimeType } = await this.svc.getFile(id);
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-    res.setHeader('Content-Length', fileData.length);
-    res.end(fileData);
+    const url = await this.svc.getSignedUrl(id);
+    res.redirect(url);
   }
 
   @Delete(':id')

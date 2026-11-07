@@ -353,6 +353,7 @@ model Payment {
   voidedById        String?       @map("voided_by_id") @db.Uuid
   voidReason        String?       @map("void_reason") @db.VarChar(500)
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   case     Case  @relation(fields: [caseId], references: [id])
   officer  User  @relation(fields: [officerId], references: [id])
@@ -812,6 +813,7 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([userId])
   @@map("notifications")
 }
 
@@ -826,7 +828,7 @@ model HrDocument {
   fileName     String   @map("file_name") @db.VarChar(255)
   mimeType     String   @map("mime_type") @db.VarChar(100)
   fileSize     Int      @map("file_size")
-  fileData     Bytes    @map("file_data")
+  fileKey      String   @map("file_key") @db.VarChar(500)
   uploadedAt   DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
   uploadedById String   @map("uploaded_by_id") @db.Uuid
 

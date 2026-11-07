@@ -27,6 +27,7 @@ import { OfficesModule } from './offices/offices.module';
 import { PerformanceModule } from './performance/performance.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AuditModule } from './audit/audit.module';
+import { StorageModule } from './storage/storage.module';
 import { LeaveModule } from './leave/leave.module';
 import { NotificationModule } from './notifications/notification.module';
 import { HrDocumentsModule } from './hr-documents/hr-documents.module';
@@ -53,6 +54,7 @@ import { RolesGuard } from './auth/roles.guard';
     PerformanceModule,
     DocumentsModule,
     AuditModule,
+    StorageModule,
     SchedulerModule,
     ReportsModule,
     ImportModule,
