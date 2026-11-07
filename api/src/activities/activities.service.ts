@@ -69,6 +69,7 @@ export class ActivitiesService {
     const ndjekja = await this.prisma.activity.findFirst({
       where: {
         caseId: dto.caseId,
+        deletedAt: null,
         activityType: { not: 'PROMISE_TO_PAY' as any },
         outcome: { not: 'PROMISE_RECEIVED' as any },
         nextActionDate: { gte: now },
@@ -144,7 +145,7 @@ export class ActivitiesService {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 50, 5000);
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: any = { deletedAt: null };
     if (query.caseId)    where.caseId = query.caseId;
     if (query.officerId) where.officerId = query.officerId;
     if (query.officeId) {
@@ -191,7 +192,7 @@ export class ActivitiesService {
 
   findByCaseId(caseId: string) {
     return this.prisma.activity.findMany({
-      where: { caseId },
+      where: { caseId, deletedAt: null },
       orderBy: { occurredAt: 'desc' },
       select: {
         id: true, activityType: true, channel: true, notes: true,
@@ -219,8 +220,15 @@ export class ActivitiesService {
     });
   }
 
-  async deleteActivity(id: string) {
-    await this.prisma.activity.delete({ where: { id } });
+  async deleteActivity(id: string, deletedById: string, reason: string) {
+    const activity = await this.prisma.activity.findUnique({ where: { id } });
+    if (!activity) throw new Error('Aktiviteti nuk u gjet');
+    if (activity.deletedAt) throw new Error('Ky aktivitet është fshirë tashmë');
+    if (!reason?.trim()) throw new Error('Arsyeja e fshirjes është e detyrueshme');
+    await this.prisma.activity.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById, deleteReason: reason.trim() },
+    });
     return { success: true };
   }
 

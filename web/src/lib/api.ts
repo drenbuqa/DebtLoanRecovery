@@ -141,7 +141,7 @@ export const activities = {
   log: (caseId: string, data: any) =>
     req(`/cases/${caseId}/activities`, { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: any) => req(`/activities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  delete: (id: string) => req(`/activities/${id}`, { method: 'DELETE' }),
+  delete: (id: string, reason: string) => req(`/activities/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 };
 
 // Payments

@@ -791,6 +791,11 @@ export default function CaseDetailPage() {
   const [archiveSaving, setArchiveSaving] = useState(false);
   const [archiveError, setArchiveError] = useState("");
 
+  const [deleteActivityTarget, setDeleteActivityTarget] = useState<any>(null);
+  const [deleteActivityReason, setDeleteActivityReason] = useState("");
+  const [deleteActivitySaving, setDeleteActivitySaving] = useState(false);
+  const [deleteActivityError, setDeleteActivityError] = useState("");
+
   const [showEditCase, setShowEditCase] = useState(false);
   const [editOfficers, setEditOfficers] = useState<any[]>([]);
   const [editOffices, setEditOffices] = useState<any[]>([]);
@@ -932,17 +937,24 @@ export default function CaseDetailPage() {
     });
   }
 
-  function deleteActivity(actId: string) {
-    openConfirm({
-      title: "Fshi aktivitetin",
-      message: "Ky aktivitet do të fshihet përgjithmonë nga kronologjia e klientit.",
-      confirmLabel: "Fshi",
-      variant: "danger",
-      onConfirm: async () => {
-        await activitiesApi.delete(actId);
-        await loadCase();
-      },
-    });
+  function deleteActivity(activity: any) {
+    setDeleteActivityReason("");
+    setDeleteActivityError("");
+    setDeleteActivityTarget(activity);
+  }
+
+  async function handleDeleteActivity() {
+    if (!deleteActivityReason.trim()) { setDeleteActivityError("Arsyeja është e detyrueshme."); return; }
+    setDeleteActivitySaving(true);
+    setDeleteActivityError("");
+    try {
+      await activitiesApi.delete(deleteActivityTarget.id, deleteActivityReason.trim());
+      setDeleteActivityTarget(null);
+      await loadCase();
+    } catch (e: any) {
+      setDeleteActivityError(e.message ?? "Gabim gjatë fshirjes.");
+      setDeleteActivitySaving(false);
+    }
   }
 
   async function handleArchiveCase() {
@@ -1360,7 +1372,7 @@ export default function CaseDetailPage() {
                               </button>
                             )}
                             {can("activity:delete") && a.id && (
-                              <button onClick={() => deleteActivity(a.id)}
+                              <button onClick={() => deleteActivity(a)}
                                 className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded"
                                 title="Fshi aktivitetin">
                                 <Trash2 size={13} />
@@ -1873,6 +1885,56 @@ export default function CaseDetailPage() {
         )}
 
       </div>
+
+      {/* ── Delete activity modal ─────────────────────────────── */}
+      {deleteActivityTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && !deleteActivitySaving && setDeleteActivityTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Trash2 size={15} className="text-red-500" />
+                </div>
+                <span className="text-[14px] font-semibold text-gray-900">Fshi Aktivitetin</span>
+              </div>
+              <button onClick={() => setDeleteActivityTarget(null)} disabled={deleteActivitySaving} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-[13px] text-gray-500 leading-relaxed">
+                Aktiviteti do të fshihet nga kronologjia e klientit. Të dhënat ruhen në databazë për auditim.
+              </p>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Pse po e fshini këtë aktivitet? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={deleteActivityReason}
+                  onChange={(e) => { setDeleteActivityReason(e.target.value); setDeleteActivityError(""); }}
+                  placeholder="p.sh. U regjistrua gabimisht, dublikatë e aktivitetit…"
+                  rows={3}
+                  className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+                />
+              </div>
+              {deleteActivityError && <p className="text-[12px] text-red-600">{deleteActivityError}</p>}
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setDeleteActivityTarget(null)} disabled={deleteActivitySaving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Anulo
+              </button>
+              <button
+                onClick={handleDeleteActivity}
+                disabled={deleteActivitySaving || !deleteActivityReason.trim()}
+                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {deleteActivitySaving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                {deleteActivitySaving ? "Duke fshirë..." : "Fshi Aktivitetin"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Archive modal ─────────────────────────────────────── */}
       {showArchive && (

@@ -45,6 +45,7 @@ model User {
   legalProceedingsCreated  LegalProceeding[]
   importJobs               ImportJob[]
   casesArchived            Case[]               @relation("ArchivedBy")
+  activitiesDeleted        Activity[]           @relation("ActivityDeletedBy")
   leaveBalance             LeaveBalance?
   leaveRequests            LeaveRequest[]          @relation("LeaveRequestUser")
   leaveRequestsReviewed    LeaveRequest[]          @relation("LeaveRequestReviewer")
@@ -288,12 +289,18 @@ model Activity {
   updatedAddress  String?          @map("updated_address") @db.VarChar(500)
   updatedPhone    String?          @map("updated_phone") @db.VarChar(50)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Soft-delete — activities are never hard-deleted, only hidden with a reason
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  deletedById     String?          @map("deleted_by_id") @db.Uuid
+  deleteReason    String?          @map("delete_reason") @db.VarChar(500)
 
-  case    Case          @relation(fields: [caseId], references: [id])
-  officer User          @relation(fields: [officerId], references: [id])
-  promise PromiseToPay?
+  case      Case          @relation(fields: [caseId], references: [id])
+  officer   User          @relation(fields: [officerId], references: [id])
+  deletedBy User?         @relation("ActivityDeletedBy", fields: [deletedById], references: [id])
+  promise   PromiseToPay?
 
   @@index([caseId, occurredAt(sort: Desc)])
+  @@index([deletedAt])
   @@map("activities")
 }
 

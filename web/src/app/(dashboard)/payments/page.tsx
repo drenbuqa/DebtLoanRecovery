@@ -204,15 +204,17 @@ function EditPaymentModal({ payment, onClose, onSaved }: { payment: any; onClose
   );
 }
 
-function DeletePaymentModal({ payment, onClose, onDeleted }: { payment: any; onClose: () => void; onDeleted: () => void }) {
+function VoidPaymentModal({ payment, onClose, onVoided }: { payment: any; onClose: () => void; onVoided: () => void }) {
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const confirm = async () => {
+    if (!reason.trim()) { setError("Arsyeja është e detyrueshme."); return; }
     setLoading(true); setError(null);
     try {
-      await paymentsApi.delete(payment.id);
-      onDeleted();
+      await paymentsApi.void(payment.id, reason.trim());
+      onVoided();
     } catch (e: any) { setError(e.message); setLoading(false); }
   };
 
@@ -221,21 +223,33 @@ function DeletePaymentModal({ payment, onClose, onDeleted }: { payment: any; onC
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
         <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Fshi Pagesën</h2>
+            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
             <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
           </div>
           <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-3">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[12px] text-red-800">
-            Kjo do të fshijë përgjithmonë pagesën prej <strong>{new Intl.NumberFormat("sq-AL", { style: "currency", currency: "EUR" }).format(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim <strong>nuk mund të zhbëhet</strong>.
+          <p className="text-[13px] text-gray-500 leading-relaxed">
+            Pagesa prej <strong>{new Intl.NumberFormat("sq-AL", { style: "currency", currency: "EUR" }).format(Number(payment.amount))}</strong> do të shënohet si e anuluar dhe balanca e kredisë do të rikthehet. Të dhënat ruhen për auditim.
+          </p>
+          <div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+              Pse po anuloni këtë pagesë? <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => { setReason(e.target.value); setError(null); }}
+              placeholder="p.sh. U regjistrua gabimisht, dublikatë e pagesës…"
+              rows={3}
+              className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+            />
           </div>
           {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
         <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={confirm} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke fshirë…" : "Fshi Pagesën"}
+          <button onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
+          <button onClick={confirm} disabled={loading || !reason.trim()} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
+            {loading ? "Duke anuluar…" : "Anulo Pagesën"}
           </button>
         </div>
       </div>
@@ -391,10 +405,10 @@ export default function PaymentsPage() {
         />
       )}
       {deleteTarget && (
-        <DeletePaymentModal
+        <VoidPaymentModal
           payment={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onDeleted={() => { setDeleteTarget(null); mutate(); toast("Pagesa u fshi"); }}
+          onVoided={() => { setDeleteTarget(null); mutate(); toast("Pagesa u anulua me sukses."); }}
         />
       )}
       <Topbar title="Pagesa" subtitle={loading ? "Duke ngarkuar…" : subtitle} help={[
