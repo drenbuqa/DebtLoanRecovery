@@ -456,6 +456,23 @@ export default function LegalPage() {
             </div>
           )}
 
+          {!loading && meta && meta.pages > 1 && (
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
+              <div className="flex items-center gap-2">
+                <button disabled={meta.page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                  <ChevronLeft size={15} />
+                </button>
+                <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
+                <button disabled={meta.page >= meta.pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center h-48 gap-2 text-[13px] text-gray-400">
               <RefreshCw size={16} className="animate-spin" /> Duke ngarkuar…

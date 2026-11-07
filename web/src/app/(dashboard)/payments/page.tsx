@@ -559,6 +559,26 @@ export default function PaymentsPage() {
               </div>
             )}
 
+            {!loading && pages > 1 && (
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
+                <div className="flex items-center gap-2">
+                  <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
+                    {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
+                    {page} / {pages}
+                  </span>
+                  <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="divide-y divide-gray-50">
                 {Array.from({ length: 6 }).map((_, i) => (
