@@ -839,7 +839,7 @@ function CasesPageInner() {
               </div>
             </div>
           ) : (
-            <div className={`flex-1 min-h-0 transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-auto`}>
+            <div id="cases-table-scroll" className={`flex-1 min-h-0 transition-opacity duration-150 ${paging ? "opacity-50 pointer-events-none" : "opacity-100"} overflow-auto`}>
             <table className="w-full min-w-[1540px] table-fixed">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -989,7 +989,7 @@ function CasesPageInner() {
                 {((page - 1) * 50) + 1}–{Math.min(page * 50, meta.total)} nga {meta.total.toLocaleString()}
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
+                <button onClick={() => { const __s=document.getElementById('cases-table-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.max(1, p - 1)); }} disabled={page === 1 || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronLeft size={15} />
                 </button>
@@ -997,7 +997,7 @@ function CasesPageInner() {
                   {paging ? <RefreshCw size={12} className="animate-spin text-gray-400" /> : null}
                   {page} / {meta.pages}
                 </span>
-                <button onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
+                <button onClick={() => { const __s=document.getElementById('cases-table-scroll'); if(__s)__s.scrollTop=0; setPage((p) => Math.min(meta.pages, p + 1)); }} disabled={page === meta.pages || paging}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
                   <ChevronRight size={15} />
                 </button>
