@@ -535,9 +535,28 @@ export default function PaymentsPage() {
             <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Pagesave</h3>
-                {meta && <p className="text-[12px] text-gray-400">{total} transaksion{total !== 1 ? "e" : ""}</p>}
+                <p className="text-[12px] text-gray-400">
+                  {!loading && pages > 1 ? `${((page - 1) * 100) + 1}–${Math.min(page * 100, total)} nga ${total.toLocaleString()} transaksione` : (meta ? `${total} transaksion${total !== 1 ? "e" : ""}` : "")}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {!loading && pages > 1 && (
+                  <>
+                    <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-[12px] text-gray-500 tabular-nums flex items-center gap-1 justify-center">
+                      {paging && <RefreshCw size={11} className="animate-spin text-gray-400" />}
+                      {page}/{pages}
+                    </span>
+                    <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={14} />
+                    </button>
+                    <div className="w-px h-4 bg-gray-200" />
+                  </>
+                )}
                 <button onClick={exportToExcel} disabled={exporting || loading}
                   className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                   <FileSpreadsheet size={13} />
@@ -556,26 +575,6 @@ export default function PaymentsPage() {
             {error && (
               <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
                 {error?.message ?? String(error)} — <button onClick={() => mutate()} className="underline">Riprovo</button>
-              </div>
-            )}
-
-            {!loading && pages > 1 && (
-              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
-                <div className="flex items-center gap-2">
-                  <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                    <ChevronLeft size={15} />
-                  </button>
-                  <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
-                    {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
-                    {page} / {pages}
-                  </span>
-                  <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
               </div>
             )}
 

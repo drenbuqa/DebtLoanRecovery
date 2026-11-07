@@ -655,8 +655,24 @@ export default function ActivitiesPage() {
                   {label}
                 </button>
               ))}
-              <div className="ml-auto flex items-center gap-2 pb-px shrink-0">
-                <span className="text-[12px] text-gray-400">{!loading && `${total.toLocaleString()} ${total === 1 ? "aktivitet" : "aktivitete"}`}</span>
+              <div className="ml-auto flex items-center gap-1.5 pb-px shrink-0">
+                {!loading && pages > 1 ? (
+                  <>
+                    <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
+                    <button disabled={page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-[12px] text-gray-500 tabular-nums">{page}/{pages}</span>
+                    <button disabled={page >= pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                      <ChevronRight size={14} />
+                    </button>
+                    <div className="w-px h-3.5 bg-gray-200" />
+                  </>
+                ) : (
+                  <span className="text-[12px] text-gray-400">{!loading && `${total.toLocaleString()} ${total === 1 ? "aktivitet" : "aktivitete"}`}</span>
+                )}
                 <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
                   <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
                 </button>
@@ -671,24 +687,6 @@ export default function ActivitiesPage() {
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-[13px] text-red-700">
             {error?.message ?? String(error)} — <button onClick={() => mutate()} className="underline">Riprovo</button>
-          </div>
-        )}
-
-        {/* ── Top pagination ──────────────────────────────────────────────── */}
-        {!loading && pages > 1 && (
-          <div className="flex items-center justify-between text-[12px] text-gray-500 px-1">
-            <span>{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
-            <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                <ChevronLeft size={15} />
-              </button>
-              <span className="tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-              <button disabled={page >= pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                <ChevronRight size={15} />
-              </button>
-            </div>
           </div>
         )}
 

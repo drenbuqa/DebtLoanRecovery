@@ -443,33 +443,32 @@ export default function LegalPage() {
           <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h3 className="text-[13px] font-semibold text-gray-900">Regjistri i Çështjeve Gjyqësore</h3>
-              {meta && <p className="text-[12px] text-gray-400">{meta.total} procedime</p>}
+              {meta && <p className="text-[12px] text-gray-400">{!loading && meta.pages > 1 ? `${((meta.page - 1) * 25) + 1}–${Math.min(meta.page * 25, meta.total)} nga ${meta.total.toLocaleString()} procedime` : `${meta.total} procedime`}</p>}
             </div>
-            <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {!loading && meta && meta.pages > 1 && (
+                <>
+                  <button disabled={meta.page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[12px] text-gray-500 tabular-nums">{meta.page}/{meta.pages}</span>
+                  <button disabled={meta.page >= meta.pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors">
+                    <ChevronRight size={14} />
+                  </button>
+                  <div className="w-px h-4 bg-gray-200" />
+                </>
+              )}
+              <button onClick={() => triggerRefresh(() => { mutate(); })} className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors">
+                <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
 
           {error && (
             <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">
               {error?.message ?? String(error)} — <button onClick={() => mutate()} className="underline">Riprovo</button>
-            </div>
-          )}
-
-          {!loading && meta && meta.pages > 1 && (
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-              <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
-              <div className="flex items-center gap-2">
-                <button disabled={meta.page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                  <ChevronLeft size={15} />
-                </button>
-                <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
-                <button disabled={meta.page >= meta.pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                  <ChevronRight size={15} />
-                </button>
-              </div>
             </div>
           )}
 
