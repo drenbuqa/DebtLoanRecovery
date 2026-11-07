@@ -1,11 +1,12 @@
 import { Controller, Post, Get, Delete, Patch, Param, Body, Request, Query, UseGuards } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
+import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
 @Controller()
 @UseGuards(RolesGuard)
 export class ActivitiesController {
-  constructor(private svc: ActivitiesService) {}
+  constructor(private svc: ActivitiesService, private audit: AuditService) {}
 
   @Get('activities')
   findAll(@Request() req: any, @Query() q: any) {
@@ -17,8 +18,14 @@ export class ActivitiesController {
 
   @Post('cases/:caseId/activities')
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  log(@Param('caseId') caseId: string, @Body() body: any, @Request() req: any) {
-    return this.svc.logActivity({ ...body, caseId, officerId: body.officerId ?? req.user?.id });
+  async log(@Param('caseId') caseId: string, @Body() body: any, @Request() req: any) {
+    const result = await this.svc.logActivity({ ...body, caseId, officerId: body.officerId ?? req.user?.id });
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'LOG_ACTIVITY', entity: 'Activity', entityId: result.id,
+      details: `${body.activityType} on case ${caseId}`,
+    });
+    return result;
   }
 
   @Get('cases/:caseId/activities')
@@ -28,14 +35,26 @@ export class ActivitiesController {
 
   @Patch('activities/:id')
   @RequireRoles('ADMIN', 'MANAGER')
-  update(@Param('id') id: string, @Body() body: { notes?: string; channel?: string; occurredAt?: string }) {
-    return this.svc.updateActivity(id, body);
+  async update(@Param('id') id: string, @Body() body: { notes?: string; channel?: string; occurredAt?: string }, @Request() req: any) {
+    const result = await this.svc.updateActivity(id, body);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'UPDATE_ACTIVITY', entity: 'Activity', entityId: id,
+      details: `Updated fields: ${Object.keys(body).join(', ')}`,
+    });
+    return result;
   }
 
   @Delete('activities/:id')
   @RequireRoles('ADMIN')
-  remove(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
-    return this.svc.deleteActivity(id, req.user.id, reason);
+  async remove(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
+    const result = await this.svc.deleteActivity(id, req.user.id, reason);
+    await this.audit.log({
+      userId: req.user.id, username: req.user.username,
+      action: 'DELETE_ACTIVITY', entity: 'Activity', entityId: id,
+      details: `Reason: ${reason}`,
+    });
+    return result;
   }
 
   @Post('activities/backfill-promise-received')

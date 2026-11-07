@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { LegalService } from './legal.service';
+import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
 @Controller('legal')
 @UseGuards(RolesGuard)
 export class LegalController {
-  constructor(private svc: LegalService) {}
+  constructor(private svc: LegalService, private audit: AuditService) {}
 
   @Get()
   findAll(@Query() q: any, @Request() req: any) {
@@ -24,9 +25,25 @@ export class LegalController {
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  create(@Body() dto: any) { return this.svc.create(dto); }
+  async create(@Body() dto: any, @Request() req: any) {
+    const result = await this.svc.create(dto);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'CREATE_LEGAL_PROCEEDING', entity: 'LegalProceeding', entityId: result.id,
+      details: `${result.proceedingRef} on case ${dto.caseId}`,
+    });
+    return result;
+  }
 
   @Patch(':id')
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  update(@Param('id') id: string, @Body() dto: any) { return this.svc.update(id, dto); }
+  async update(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    const result = await this.svc.update(id, dto);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'UPDATE_LEGAL_PROCEEDING', entity: 'LegalProceeding', entityId: id,
+      details: `Updated fields: ${Object.keys(dto).join(', ')}`,
+    });
+    return result;
+  }
 }

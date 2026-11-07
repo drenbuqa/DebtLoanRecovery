@@ -1,12 +1,13 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Request, UseGuards } from '@nestjs/common';
 import { CasesService } from './cases.service';
+import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 import { CreateCaseDto } from './dto/create-case.dto';
 
 @Controller('cases')
 @UseGuards(RolesGuard)
 export class CasesController {
-  constructor(private svc: CasesService) {}
+  constructor(private svc: CasesService, private audit: AuditService) {}
 
   @Get('dashboard-stats')
   dashboardStats(@Request() req: any, @Query('officeId') officeId?: string, @Query('officerId') officerId?: string) {
@@ -38,7 +39,6 @@ export class CasesController {
     @Query('to') to?: string,
   ) {
     const user = req.user;
-    // Officers and managers can only see their own assigned cases
     if (user?.role === 'OFFICER' || user?.role === 'MANAGER') {
       officerId = user.id;
       officeId = undefined;
@@ -52,8 +52,14 @@ export class CasesController {
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  create(@Body() dto: CreateCaseDto, @Request() req: any) {
-    return this.svc.createCase(dto, req.user?.id);
+  async create(@Body() dto: CreateCaseDto, @Request() req: any) {
+    const result = await this.svc.createCase(dto, req.user?.id);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'CREATE_CASE', entity: 'Case', entityId: result.id,
+      details: `Case ${result.caseReference} created`,
+    });
+    return result;
   }
 
   @Get(':id/history')
@@ -64,8 +70,14 @@ export class CasesController {
 
   @Patch(':id/status')
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  updateStatus(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    return this.svc.updateStatus(id, body, req.user?.id);
+  async updateStatus(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    const result = await this.svc.updateStatus(id, body, req.user?.id);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'UPDATE_CASE_STATUS', entity: 'Case', entityId: id,
+      details: body.status ? `Status → ${body.status}` : `Stage → ${body.collectionStage ?? body.collectionStatus}`,
+    });
+    return result;
   }
 
   @Patch(':id/next-action')
@@ -76,20 +88,38 @@ export class CasesController {
 
   @Patch(':id')
   @RequireRoles('ADMIN', 'MANAGER')
-  update(@Param('id') id: string, @Body() dto: any) {
-    return this.svc.updateCase(id, dto);
+  async update(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    const result = await this.svc.updateCase(id, dto);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'UPDATE_CASE', entity: 'Case', entityId: id,
+      details: `Updated fields: ${Object.keys(dto).join(', ')}`,
+    });
+    return result;
   }
 
   @Patch(':id/assign')
   @RequireRoles('ADMIN', 'MANAGER')
-  assign(@Param('id') id: string, @Body('officerId') officerId: string, @Request() req: any) {
-    return this.svc.assignOfficer(id, officerId, req.user?.id);
+  async assign(@Param('id') id: string, @Body('officerId') officerId: string, @Request() req: any) {
+    const result = await this.svc.assignOfficer(id, officerId, req.user?.id);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'ASSIGN_CASE', entity: 'Case', entityId: id,
+      details: `Assigned to officer ${officerId}`,
+    });
+    return result;
   }
 
   @Post(':id/archive')
   @RequireRoles('ADMIN')
-  archive(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
-    return this.svc.archiveCase(id, req.user.id, reason);
+  async archive(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
+    const result = await this.svc.archiveCase(id, req.user.id, reason);
+    await this.audit.log({
+      userId: req.user.id, username: req.user.username,
+      action: 'ARCHIVE_CASE', entity: 'Case', entityId: id,
+      details: `Reason: ${reason}`,
+    });
+    return result;
   }
 
   @Post('admin/recalculate-next-action')

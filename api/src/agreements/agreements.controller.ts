@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { AgreementsService } from './agreements.service';
+import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 
 @Controller('agreements')
 @UseGuards(RolesGuard)
 export class AgreementsController {
-  constructor(private svc: AgreementsService) {}
+  constructor(private svc: AgreementsService, private audit: AuditService) {}
 
   @Get()
   findAll(@Query() q: any, @Request() req: any) {
@@ -20,17 +21,37 @@ export class AgreementsController {
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  create(@Body() dto: any) { return this.svc.create(dto); }
+  async create(@Body() dto: any, @Request() req: any) {
+    const result = await this.svc.create(dto);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'CREATE_AGREEMENT', entity: 'Agreement', entityId: result.id,
+      details: `${result.agreementReference} — ${result.totalAmount} ${result.currency} on case ${dto.caseId}`,
+    });
+    return result;
+  }
 
   @Patch(':id/status')
   @RequireRoles('ADMIN', 'MANAGER')
-  updateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.svc.updateStatus(id, status);
+  async updateStatus(@Param('id') id: string, @Body('status') status: string, @Request() req: any) {
+    const result = await this.svc.updateStatus(id, status);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'UPDATE_AGREEMENT_STATUS', entity: 'Agreement', entityId: id,
+      details: `Status → ${status}`,
+    });
+    return result;
   }
 
   @Patch('installments/:id/pay')
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  payInstallment(@Param('id') id: string, @Body('paidAmount') paidAmount: number | undefined, @Request() req: any) {
-    return this.svc.markInstallmentPaid(id, paidAmount, req.user?.id);
+  async payInstallment(@Param('id') id: string, @Body('paidAmount') paidAmount: number | undefined, @Request() req: any) {
+    const result = await this.svc.markInstallmentPaid(id, paidAmount, req.user?.id);
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'PAY_INSTALLMENT', entity: 'AgreementInstallment', entityId: id,
+      details: paidAmount !== undefined ? `Amount: ${paidAmount}` : 'Full installment paid',
+    });
+    return result;
   }
 }

@@ -1,12 +1,13 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { AuditService } from '../audit/audit.service';
 import { RolesGuard, RequireRoles } from '../auth/roles.guard';
 import { RegisterPaymentDto } from './dto/register-payment.dto';
 
 @Controller('payments')
 @UseGuards(RolesGuard)
 export class PaymentsController {
-  constructor(private svc: PaymentsService) {}
+  constructor(private svc: PaymentsService, private audit: AuditService) {}
 
   @Get()
   findAll(
@@ -26,20 +27,37 @@ export class PaymentsController {
 
   @Post()
   @RequireRoles('ADMIN', 'MANAGER', 'OFFICER')
-  register(@Body() body: RegisterPaymentDto, @Request() req: any) {
-    return this.svc.register({ ...body, officerId: req.user?.id });
+  async register(@Body() body: RegisterPaymentDto, @Request() req: any) {
+    const result = await this.svc.register({ ...body, officerId: req.user?.id });
+    await this.audit.log({
+      userId: req.user?.id, username: req.user?.username,
+      action: 'REGISTER_PAYMENT', entity: 'Payment', entityId: result.id,
+      details: `${result.paymentReference} — ${result.amount} ${(result as any).currency ?? 'EUR'} on case ${body.caseId}`,
+    });
+    return result;
   }
 
   @Patch(':id/void')
   @RequireRoles('ADMIN', 'MANAGER')
-  void(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
-    return this.svc.voidPayment(id, reason, req.user.id);
+  async void(@Param('id') id: string, @Body('reason') reason: string, @Request() req: any) {
+    const result = await this.svc.voidPayment(id, reason, req.user.id);
+    await this.audit.log({
+      userId: req.user.id, username: req.user.username,
+      action: 'VOID_PAYMENT', entity: 'Payment', entityId: id,
+      details: `Reason: ${reason}`,
+    });
+    return result;
   }
 
   @Patch(':id')
   @RequireRoles('ADMIN', 'MANAGER')
-  update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
-    return this.svc.updatePayment(id, body, req.user.id);
+  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    const result = await this.svc.updatePayment(id, body, req.user.id);
+    await this.audit.log({
+      userId: req.user.id, username: req.user.username,
+      action: 'UPDATE_PAYMENT', entity: 'Payment', entityId: id,
+      details: `Updated fields: ${Object.keys(body).join(', ')}`,
+    });
+    return result;
   }
-
 }
