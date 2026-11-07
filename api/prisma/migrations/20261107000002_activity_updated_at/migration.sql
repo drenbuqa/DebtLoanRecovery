@@ -1,0 +1,1 @@
+ALTER TABLE "activities" ADD COLUMN "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW();
