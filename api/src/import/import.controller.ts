@@ -89,7 +89,7 @@ export class ImportController {
     @Body('type') type: string,
   ) {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
-    const validTypes = ['officer', 'institution', 'city'];
+    const validTypes = ['officer', 'secondary_officer', 'npl', 'institution', 'city', 'category', 'balance', 'phone2', 'office', 'guarantor1', 'guarantor2', 'inactive'];
     if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
     return this.svc.bulkUpdate(file.buffer, type as any, req.user.id, file.originalname);
   }

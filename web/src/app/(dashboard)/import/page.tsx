@@ -1111,7 +1111,7 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh, refData }: {
 
 // ── TAB 4: Ndryshime te pjesshme ───────────────────────────────────────────────
 
-type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2";
+type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2" | "inactive";
 
 const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "officer",           label: "Zyrtar kryesor",      desc: "Ndrysho zyrtar kryesor të rastit" },
@@ -1124,6 +1124,7 @@ const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "phone2",            label: "Telefon alternativ",   desc: "Shto/ndrysho numrin e dytë" },
   { key: "guarantor1",        label: "Garanti 1",            desc: "Shto/ndrysho garantorin e parë" },
   { key: "guarantor2",        label: "Garanti 2",            desc: "Shto/ndrysho garantorin e dytë" },
+  { key: "inactive",          label: "Klientët joaktiv",    desc: "Shëno klientët si joaktiv" },
 ];
 
 function UpdatesTab({ officers, institutions, cities, offices }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[] }) {
@@ -1151,6 +1152,14 @@ function UpdatesTab({ officers, institutions, cities, offices }: { officers: any
   }
 
   function downloadTemplate() {
+    if (type === "inactive") {
+      downloadExcel([
+        { "Numri i Klientit (case_reference)": "Q71234567R", "Statusi i Ri (opsional)": "CLOSED" },
+        { "Numri i Klientit (case_reference)": "M31234567N", "Statusi i Ri (opsional)": "SUSPENDED" },
+        { "Numri i Klientit (case_reference)": "K91234567P", "Statusi i Ri (opsional)": "" },
+      ], `template-${type}`);
+      return;
+    }
     if (type === "guarantor1" || type === "guarantor2") {
       downloadExcel([
         { "Numri i Klientit (case_reference)": "Q71234567R", "Emri Mbiemri": "Arben Gashi", "Telefoni (opsional)": "+38344123456" },
@@ -1243,6 +1252,28 @@ function UpdatesTab({ officers, institutions, cities, offices }: { officers: any
         Kolona B: emri i plotë i garantorit (p.sh. <span className="font-mono bg-gray-100 px-1 rounded">Arben Gashi</span>).{" "}
         Kolona C (opsionale): numri i telefonit.
       </p>
+    );
+    if (type === "inactive") return (
+      <div className="space-y-2">
+        <p className="text-[12px] text-gray-500 leading-relaxed">
+          Kolona B (opsionale): statusi i ri. Nëse lihet bosh, vendoset <span className="font-mono bg-gray-100 px-1 rounded">CLOSED</span>.
+        </p>
+        <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+          {[
+            ["CLOSED",      "Mbyllur — kredia është shlyer ose mbyllur"],
+            ["SUSPENDED",   "Pezulluar — rasti është ngrirë përkohësisht"],
+            ["LEGAL",       "Procedurë ligjore — rasti është dërguar juridikisht"],
+            ["ANKES",       "Ankim — rasti është në fazë ankimi"],
+            ["AKTGJYKIM",   "Aktgjykim — është marrë vendim gjyqësor"],
+          ].map(([code, label]) => (
+            <div key={code} className="flex items-center px-3 py-2 hover:bg-gray-50 gap-2 text-[12px]">
+              <span className="w-24 font-mono font-bold text-brand-700 shrink-0">{code}</span>
+              <span className="flex-1 text-gray-800">{label}</span>
+              <CopyBtn text={code} />
+            </div>
+          ))}
+        </div>
+      </div>
     );
     return null;
   }

@@ -269,6 +269,14 @@ export const performance = {
   },
 };
 
+export const monitoring = {
+  officers: (officeId?: string) => {
+    const qs = officeId ? `?officeId=${officeId}` : '';
+    return req<any[]>(`/monitoring/officers${qs}`);
+  },
+  officerDetail: (id: string) => req<any>(`/monitoring/officers/${id}`),
+};
+
 // Import
 async function importFetch(path: string, form: FormData) {
   const res = await fetch(`${API_BASE}${path}`, { method: 'POST', credentials: 'include', body: form });

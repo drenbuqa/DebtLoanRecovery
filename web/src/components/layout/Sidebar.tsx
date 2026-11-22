@@ -12,7 +12,7 @@ import {
   LayoutDashboard, FolderOpen, Activity,
   CreditCard, FileText, Scale, Building2,
   BarChart3, TrendingUp, Users, Database, Settings,
-  LogOut, X, Upload, CalendarDays, ChevronsLeft, ChevronsRight, BookOpen,
+  LogOut, X, Upload, CalendarDays, ChevronsLeft, ChevronsRight, BookOpen, Eye,
 } from "lucide-react";
 
 // ── Nav config ─────────────────────────────────────────────────
@@ -48,6 +48,7 @@ const nav: NavGroup[] = [
     items: [
       { href: "/reports",      label: "Raporte",       icon: BarChart3,    permission: "page:reports" },
       { href: "/performance",  label: "Performanca",   icon: TrendingUp,   permission: "page:performance" },
+      { href: "/monitoring",   label: "Monitorimi",    icon: Eye,          permission: "page:monitoring" },
     ],
   },
   {

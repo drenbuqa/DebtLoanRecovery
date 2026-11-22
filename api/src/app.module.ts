@@ -32,6 +32,7 @@ import { LeaveModule } from './leave/leave.module';
 import { NotificationModule } from './notifications/notification.module';
 import { HrDocumentsModule } from './hr-documents/hr-documents.module';
 import { ConfidentialityModule } from './confidentiality/confidentiality.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 
@@ -62,6 +63,7 @@ import { RolesGuard } from './auth/roles.guard';
     NotificationModule,
     HrDocumentsModule,
     ConfidentialityModule,
+    MonitoringModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

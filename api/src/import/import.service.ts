@@ -659,7 +659,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2'|'inactive', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -715,7 +715,8 @@ export class ImportService {
       const codeRaw = String(row[1] ?? '').trim();
       const rowLabel = `Rreshti ${i + 2}`;
 
-      if (!caseRef || !codeRaw) { skipped++; continue; }
+      if (!caseRef) { skipped++; continue; }
+      if (type !== 'inactive' && !codeRaw) { skipped++; continue; }
 
       try {
         const cas = await this.prisma.case.findUnique({
@@ -817,6 +818,17 @@ export class ImportService {
             }
             await this.prisma.loanParty.createMany({ data: [{ loanId: cas.loanId, personId: person.id, role: 'GUARANTOR' }], skipDuplicates: true });
           }
+          updated++;
+        } else if (type === 'inactive') {
+          const VALID_INACTIVE = ['CLOSED', 'SUSPENDED', 'LEGAL', 'ANKES', 'AKTGJYKIM'] as const;
+          type InactiveStatus = typeof VALID_INACTIVE[number];
+          const targetStatus: InactiveStatus = codeRaw ? (codeRaw.toUpperCase() as InactiveStatus) : 'CLOSED';
+          if (!VALID_INACTIVE.includes(targetStatus)) {
+            errors.push(`${rowLabel}: statusi "${codeRaw}" nuk është i vlefshëm (CLOSED, SUSPENDED, LEGAL, ANKES, AKTGJYKIM)`);
+            skipped++;
+            continue;
+          }
+          await this.prisma.case.update({ where: { id: cas.id }, data: { status: targetStatus } });
           updated++;
         }
       } catch (e: any) {

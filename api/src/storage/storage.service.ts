@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Injectable, Logger } from '@nestjs/common';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
@@ -7,6 +7,8 @@ import { randomUUID } from 'crypto';
 export class StorageService {
   private s3: S3Client;
   private bucket: string;
+  private bucketReady = false;
+  private readonly logger = new Logger(StorageService.name);
 
   constructor() {
     this.s3 = new S3Client({
@@ -21,7 +23,25 @@ export class StorageService {
     this.bucket = process.env.S3_BUCKET ?? 'dlr-documents';
   }
 
+  private async ensureBucket(): Promise<void> {
+    if (this.bucketReady) return;
+    try {
+      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      this.bucketReady = true;
+    } catch (e: any) {
+      if (e.$metadata?.httpStatusCode === 404 || e.name === 'NoSuchBucket' || e.Code === 'NoSuchBucket') {
+        this.logger.log(`Bucket "${this.bucket}" not found, creating it…`);
+        await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
+        this.bucketReady = true;
+        this.logger.log(`Bucket "${this.bucket}" created.`);
+      } else {
+        throw e;
+      }
+    }
+  }
+
   async upload(buffer: Buffer, originalName: string, mimeType: string): Promise<string> {
+    await this.ensureBucket();
     const ext = originalName.split('.').pop() ?? 'bin';
     const key = `hr-documents/${randomUUID()}.${ext}`;
     await this.s3.send(new PutObjectCommand({

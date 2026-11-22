@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import {
   CalendarDays, Plus, X, Clock, CheckCircle, XCircle, Ban,
-  AlertTriangle, ChevronRight, Info,
+  AlertTriangle, ChevronRight, Info, ChevronDown, Stethoscope,
+  Wallet, History,
 } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────
@@ -77,8 +78,8 @@ function BalanceCard({ balance }: { balance: any }) {
   // June forfeiture warning
   const now = new Date();
   const isPreJune = now.getMonth() < 5; // before June
-  const showJuneWarning = isPreJune && balance.balance > 6;
-  const forfeitDays = balance.balance - 6;
+  const showJuneWarning = isPreJune && balance.balance > 9;
+  const forfeitDays = balance.balance - 9;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
@@ -141,7 +142,7 @@ function BalanceCard({ balance }: { balance: any }) {
         <div className="mx-6 mb-4 flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
           <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
           <div className="text-[12px] text-red-700 leading-relaxed">
-            <strong>Kujdes — Rregulli i Qershorit:</strong> Bilancet mbi 6 ditë nuk transferohen pas Qershorit.
+            <strong>Kujdes — Rregulli i Qershorit:</strong> Bilancet mbi 9 ditë nuk transferohen pas Qershorit.
             Nëse nuk i shfrytëzoni, do të humbni <strong>{forfeitDays} ditë</strong> të grumbulluara.
           </div>
         </div>
@@ -300,14 +301,270 @@ function RequestModal({ balance, onClose, onSuccess }: { balance: any; onClose: 
   );
 }
 
-// ── Main page ──────────────────────────────────────────────────
+// ── Type icon ──────────────────────────────────────────────────
 
-const FILTER_OPTIONS = [
-  { key: "all",       label: "Të gjitha" },
-  { key: "PENDING",   label: "Në Pritje" },
-  { key: "APPROVED",  label: "Aprovuara" },
-  { key: "REJECTED",  label: "Refuzuara" },
-] as const;
+function TypeIcon({ type }: { type: string }) {
+  if (type === "ANNUAL")
+    return (
+      <div className="w-9 h-9 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+        <CalendarDays size={15} className="text-brand-600" />
+      </div>
+    );
+  if (type === "SICK")
+    return (
+      <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+        <Stethoscope size={15} className="text-amber-500" />
+      </div>
+    );
+  return (
+    <div className="w-9 h-9 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
+      <Wallet size={15} className="text-gray-400" />
+    </div>
+  );
+}
+
+// ── Year group ─────────────────────────────────────────────────
+
+function YearGroup({
+  year, rows, onCancel, isCurrentYear,
+}: {
+  year: number;
+  rows: any[];
+  onCancel: (id: string) => void;
+  isCurrentYear: boolean;
+}) {
+  const [open, setOpen] = useState(isCurrentYear);
+
+  const annualDays  = rows.filter(r => r.leaveType === "ANNUAL"  && r.status === "APPROVED").reduce((s, r) => s + r.workingDays, 0);
+  const sickDays    = rows.filter(r => r.leaveType === "SICK"    && r.status === "APPROVED").reduce((s, r) => s + r.workingDays, 0);
+  const unpaidDays  = rows.filter(r => r.leaveType === "UNPAID"  && r.status === "APPROVED").reduce((s, r) => s + r.workingDays, 0);
+  const pendingRows = rows.filter(r => r.status === "PENDING");
+
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
+
+  return (
+    <div>
+      {/* Year divider row */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100/60 transition-colors group"
+      >
+        <span className="text-[13px] font-bold text-gray-700">{year}</span>
+
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
+          {annualDays > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full">
+              <CalendarDays size={10} />
+              {annualDays} ditë vjetore
+            </span>
+          )}
+          {sickDays > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+              <Stethoscope size={10} />
+              {sickDays} ditë sëmundje
+            </span>
+          )}
+          {unpaidDays > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full">
+              <Wallet size={10} />
+              {unpaidDays} pa pagë
+            </span>
+          )}
+          {pendingRows.length > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+              <Clock size={10} />
+              {pendingRows.length} në pritje
+            </span>
+          )}
+          {annualDays === 0 && sickDays === 0 && unpaidDays === 0 && pendingRows.length === 0 && (
+            <span className="text-[11px] text-gray-400">{rows.length} kërkesa</span>
+          )}
+        </div>
+
+        <ChevronDown
+          size={14}
+          className={`text-gray-400 group-hover:text-gray-600 transition-transform shrink-0 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* Rows */}
+      {open && (
+        <div className="divide-y divide-gray-50">
+          {rows.map(r => (
+            <div key={r.id} className="flex items-center gap-3.5 px-5 py-3.5 hover:bg-gray-50/60 transition-colors">
+              <TypeIcon type={r.leaveType} />
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <LeaveTypeBadge type={r.leaveType} />
+                  <StatusBadge status={r.status} />
+                </div>
+                <div className="flex items-center gap-1.5 mt-1.5 text-[12px] text-gray-700 font-medium">
+                  <span>{fmtDate(r.startDate)}</span>
+                  <span className="text-gray-300">→</span>
+                  <span>{fmtDate(r.endDate)}</span>
+                  <span className="text-gray-400 font-normal ml-0.5">· {r.workingDays} {r.workingDays === 1 ? "ditë" : "ditë"} pune</span>
+                </div>
+                {r.reviewNote && (
+                  <div className="text-[11px] text-gray-400 mt-1 flex items-start gap-1">
+                    <span className="shrink-0 mt-px">↳</span>
+                    <span>{r.reviewNote}</span>
+                  </div>
+                )}
+                {r.reason && !r.reviewNote && (
+                  <div className="text-[11px] text-gray-400 mt-1 italic">"{r.reason}"</div>
+                )}
+              </div>
+
+              <div className="text-right shrink-0 space-y-1">
+                <div className="text-[11px] text-gray-400">
+                  {new Date(r.createdAt).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                </div>
+                {r.status === "PENDING" && (
+                  <button
+                    onClick={() => onCancel(r.id)}
+                    className="text-[11px] font-medium text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    Anulo
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── History section ────────────────────────────────────────────
+
+function HistorySection({
+  requests, loading, onCancel, onNewRequest, canRequest,
+}: {
+  requests: any[];
+  loading: boolean;
+  onCancel: (id: string) => void;
+  onNewRequest: () => void;
+  canRequest: boolean;
+}) {
+  const [filter, setFilter] = useState<string>("all");
+
+  const FILTER_OPTIONS = [
+    { key: "all",       label: "Të gjitha" },
+    { key: "PENDING",   label: "Në Pritje" },
+    { key: "APPROVED",  label: "Aprovuara" },
+    { key: "REJECTED",  label: "Refuzuara" },
+  ] as const;
+
+  const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter);
+  const pendingCount = requests.filter(r => r.status === "PENDING").length;
+  const currentYear = new Date().getFullYear();
+
+  // Group filtered rows by year (descending)
+  const byYear = filtered.reduce<Record<number, any[]>>((acc, r) => {
+    const y = new Date(r.startDate).getFullYear();
+    if (!acc[y]) acc[y] = [];
+    acc[y].push(r);
+    return acc;
+  }, {});
+  const years = Object.keys(byYear).map(Number).sort((a, b) => b - a);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+            <History size={14} className="text-gray-500" />
+          </div>
+          <div>
+            <h2 className="text-[14px] font-semibold text-gray-900">Historia e Pushimeve</h2>
+            {!loading && (
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                {requests.length === 0 ? "Nuk ka kërkesa" : `${requests.length} ${requests.length === 1 ? "kërkesë" : "kërkesa"} gjithsej`}
+              </p>
+            )}
+          </div>
+        </div>
+        {canRequest && (
+          <button onClick={onNewRequest}
+            className="flex items-center gap-2 h-9 px-4 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-semibold rounded-xl transition-colors">
+            <Plus size={14} />
+            Kërko Pushim
+          </button>
+        )}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex border-b border-gray-100 px-5 overflow-x-auto">
+        {FILTER_OPTIONS.map(({ key, label }) => (
+          <button key={key} onClick={() => setFilter(key)}
+            className={`px-4 py-3 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+              filter === key
+                ? "border-brand-600 text-brand-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}>
+            {label}
+            {key === "PENDING" && pendingCount > 0 && (
+              <span className="ml-1.5 text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="divide-y divide-gray-50">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+              <div className="w-9 h-9 rounded-xl bg-gray-100 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-36 bg-gray-100 rounded" />
+                <div className="h-2.5 w-24 bg-gray-100 rounded" />
+              </div>
+              <div className="w-14 h-3 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-14">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+            <CalendarDays size={20} className="text-gray-300" />
+          </div>
+          <p className="text-[13px] font-medium text-gray-400">
+            {filter === "all" ? "Nuk keni kërkesa pushimi" : "Nuk ka kërkesa me këtë status"}
+          </p>
+          {filter === "all" && canRequest && (
+            <button onClick={onNewRequest}
+              className="mt-4 flex items-center gap-2 h-9 px-4 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-medium rounded-xl transition-colors">
+              <Plus size={14} /> Kërko pushimin e parë
+            </button>
+          )}
+        </div>
+      ) : (
+        <div>
+          {years.map(year => (
+            <YearGroup
+              key={year}
+              year={year}
+              rows={byYear[year]}
+              onCancel={onCancel}
+              isCurrentYear={year === currentYear}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────
 
 export default function LeavePage() {
   const { can, user } = useAuth();
@@ -317,7 +574,6 @@ export default function LeavePage() {
   const [requests, setRequests]   = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [filter, setFilter]       = useState<string>("all");
 
   async function load() {
     try {
@@ -341,13 +597,6 @@ export default function LeavePage() {
     } catch (e: any) { toast(e.message ?? "Gabim gjatë anulimit", "error"); }
   }
 
-  const filtered = filter === "all" ? requests : requests.filter(r => r.status === filter);
-  const pendingCount = requests.filter(r => r.status === "PENDING").length;
-
-  const typeLabel: Record<string, string> = {
-    ANNUAL: "Pushim Vjetor", SICK: "Pushim i Sëmurë", UNPAID: "Pushim pa Pagë",
-  };
-
   return (
     <>
       <Topbar title="Pushimet e Mia" subtitle="Apliko dhe shiko gjendjen e pushimeve vjetore" help={[
@@ -355,7 +604,8 @@ export default function LeavePage() {
         { title: "Si të aplikoni për pushim", body: "Klikoni butonin 'Kërko Pushim' në krye. Zgjidhni llojin (vjetor, mjekësor etj.), datën e fillimit dhe mbarimit, dhe shtoni arsyen nëse dëshironi. Pas dërgimit, kërkesa shkon te menaxheri/administratori për aprovim — nuk mund të filloni pushimin pa aprovim." },
         { title: "Statuset e kërkesës", body: "Në Pritje = kërkesa u dërgua dhe pret vendim. E Aprovuar = aprovuar, mund të shkoni në pushim. E Refuzuar = nuk u aprovuar — menaxheri mund të ketë lënë një shënim me arsyen. E Anuluar = ju vetë e keni anuluar para aprovimit." },
         { title: "Si të anuloni një kërkesë", body: "Nëse keni ndryshuar mendim dhe kërkesa është ende 'Në Pritje', klikoni butonin 'Anulo' pranë kërkesës. Nuk mund të anuloni një kërkesë tashmë të aprovuar — kontaktoni menaxherin direkt." },
-        { title: "Paralajmërimi i qershorit", body: "Nëse po afrohemi fundit të qershorit dhe keni mbi 6 ditë pushim të pashfrytëzuara, sistemi ju paralajmëron. Kjo është sepse ditët e tepërta mbi 6 mund të humbasin pas datës 30 qershor — planifikoni pushimet tuaja në kohë." },
+        { title: "Paralajmërimi i qershorit", body: "Nëse po afrohemi fundit të qershorit dhe keni mbi 9 ditë pushim të pashfrytëzuara, sistemi ju paralajmëron. Kjo është sepse ditët e tepërta mbi 9 mund të humbasin pas datës 30 qershor — planifikoni pushimet tuaja në kohë." },
+        { title: "Historia e pushimeve", body: "Seksioni 'Historia e Pushimeve' tregon të gjitha kërkesat tuaja të grupuara sipas vitit. Klikoni mbi vitin për të shpalosur ose fshehur detajet. Çdo grup viti tregon sa ditë vjetore, sëmundjeje dhe pa pagë janë shfrytëzuar atë vit." },
       ]} />
 
       <div className="p-4 md:p-6 space-y-5">
@@ -387,111 +637,15 @@ export default function LeavePage() {
           </a>
         )}
 
-        {/* History section */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        {/* History */}
+        <HistorySection
+          requests={requests}
+          loading={loading}
+          onCancel={cancelReq}
+          onNewRequest={() => setShowModal(true)}
+          canRequest={can("page:leave")}
+        />
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <div>
-              <h2 className="text-[14px] font-semibold text-gray-900">Historia e Kërkesave</h2>
-              <p className="text-[12px] text-gray-400 mt-0.5">{requests.length} kërkesa gjithsej</p>
-            </div>
-            {can("page:leave") && (
-              <button onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 h-9 px-4 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-semibold rounded-lg transition-colors">
-                <Plus size={15} />
-                Kërko Pushim
-              </button>
-            )}
-          </div>
-
-          {/* Filter tabs */}
-          <div className="flex border-b border-gray-100 px-5">
-            {FILTER_OPTIONS.map(({ key, label }) => (
-              <button key={key} onClick={() => setFilter(key)}
-                className={`px-4 py-3 text-[12px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                  filter === key
-                    ? "border-brand-600 text-brand-700"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}>
-                {label}
-                {key === "PENDING" && pendingCount > 0 && (
-                  <span className="ml-1.5 text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* List */}
-          {loading ? (
-            <div className="divide-y divide-gray-50">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-40 bg-gray-100 rounded" />
-                    <div className="h-2.5 w-28 bg-gray-100 rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14">
-              <CalendarDays size={28} className="text-gray-200 mb-3" />
-              <p className="text-[13px] font-medium text-gray-400">
-                {filter === "all" ? "Nuk keni kërkesa pushimi" : "Nuk ka kërkesa me këtë status"}
-              </p>
-              {filter === "all" && can("page:leave") && (
-                <button onClick={() => setShowModal(true)}
-                  className="mt-4 flex items-center gap-2 h-9 px-4 bg-brand-600 hover:bg-brand-700 text-white text-[13px] font-medium rounded-lg transition-colors">
-                  <Plus size={14} /> Kërko pushimin e parë
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {filtered.map(r => (
-                <div key={r.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
-                    <CalendarDays size={16} className="text-brand-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <LeaveTypeBadge type={r.leaveType} />
-                      <StatusBadge status={r.status} />
-                    </div>
-                    <div className="text-[12px] text-gray-600 mt-1.5">
-                      {new Date(r.startDate).toLocaleDateString("sq-AL")}
-                      {" — "}
-                      {new Date(r.endDate).toLocaleDateString("sq-AL")}
-                      <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
-                    </div>
-                    {r.reviewNote && (
-                      <div className="text-[11px] text-gray-400 mt-1">Shënim: {r.reviewNote}</div>
-                    )}
-                    {r.reason && (
-                      <div className="text-[11px] text-gray-400 mt-0.5 italic">"{r.reason}"</div>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[11px] text-gray-400">
-                      {new Date(r.createdAt).toLocaleDateString("sq-AL")}
-                    </div>
-                    {r.status === "PENDING" && (
-                      <button onClick={() => cancelReq(r.id)}
-                        className="mt-1.5 text-[11px] font-medium text-red-500 hover:text-red-700 transition-colors">
-                        Anulo
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {showModal && (
