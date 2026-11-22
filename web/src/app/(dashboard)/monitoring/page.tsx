@@ -7,11 +7,11 @@ import Topbar from "@/components/layout/Topbar";
 import { AccessGuard } from "@/components/AccessGuard";
 import { formatCurrency } from "@/lib/utils";
 import { monitoring as monitoringApi, offices as officesApi } from "@/lib/api";
+import { Select } from "@/components/ui/Select";
 import {
   Eye, AlertTriangle, RefreshCw, ChevronRight,
-  Users, TrendingUp, Clock, Activity, Search,
+  Users, TrendingUp, Search,
 } from "lucide-react";
-import { Select } from "@/components/ui/Select";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -23,114 +23,81 @@ function relativeDate(d: string | Date | null): string {
   if (!d) return "Asnjëherë";
   const diff = Date.now() - new Date(d).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m më parë`;
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h më parë`;
+  if (hrs < 24) return `${hrs}h`;
   const days = Math.floor(hrs / 24);
   if (days === 1) return "Dje";
-  if (days < 7) return `${days} ditë më parë`;
+  if (days < 7) return `${days} ditë`;
   return new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" });
 }
 
-function StatPill({ value, label, color }: { value: number | string; label: string; color: string }) {
+// ── KPI card — matches dashboard style exactly ────────────────
+
+function KpiCard({ label, value, icon: Icon, urgent }: { label: string; value: string | number; icon: React.ElementType; urgent?: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-0">
-      <span className={`text-[15px] font-bold tabular-nums ${color}`}>{value}</span>
-      <span className="text-[10px] text-gray-400 leading-tight text-center whitespace-nowrap">{label}</span>
+    <div className={`bg-white rounded-xl border px-4 py-3.5 flex items-center gap-3 ${urgent ? "border-red-200" : "border-gray-200"}`}
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${urgent ? "bg-red-50" : "bg-gray-100"}`}>
+        <Icon size={15} className={urgent ? "text-red-500" : "text-gray-500"} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[10.5px] font-medium text-gray-400 uppercase tracking-wide leading-tight mb-1.5">{label}</div>
+        <div className={`text-[19px] font-bold tabular-nums leading-none ${urgent ? "text-red-600" : "text-gray-900"}`}>{value}</div>
+      </div>
     </div>
   );
 }
 
-// ── Officer card ─────────────────────────────────────────────
+// ── Officer card — compact ────────────────────────────────────
 
 function OfficerCard({ o, onClick }: { o: any; onClick: () => void }) {
-  const alertLevel = o.promisesOverdue > 5 ? "high" : o.promisesOverdue > 1 ? "medium" : "none";
+  const hasOverdue = o.promisesOverdue > 0;
 
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white rounded-2xl border border-gray-200 p-5 text-left hover:border-brand-300 hover:shadow-md transition-all group"
+      className="w-full bg-white rounded-xl border border-gray-200 px-4 py-3.5 text-left hover:border-brand-300 hover:shadow-sm transition-all group cursor-pointer"
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
-            <span className="text-brand-700 text-[13px] font-bold">{initials(o.fullName)}</span>
-          </div>
-          <div className="min-w-0">
-            <div className="text-[14px] font-semibold text-gray-900 truncate">{o.fullName}</div>
-            <div className="text-[11px] text-gray-400 mt-0.5 truncate">
-              {o.office?.name ?? "Pa zyrë"} · #{o.userCode ?? "—"}
-            </div>
-          </div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+          <span className="text-gray-600 text-[11px] font-bold">{initials(o.fullName)}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {alertLevel !== "none" && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
-              alertLevel === "high" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
-            }`}>
-              <AlertTriangle size={10} />
-              {o.promisesOverdue} vonuar
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-gray-900 truncate leading-tight">{o.fullName}</div>
+          <div className="text-[11px] text-gray-400 truncate">{o.office?.name ?? "Pa zyrë"} · #{o.userCode ?? "—"}</div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hasOverdue && (
+            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+              {o.promisesOverdue} von.
+            </span>
           )}
-          <ChevronRight size={15} className="text-gray-300 group-hover:text-brand-500 transition-colors" />
+          <ChevronRight size={13} className="text-gray-300 group-hover:text-brand-500 transition-colors" />
         </div>
       </div>
 
-      {/* Portfolio balance */}
-      <div className="mb-4">
-        <div className="text-[11px] text-gray-400 mb-0.5">Portofoli aktiv</div>
-        <div className="text-[18px] font-bold text-gray-900 tabular-nums">
-          {formatCurrency(o.portfolioBalance)}
-        </div>
+      <div className="text-[16px] font-bold text-gray-900 tabular-nums mb-3">
+        {formatCurrency(o.portfolioBalance)}
       </div>
 
-      {/* Stats row */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-        <StatPill value={o.activeCases}          label="Klientë aktiv"   color="text-gray-800" />
-        <div className="w-px h-6 bg-gray-100" />
-        <StatPill value={o.promisesPending}       label="Premtime hapura" color={o.promisesPending > 0 ? "text-blue-600" : "text-gray-800"} />
-        <div className="w-px h-6 bg-gray-100" />
-        <StatPill value={o.activitiesThisMonth}   label="Aktivitete/muaj" color="text-gray-800" />
-        <div className="w-px h-6 bg-gray-100" />
-        <div className="flex flex-col items-center gap-0.5 min-w-0">
-          <span className="text-[11px] font-medium text-gray-500 truncate">{relativeDate(o.lastActivityAt)}</span>
-          <span className="text-[10px] text-gray-400 leading-tight">Aktiviteti i fundit</span>
+      <div className="flex items-center gap-4 pt-2.5 border-t border-gray-50 text-[11px]">
+        <div>
+          <span className="font-semibold text-gray-800">{o.activeCases}</span>
+          <span className="text-gray-400 ml-1">klientë</span>
         </div>
+        <div>
+          <span className={`font-semibold ${o.promisesPending > 0 ? "text-gray-800" : "text-gray-400"}`}>{o.promisesPending}</span>
+          <span className="text-gray-400 ml-1">premtime</span>
+        </div>
+        <div>
+          <span className="font-semibold text-gray-800">{o.activitiesThisMonth}</span>
+          <span className="text-gray-400 ml-1">akt./muaj</span>
+        </div>
+        <div className="ml-auto text-gray-400">{relativeDate(o.lastActivityAt)}</div>
       </div>
     </button>
-  );
-}
-
-// ── Summary bar ───────────────────────────────────────────────
-
-function SummaryBar({ officers }: { officers: any[] }) {
-  const totalPortfolio  = officers.reduce((s, o) => s + o.portfolioBalance, 0);
-  const totalCases      = officers.reduce((s, o) => s + o.activeCases, 0);
-  const totalOverdue    = officers.reduce((s, o) => s + o.promisesOverdue, 0);
-  const totalActivities = officers.reduce((s, o) => s + o.activitiesThisMonth, 0);
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      {[
-        { label: "Oficerrë aktiv",        value: officers.length,              icon: Users,      color: "bg-brand-50 text-brand-600"  },
-        { label: "Portofoli total",        value: formatCurrency(totalPortfolio), icon: TrendingUp, color: "bg-emerald-50 text-emerald-600" },
-        { label: "Klientë aktiv (total)",  value: totalCases,                   icon: Eye,        color: "bg-blue-50 text-blue-600"    },
-        { label: "Premtime të vonuara",    value: totalOverdue,                 icon: AlertTriangle, color: totalOverdue > 0 ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-400" },
-      ].map(({ label, value, icon: Icon, color }) => (
-        <div key={label} className="bg-white rounded-xl border border-gray-200 px-4 py-3.5 flex items-center gap-3"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
-            <Icon size={15} />
-          </div>
-          <div>
-            <div className="text-[18px] font-bold text-gray-900 tabular-nums leading-none">{value}</div>
-            <div className="text-[11px] text-gray-400 mt-0.5 leading-tight">{label}</div>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -171,6 +138,10 @@ export default function MonitoringPage() {
     return list;
   }, [officers, search, sortBy]);
 
+  const totalPortfolio  = officers.reduce((s: number, o: any) => s + o.portfolioBalance, 0);
+  const totalCases      = officers.reduce((s: number, o: any) => s + o.activeCases, 0);
+  const totalOverdue    = officers.reduce((s: number, o: any) => s + o.promisesOverdue, 0);
+
   return (
     <AccessGuard permission="page:monitoring">
       <div className="min-h-screen bg-gray-50">
@@ -185,24 +156,27 @@ export default function MonitoringPage() {
         />
 
         <div className="p-4 md:p-6">
-          {/* Summary */}
-          {!isLoading && officers.length > 0 && <SummaryBar officers={officers} />}
+          {/* KPI summary */}
+          {!isLoading && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              <KpiCard label="Oficerë aktiv"       value={officers.length} icon={Users} />
+              <KpiCard label="Portofoli total"      value={formatCurrency(totalPortfolio)} icon={TrendingUp} />
+              <KpiCard label="Klientë aktiv"        value={totalCases} icon={Eye} />
+              <KpiCard label="Premtime të vonuara"  value={totalOverdue} icon={AlertTriangle} urgent={totalOverdue > 0} />
+            </div>
+          )}
 
-          {/* Filters */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-5 flex flex-wrap gap-3 items-center"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            {/* Search */}
-            <div className="relative flex-1 min-w-48">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          {/* Filters — bare row, no container */}
+          <div className="flex flex-wrap gap-2.5 items-center mb-4">
+            <div className="relative flex-1 min-w-48 max-w-72">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Kërko oficer…"
-                className="w-full pl-9 pr-3 py-2 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors"
+                className="w-full pl-8 pr-3 py-2 text-[13px] border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-brand-400 transition-colors"
               />
             </div>
-
-            {/* Office filter */}
             <Select
               value={officeId}
               onChange={setOfficeId}
@@ -211,49 +185,45 @@ export default function MonitoringPage() {
               clearable
               options={officeList.map((o: any) => ({ value: o.id, label: o.name }))}
             />
-
-            {/* Sort */}
             <Select
               value={sortBy}
               onChange={v => setSortBy(v as any)}
               className="w-48"
               options={[
-                { value: "overdue",    label: "Sipas vonuara ↓" },
-                { value: "portfolio",  label: "Sipas portofolit ↓" },
-                { value: "cases",      label: "Sipas klientëve ↓" },
-                { value: "activity",   label: "Sipas aktivitetit të fundit" },
-                { value: "name",       label: "Sipas emrit" },
+                { value: "overdue",   label: "Sipas vonuara ↓" },
+                { value: "portfolio", label: "Sipas portofolit ↓" },
+                { value: "cases",     label: "Sipas klientëve ↓" },
+                { value: "activity",  label: "Aktiviteti i fundit" },
+                { value: "name",      label: "Sipas emrit" },
               ]}
             />
-
             <button onClick={() => mutate()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 text-[12px] text-gray-600 hover:bg-gray-50 transition-colors">
-              <RefreshCw size={13} />
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-white text-[12px] text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">
+              <RefreshCw size={12} />
               Rifresko
             </button>
           </div>
 
           {/* Loading skeleton */}
           {isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-2xl border border-gray-200 p-5 animate-pulse h-48" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse h-36" />
               ))}
             </div>
           )}
 
           {/* Empty */}
           {!isLoading && filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200">
-              <Users size={28} className="text-gray-200 mb-3" />
-              <p className="text-[13px] font-medium text-gray-400">Nuk u gjetën oficerë</p>
-              <p className="text-[12px] text-gray-300 mt-1">Ndryshoni filtrin ose rifreskoni</p>
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200">
+              <Users size={24} className="text-gray-200 mb-3" />
+              <p className="text-[13px] text-gray-400">Nuk u gjetën oficerë</p>
             </div>
           )}
 
           {/* Grid */}
           {!isLoading && filtered.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
               {filtered.map(o => (
                 <OfficerCard key={o.id} o={o} onClick={() => router.push(`/monitoring/${o.id}`)} />
               ))}

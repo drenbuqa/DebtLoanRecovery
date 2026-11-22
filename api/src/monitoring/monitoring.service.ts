@@ -101,7 +101,7 @@ export class MonitoringService {
       this.prisma.case.findMany({
         where: { assignedOfficerId: officerId, archivedAt: null },
         select: {
-          id: true, caseReference: true, status: true, collectionStage: true,
+          id: true, caseReference: true, status: true, collectionStage: true, collectionStatus: true,
           nextActionDate: true, nextActionNote: true, registrationDate: true,
           loan: { select: { currentOutstandingBalance: true, lastPaymentDate: true,
             borrower: { select: { fullName: true } } } },
