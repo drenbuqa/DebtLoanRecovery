@@ -91,7 +91,11 @@ export class ImportController {
     if (!file) throw new BadRequestException('Asnjë dokument nuk u ngarkua');
     const validTypes = ['officer', 'secondary_officer', 'npl', 'institution', 'city', 'category', 'balance', 'phone2', 'office', 'guarantor1', 'guarantor2', 'inactive'];
     if (!validTypes.includes(type)) throw new BadRequestException('Lloji i pavlefshëm');
-    return this.svc.bulkUpdate(file.buffer, type as any, req.user.id, file.originalname);
+    try {
+      return await this.svc.bulkUpdate(file.buffer, type as any, req.user.id, file.originalname);
+    } catch (e: any) {
+      throw new BadRequestException(e.message ?? 'Ndodhi një gabim gjatë procesimit');
+    }
   }
 
   @Get('jobs/:id/rollback-check')

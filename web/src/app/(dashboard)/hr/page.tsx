@@ -151,11 +151,25 @@ function DocCard({ doc, canDelete, onDelete }: {
 }) {
   const { icon: Icon, color, bg } = mimeIcon(doc.mimeType);
   const [deleting, setDeleting] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
 
   async function handleDelete() {
     if (!confirm(`Jeni i sigurt që doni të fshini "${doc.title}"?`)) return;
     setDeleting(true);
     try { onDelete(doc.id); } finally { setDeleting(false); }
+  }
+
+  async function handleOpen() {
+    setOpening(true);
+    setOpenError(null);
+    try {
+      await hrApi.openFile(doc.id);
+    } catch (e: any) {
+      setOpenError(e.message ?? 'Gabim gjatë hapjes së dokumentit.');
+    } finally {
+      setOpening(false);
+    }
   }
 
   return (
@@ -189,16 +203,19 @@ function DocCard({ doc, canDelete, onDelete }: {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        <a
-          href={hrApi.fileUrl(doc.id)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors"
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {openError && (
+          <p className="text-[11px] text-red-600 max-w-[200px] text-right">{openError}</p>
+        )}
+        <div className="flex items-center gap-2">
+        <button
+          onClick={handleOpen}
+          disabled={opening}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
           title="Hap dokumentin">
-          <Eye size={12} />
+          {opening ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
           <span className="hidden sm:inline">Hap</span>
-        </a>
+        </button>
         {canDelete && (
           <button
             onClick={handleDelete} disabled={deleting}
@@ -207,6 +224,7 @@ function DocCard({ doc, canDelete, onDelete }: {
             {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
           </button>
         )}
+        </div>
       </div>
     </div>
   );

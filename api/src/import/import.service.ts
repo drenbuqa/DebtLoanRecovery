@@ -847,15 +847,19 @@ export class ImportService {
           notifs.push({ userId: officerId, title: `Ti u caktove si oficer në ${caseIds.length} raste të reja`, link: `/cases` });
         }
       }
-      await this.prisma.notification.createMany({ data: notifs });
+      try {
+        await this.prisma.notification.createMany({ data: notifs, skipDuplicates: true });
+      } catch { /* non-fatal — notifications are best-effort */ }
     }
 
-    await this.prisma.importJob.update({
-      where: { id: job.id },
-      data: { status: 'COMPLETED', successfulRows: updated, failedRows: errors.length, completedAt: new Date() },
-    });
+    try {
+      await this.prisma.importJob.update({
+        where: { id: job.id },
+        data: { status: 'COMPLETED', successfulRows: updated, failedRows: errors.length, completedAt: new Date() },
+      });
+    } catch { /* best-effort — don't fail the response over a job status update */ }
 
-    return { updated, skipped, errors, total: dataRows.length };
+    return { updated, skipped, errors: errors.slice(0, 200), total: dataRows.length };
   }
 
   private prepareRows(rows: ImportRow[], institutionOverride?: string) {

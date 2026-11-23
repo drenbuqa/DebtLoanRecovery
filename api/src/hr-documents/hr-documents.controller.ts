@@ -1,10 +1,9 @@
 import {
   Controller, Get, Post, Delete, Param, Body,
-  UseInterceptors, UploadedFile, Request, Res,
+  UseInterceptors, UploadedFile, Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import type { Response } from 'express';
 import { HrDocumentsService } from './hr-documents.service';
 import { RequireRoles } from '../auth/roles.guard';
 
@@ -37,9 +36,9 @@ export class HrDocumentsController {
   }
 
   @Get(':id/file')
-  async getFile(@Param('id') id: string, @Res() res: Response) {
+  async getFile(@Param('id') id: string) {
     const url = await this.svc.getSignedUrl(id);
-    res.redirect(url);
+    return { url };
   }
 
   @Delete(':id')

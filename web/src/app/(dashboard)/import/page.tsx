@@ -1127,7 +1127,7 @@ const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "inactive",          label: "Klientët joaktiv",    desc: "Shëno klientët si joaktiv" },
 ];
 
-function UpdatesTab({ officers, institutions, cities, offices }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[] }) {
+function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs, onRollback }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[]; jobs: any[]; loadingJobs: boolean; onRollback: () => void }) {
   const [type, setType] = useState<BulkType>("officer");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -1409,6 +1409,8 @@ function UpdatesTab({ officers, institutions, cities, offices }: { officers: any
           </div>
         </div>
       </div>
+      {/* Per-section history */}
+      <MiniHistory jobs={jobs} loading={loadingJobs} onRollback={onRollback} emptyLabel="Asnjë ndryshim i pjesshëm i regjistruar" />
     </div>
   );
 }
@@ -1496,6 +1498,7 @@ export default function ImportPage() {
   const clientJobs   = jobs.filter(j => j.importType === "PORTFOLIO");
   const activityJobs = jobs.filter(j => j.importType === "ACTIVITIES");
   const paymentJobs  = jobs.filter(j => j.importType === "PAYMENTS");
+  const bulkJobs     = jobs.filter(j => j.importType === "BULK_UPDATE");
 
   async function submit() {
     if (!file) return;
@@ -1610,6 +1613,9 @@ export default function ImportPage() {
             institutions={refData?.institutions ?? []}
             cities={refData?.cities ?? []}
             offices={refData?.offices ?? []}
+            jobs={bulkJobs}
+            loadingJobs={loadingJobs}
+            onRollback={refreshJobs}
           />
         )}
         {tab === "history" && (

@@ -262,22 +262,22 @@ function OfficerDashboard({ user }: { user: any }) {
 
   const { data: todayRes, isLoading: todayLoading } = useSWR(
     user?.id ? ["officer-today", user.id] : null,
-    () => casesApi.list({ officerId: user.id, view: "ndjekja_sot", limit: 5, page: 1 }),
+    () => casesApi.list({ officerId: user.id, view: "ndjekja_sot", limit: 20, page: 1 }),
   );
 
   const { data: overdueRes, isLoading: overdueLoading } = useSWR(
     user?.id ? ["officer-overdue", user.id] : null,
-    () => casesApi.list({ officerId: user.id, view: "vonesa", limit: 5, page: 1 }),
+    () => casesApi.list({ officerId: user.id, view: "vonesa", limit: 20, page: 1 }),
   );
 
   const { data: brokenRes, isLoading: brokenLoading } = useSWR(
     user?.id ? ["officer-broken", user.id] : null,
-    () => casesApi.list({ officerId: user.id, view: "premtime_thyera", limit: 5, page: 1 }),
+    () => casesApi.list({ officerId: user.id, view: "premtime_thyera", limit: 20, page: 1 }),
   );
 
   const { data: soonRes, isLoading: soonLoading } = useSWR(
     user?.id ? ["officer-soon", user.id] : null,
-    () => casesApi.list({ officerId: user.id, view: "promises_soon", limit: 5, page: 1 }),
+    () => casesApi.list({ officerId: user.id, view: "promises_soon", limit: 20, page: 1 }),
   );
 
   const todayCases   = todayRes?.data ?? [];
@@ -477,7 +477,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
 
   const { data: overdueRes, isLoading: overdueLoading } = useSWR(
     user ? ["dash-overdue", officeId] : null,
-    () => casesApi.list({ view: "vonesa", limit: 5, ...(officeId ? { officeId } : {}), page: 1 }),
+    () => casesApi.list({ view: "vonesa", limit: 20, ...(officeId ? { officeId } : {}), page: 1 }),
   );
 
   const stats          = dashData?.stats ?? null;

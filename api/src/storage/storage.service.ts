@@ -54,7 +54,6 @@ export class StorageService {
   }
 
   async getSignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
-    await this.ensureBucket();
     return getSignedUrl(
       this.s3,
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),

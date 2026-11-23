@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -50,6 +50,11 @@ export class HrDocumentsService {
       select: { fileKey: true },
     });
     if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
+    if (doc.fileKey.startsWith('legacy/')) {
+      throw new BadRequestException(
+        'Ky dokument është importuar nga sistemi i vjetër dhe nuk mund të hapet. Ju lutemi ngarkoni përsëri dokumentin.',
+      );
+    }
     return this.storage.getSignedUrl(doc.fileKey);
   }
 
