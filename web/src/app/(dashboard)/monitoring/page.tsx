@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useRefreshing } from "@/lib/useRefreshing";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/layout/Topbar";
@@ -108,6 +109,7 @@ export default function MonitoringPage() {
   const [officeId, setOfficeId] = useState("");
   const [search, setSearch]     = useState("");
   const [sortBy, setSortBy]     = useState<"name" | "cases" | "portfolio" | "overdue" | "activity">("overdue");
+  const [refreshing, triggerRefresh] = useRefreshing();
 
   const { data: officers = [], isLoading, mutate } = useSWR(
     ["monitoring-officers", officeId],
@@ -168,7 +170,7 @@ export default function MonitoringPage() {
 
           {/* Filters — bare row, no container */}
           <div className="flex flex-wrap gap-2.5 items-center mb-4">
-            <div className="relative flex-1 min-w-48 max-w-72">
+            <div className="relative flex-1 min-w-48 max-w-72 shrink-0">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 value={search}
@@ -190,17 +192,17 @@ export default function MonitoringPage() {
               onChange={v => setSortBy(v as any)}
               className="w-48"
               options={[
-                { value: "overdue",   label: "Sipas vonuara ↓" },
-                { value: "portfolio", label: "Sipas portofolit ↓" },
-                { value: "cases",     label: "Sipas klientëve ↓" },
-                { value: "activity",  label: "Aktiviteti i fundit" },
-                { value: "name",      label: "Sipas emrit" },
+                { value: "overdue",   label: "Premtime të vonuara (më shumë së pari)" },
+                { value: "portfolio", label: "Portofoli (më i madh së pari)" },
+                { value: "cases",     label: "Klientë aktivë (më shumë së pari)" },
+                { value: "activity",  label: "Aktiviteti i fundit (më i ri së pari)" },
+                { value: "name",      label: "Emri (A–Z)" },
               ]}
             />
-            <button onClick={() => mutate()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-white text-[12px] text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">
-              <RefreshCw size={12} />
-              Rifresko
+            <div className="flex-1" />
+            <button onClick={() => triggerRefresh(() => { mutate(); })}
+              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0">
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
 

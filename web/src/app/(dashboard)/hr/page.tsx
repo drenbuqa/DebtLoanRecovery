@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { hrDocuments as hrApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import {
   BookOpen, Upload, Trash2, FileText, FileSpreadsheet,
   File, Download, Eye, Plus, X, Loader2, AlertCircle,
@@ -155,7 +156,6 @@ function DocCard({ doc, canDelete, onDelete }: {
   const [openError, setOpenError] = useState<string | null>(null);
 
   async function handleDelete() {
-    if (!confirm(`Jeni i sigurt që doni të fshini "${doc.title}"?`)) return;
     setDeleting(true);
     try { onDelete(doc.id); } finally { setDeleting(false); }
   }
@@ -237,6 +237,7 @@ export default function HrPage() {
   const [docs, setDocs]           = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [confirmModal, openConfirm] = useConfirm();
 
   async function load() {
     setLoading(true);
@@ -246,12 +247,20 @@ export default function HrPage() {
   useEffect(() => { load(); }, []);
 
   async function handleDelete(id: string) {
-    try {
-      await hrApi.delete(id);
-      setDocs(d => d.filter(doc => doc.id !== id));
-    } catch (e: any) {
-      alert(e.message ?? "Gabim gjatë fshirjes.");
-    }
+    const doc = docs.find(d => d.id === id);
+    openConfirm({
+      title: `Fshi "${doc?.title ?? "dokumentin"}"`,
+      message: "Dokumenti do të fshihet përgjithmonë. Ky veprim nuk mund të zhbëhet.",
+      confirmLabel: "Fshi",
+      onConfirm: async () => {
+        try {
+          await hrApi.delete(id);
+          setDocs(d => d.filter(doc => doc.id !== id));
+        } catch (e: any) {
+          alert(e.message ?? "Gabim gjatë fshirjes.");
+        }
+      },
+    });
   }
 
   return (
@@ -320,6 +329,7 @@ export default function HrPage() {
         )}
       </div>
 
+      {confirmModal}
       {showUpload && (
         <UploadModal
           onClose={() => setShowUpload(false)}

@@ -148,10 +148,13 @@ export class InstitutionsService {
     });
 
     // 3c. Batch: active legal proceedings (not CLOSED) per case
-    const legalProceedings = await this.prisma.legalProceeding.findMany({
-      where: { caseId: { in: allCaseIds }, status: { not: 'CLOSED' as any } },
-      select: { caseId: true },
-    });
+    let legalProceedings: { caseId: string }[] = [];
+    try {
+      legalProceedings = await this.prisma.legalProceeding.findMany({
+        where: { caseId: { in: allCaseIds }, status: { not: 'CLOSED' as any } },
+        select: { caseId: true },
+      });
+    } catch { /* table schema mismatch in some environments — count stays 0 */ }
 
     // 4. Aggregate per institution
     return institutions.map((inst) => {

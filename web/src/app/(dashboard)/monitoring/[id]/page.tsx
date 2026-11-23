@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRefreshing } from "@/lib/useRefreshing";
 import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -298,6 +299,7 @@ export default function OfficerDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const [tab, setTab] = useState<Tab>("cases");
+  const [refreshing, triggerRefresh] = useRefreshing();
 
   const { data, isLoading, mutate } = useSWR(
     id ? ["monitoring-officer", id] : null,
@@ -355,11 +357,6 @@ export default function OfficerDetailPage() {
                     {officer?.office?.name ?? "Pa zyrë"} · #{officer?.userCode ?? "—"} · {officer?.role}
                   </div>
                 </div>
-                <button onClick={() => mutate()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-[12px] text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer shrink-0">
-                  <RefreshCw size={12} />
-                  Rifresko
-                </button>
               </div>
 
               {/* Stats — same KpiCard as dashboard */}
@@ -375,7 +372,8 @@ export default function OfficerDetailPage() {
               {/* Tabs */}
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex border-b border-gray-100 overflow-x-auto">
+                <div className="flex items-center border-b border-gray-100">
+                  <div className="flex overflow-x-auto flex-1">
                   {TABS.map(({ key, label, icon: Icon }) => {
                     const badge = key === "cases" ? cases.length
                       : key === "promises" ? promises.length
@@ -402,6 +400,11 @@ export default function OfficerDetailPage() {
                       </button>
                     );
                   })}
+                  </div>
+                  <button onClick={() => triggerRefresh(() => { mutate(); })}
+                    className="p-2 mr-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0">
+                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                  </button>
                 </div>
                 <div className="min-h-56">
                   {tab === "cases"      && <CasesTab cases={cases} />}
