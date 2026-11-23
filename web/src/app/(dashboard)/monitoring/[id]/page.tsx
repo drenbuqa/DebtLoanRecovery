@@ -13,12 +13,13 @@ import {
   ArrowLeft, Users, TrendingUp, AlertTriangle,
   Activity, CheckCircle, Clock,
   ChevronRight, RefreshCw, Phone, MapPin, MessageSquare,
+  XCircle, Mail, FileText, CreditCard, CheckSquare,
 } from "lucide-react";
 
 // ── Label maps ───────────────────────────────────────────────
 
 const FAZA_LABEL: Record<string, string> = {
-  KLIENT_I_RI:            "Klienti i Ri",
+  KLIENT_I_RI:            "Klient i Ri",
   PAKONTAKTUAR:           "I Pakontaktuar",
   ZOTIM_PAGESE:           "Zotim Pagese",
   ME_MARREVESHJE:         "Me Marrëveshje",
@@ -28,32 +29,53 @@ const FAZA_LABEL: Record<string, string> = {
   TJERA:                  "Të Tjera",
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE:    "Aktiv",
-  CLOSED:    "Mbyllur",
-  SUSPENDED: "Pezulluar",
-  LEGAL:     "Juridike",
-  ANKES:     "Ankesë",
-  AKTGJYKIM: "Aktgjykim",
+const PROMISE_LABEL: Record<string, { label: string; color: string; bg: string }> = {
+  PENDING:  { label: "Në pritje",     color: "text-amber-700",   bg: "bg-amber-50" },
+  KEPT:     { label: "Mbajtur",       color: "text-emerald-700", bg: "bg-emerald-50" },
+  BROKEN:   { label: "Thyer",         color: "text-red-700",     bg: "bg-red-50" },
+  PARTIAL:  { label: "Pjesërisht",    color: "text-orange-700",  bg: "bg-orange-50" },
+  CANCELLED:{ label: "Anuluar",       color: "text-gray-500",    bg: "bg-gray-100" },
 };
 
-const PROMISE_LABEL: Record<string, string> = {
-  PENDING: "Në pritje",
-  KEPT:    "Mbajtur",
-  BROKEN:  "Thyer",
-  PARTIAL: "Pjesërisht",
+const TYPE_META: Record<string, { icon: any; label: string; color: string; bg: string }> = {
+  CALL:              { icon: Phone,         label: "Telefonatë",           color: "text-gray-500",    bg: "bg-gray-100" },
+  CALL_BORROWER:     { icon: Phone,         label: "Tel. Huamarrës",       color: "text-gray-500",    bg: "bg-gray-100" },
+  CALL_GUARANTOR:    { icon: Phone,         label: "Tel. Garantori",       color: "text-gray-500",    bg: "bg-gray-100" },
+  VISIT:             { icon: MapPin,        label: "Vizitë",               color: "text-gray-500",    bg: "bg-gray-100" },
+  VISIT_BORROWER:    { icon: MapPin,        label: "Vizitë Huamarrës",     color: "text-gray-500",    bg: "bg-gray-100" },
+  VISIT_GUARANTOR:   { icon: MapPin,        label: "Vizitë Garantori",     color: "text-gray-500",    bg: "bg-gray-100" },
+  FIELD_VISIT:       { icon: MapPin,        label: "Vizitë në Terren",     color: "text-brand-600",   bg: "bg-brand-50" },
+  SMS:               { icon: MessageSquare, label: "SMS",                  color: "text-gray-500",    bg: "bg-gray-100" },
+  EMAIL:             { icon: Mail,          label: "Email",                color: "text-gray-500",    bg: "bg-gray-100" },
+  LETTER:            { icon: FileText,      label: "Letër",                color: "text-gray-500",    bg: "bg-gray-100" },
+  WARNING_LETTER:    { icon: AlertTriangle, label: "Letër Paralajmëruese", color: "text-amber-600",   bg: "bg-amber-50" },
+  PROMISE_TO_PAY:    { icon: CheckSquare,   label: "Premtim Pagese",       color: "text-amber-600",   bg: "bg-amber-50" },
+  PAYMENT_RECEIVED:  { icon: CreditCard,    label: "Pagesë e Marrë",       color: "text-emerald-600", bg: "bg-emerald-50" },
+  LEGAL_ACTION:      { icon: FileText,      label: "Veprim Ligjor",        color: "text-brand-600",   bg: "bg-brand-50" },
+  MEETING_BORROWER:  { icon: Activity,      label: "Takim Huamarrës",      color: "text-gray-500",    bg: "bg-gray-100" },
+  MEETING_GUARANTOR: { icon: Activity,      label: "Takim Garantori",      color: "text-gray-500",    bg: "bg-gray-100" },
+  NOTE:              { icon: Clock,         label: "Shënim",               color: "text-gray-500",    bg: "bg-gray-100" },
 };
 
-const ACT_TYPE_LABEL: Record<string, string> = {
-  CALL:                  "Telefonatë",
-  CALL_BORROWER:         "Telefonatë (Huamarrës)",
-  CALL_GUARANTOR:        "Telefonatë (Garant)",
-  VISIT:                 "Vizitë",
-  FIELD_VISIT:           "Vizitë në terren",
-  VISIT_BORROWER:        "Vizitë (Huamarrës)",
-  VISIT_GUARANTOR:       "Vizitë (Garant)",
-  MEETING_BORROWER:      "Takim (Huamarrës)",
-  MEETING_GUARANTOR:     "Takim (Garant)",
+const OUTCOME_META: Record<string, { label: string; color: string; bg: string }> = {
+  CONTACTED:        { label: "Kontaktuar",         color: "text-gray-600",    bg: "bg-gray-100" },
+  NO_ANSWER:        { label: "Nuk u përgjigj",     color: "text-gray-500",    bg: "bg-gray-100" },
+  PROMISE_RECEIVED: { label: "Premtim i marrë",    color: "text-amber-700",   bg: "bg-amber-50" },
+  FULL_PAYMENT:     { label: "Pagesë e plotë",     color: "text-emerald-700", bg: "bg-emerald-50" },
+  PARTIAL_PAYMENT:  { label: "Pagesë pjesshme",    color: "text-emerald-600", bg: "bg-emerald-50" },
+  REFUSED:          { label: "Refuzuar",           color: "text-red-700",     bg: "bg-red-50" },
+  DISPUTE:          { label: "Kundërshtim",        color: "text-orange-700",  bg: "bg-orange-50" },
+  DECEASED:         { label: "I/E Ndjerë",         color: "text-gray-600",    bg: "bg-gray-200" },
+  ESCALATED:        { label: "Eskaluar",           color: "text-brand-700",   bg: "bg-brand-50" },
+  OTHER:            { label: "Tjetër",             color: "text-gray-500",    bg: "bg-gray-100" },
+};
+
+const STAGE_CFG: Record<string, { label: string; color: string; bg: string }> = {
+  D1:    { label: "D1",       color: "text-gray-600",    bg: "bg-gray-100" },
+  D2:    { label: "D2",       color: "text-amber-700",   bg: "bg-amber-50" },
+  D3:    { label: "D3",       color: "text-orange-700",  bg: "bg-orange-50" },
+  D4:    { label: "90+",      color: "text-red-700",     bg: "bg-red-50" },
+  LEGAL: { label: "Juridike", color: "text-brand-700",   bg: "bg-brand-50" },
 };
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -65,18 +87,23 @@ function fmtDate(d: string | Date | null | undefined): string {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" });
 }
-function fmtDateTime(d: string | Date | null | undefined): string {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+function fmtTime(d: string | Date): string {
+  return new Date(d).toLocaleTimeString("sq-AL", { hour: "2-digit", minute: "2-digit" });
+}
+function fmtDayHeader(d: string | Date): string {
+  const date = new Date(d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  date.setHours(0,0,0,0);
+  if (date.getTime() === today.getTime()) return "Sot";
+  if (date.getTime() === yesterday.getTime()) return "Dje";
+  return date.toLocaleDateString("sq-AL", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+}
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
 }
 
-function ActivityTypeIcon({ type }: { type: string }) {
-  if (type.includes("CALL")) return <Phone size={12} />;
-  if (type.includes("VISIT") || type.includes("FIELD")) return <MapPin size={12} />;
-  return <MessageSquare size={12} />;
-}
-
-// ── KPI card — matches dashboard ─────────────────────────────
+// ── KPI card ─────────────────────────────────────────────────
 
 function KpiCard({ label, value, icon: Icon, urgent }: { label: string; value: string | number; icon: React.ElementType; urgent?: boolean }) {
   return (
@@ -93,16 +120,15 @@ function KpiCard({ label, value, icon: Icon, urgent }: { label: string; value: s
   );
 }
 
-// ── Tab types ────────────────────────────────────────────────
+// ── Shared table header style ─────────────────────────────────
 
-type Tab = "cases" | "promises" | "activities" | "overdue";
-
-const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: "cases",      label: "Klientët",    icon: Users },
-  { key: "promises",   label: "Premtimet",   icon: CheckCircle },
-  { key: "overdue",    label: "Vonesat",     icon: AlertTriangle },
-  { key: "activities", label: "Aktivitetet", icon: Activity },
-];
+function TH({ children, right }: { children?: React.ReactNode; right?: boolean }) {
+  return (
+    <th className={`py-2.5 px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50/50 whitespace-nowrap ${right ? "text-right" : "text-left"}`}>
+      {children}
+    </th>
+  );
+}
 
 // ── Cases tab ────────────────────────────────────────────────
 
@@ -114,76 +140,111 @@ function CasesTab({ cases }: { cases: any[] }) {
     </div>
   );
 
+  const now = new Date();
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead>
           <tr className="border-b border-gray-100">
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Klienti</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Referenca</th>
-            <th className="text-right py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Borxhi</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Faza</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Statusi</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Veprim i ardhshëm</th>
-            <th className="py-2.5 px-4" />
+            <TH>Klienti</TH>
+            <TH>Referenca</TH>
+            <TH>Banka</TH>
+            <TH right>Borxhi</TH>
+            <TH>Faza</TH>
+            <TH>Sinjal</TH>
+            <TH>Ndjekja e Radhës</TH>
+            <th className="py-2.5 px-3 bg-gray-50/50 w-8" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {cases.map((c: any) => (
-            <tr key={c.id} className="hover:bg-gray-50 transition-colors group">
-              <td className="py-2.5 px-4 font-medium text-gray-900 truncate max-w-[180px]">
-                {c.loan?.borrower?.fullName ?? "—"}
-              </td>
-              <td className="py-2.5 px-4">
-                <span className="font-mono text-[12px] text-gray-500">{c.caseReference}</span>
-              </td>
-              <td className="py-2.5 px-4 text-right font-semibold text-gray-900 tabular-nums">
-                {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
-              </td>
-              <td className="py-2.5 px-4">
-                <span className="text-[12px] text-gray-700">
-                  {c.collectionStatus ? (FAZA_LABEL[c.collectionStatus] ?? c.collectionStatus) : "—"}
-                </span>
-              </td>
-              <td className="py-2.5 px-4">
-                <span className={`inline-flex px-1.5 py-0.5 rounded text-[11px] font-medium ${
-                  c.status === "ACTIVE" ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-500"
-                }`}>
-                  {STATUS_LABEL[c.status] ?? c.status}
-                </span>
-              </td>
-              <td className="py-2.5 px-4">
-                {c.nextActionDate ? (
-                  <div className="text-[12px] text-gray-600">{fmtDate(c.nextActionDate)}</div>
-                ) : <span className="text-[12px] text-gray-300">—</span>}
-              </td>
-              <td className="py-2.5 px-4">
-                <Link href={`/cases/${c.id}`} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight size={13} className="text-brand-500" />
-                </Link>
-              </td>
-            </tr>
-          ))}
+          {cases.map((c: any) => {
+            const nextOverdue = c.nextActionDate && new Date(c.nextActionDate) < now;
+            const stage = c.collectionStage ? STAGE_CFG[c.collectionStage] : null;
+            return (
+              <tr key={c.id} className="hover:bg-gray-50/60 transition-colors group cursor-pointer"
+                onClick={() => window.location.href = `/cases/${c.id}`}>
+                <td className="py-2 px-3">
+                  <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[160px]">
+                    {c.loan?.borrower?.fullName ?? "—"}
+                  </div>
+                  {c.status && c.status !== "ACTIVE" && (() => {
+                    const cfg: Record<string, { label: string; color: string }> = {
+                      LEGAL:     { label: "Juridike",  color: "bg-red-100 text-red-700" },
+                      SUSPENDED: { label: "Pezulluar", color: "bg-amber-100 text-amber-700" },
+                      CLOSED:    { label: "Mbyllur",   color: "bg-gray-100 text-gray-500" },
+                      ANKES:     { label: "Ankesë",    color: "bg-purple-100 text-purple-700" },
+                      AKTGJYKIM: { label: "Aktgjykim", color: "bg-blue-100 text-blue-700" },
+                    };
+                    const s = cfg[c.status];
+                    return s ? <span className={`inline-block mt-0.5 px-1.5 py-px rounded text-[9px] font-semibold leading-tight ${s.color}`}>{s.label}</span> : null;
+                  })()}
+                </td>
+                <td className="py-2 px-3">
+                  <span className="font-mono text-[11px] text-gray-500">{c.caseReference}</span>
+                </td>
+                <td className="py-2 px-3">
+                  <span className="text-[11px] text-gray-600">{c.loan?.institution?.shortName ?? "—"}</span>
+                </td>
+                <td className="py-2 px-3 text-right">
+                  <span className="text-[12px] font-bold text-gray-900 tabular-nums">
+                    {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
+                  </span>
+                </td>
+                <td className="py-2 px-3">
+                  <span className="text-[11px] text-gray-600">
+                    {c.collectionStatus ? (FAZA_LABEL[c.collectionStatus] ?? c.collectionStatus) : "—"}
+                  </span>
+                </td>
+                <td className="py-2 px-3">
+                  {stage ? (
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${stage.bg} ${stage.color}`}>
+                      {stage.label}
+                    </span>
+                  ) : <span className="text-gray-300 text-[11px]">—</span>}
+                </td>
+                <td className="py-2 px-3">
+                  {c.nextActionDate ? (
+                    <div>
+                      <div className={`text-[11px] font-medium ${nextOverdue ? "text-red-500" : "text-gray-700"}`}>
+                        {fmtDate(c.nextActionDate)}
+                      </div>
+                      {c.nextActionNote && (
+                        <div className="text-[10px] text-gray-400 truncate max-w-[160px]">{c.nextActionNote}</div>
+                      )}
+                    </div>
+                  ) : <span className="text-gray-300 text-[11px]">—</span>}
+                </td>
+                <td className="py-2 px-3">
+                  <ChevronRight size={13} className="text-gray-200 group-hover:text-brand-500 transition-colors" />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-// ── Promises tab ─────────────────────────────────────────────
+// ── Promises tab (shared for Premtimet / Vonesat / Dështimet) ─
 
-function PromisesTab({ promises, overdue = false }: { promises: any[]; overdue?: boolean }) {
+function PromisesTab({ promises, mode }: { promises: any[]; mode: "all" | "overdue" | "broken" }) {
   const now = new Date();
-  const list = overdue
+  const list = mode === "overdue"
     ? promises.filter((p: any) => p.status === "PENDING" && new Date(p.promiseDate) < now)
-    : promises;
+    : mode === "broken"
+    ? promises.filter((p: any) => p.status === "BROKEN" || p.status === "CANCELLED")
+    : promises.filter((p: any) => p.status !== "BROKEN" && p.status !== "CANCELLED");
+
+  const emptyMsg = mode === "overdue" ? "Nuk ka premtime të vonuara"
+    : mode === "broken" ? "Nuk ka premtime të dështuara"
+    : "Nuk ka premtime të regjistruara";
 
   if (list.length === 0) return (
     <div className="flex flex-col items-center justify-center py-14 text-center">
       <CheckCircle size={24} className="text-gray-200 mb-2" />
-      <p className="text-[13px] text-gray-400">
-        {overdue ? "Nuk ka premtime të vonuara" : "Nuk ka premtime të regjistruara"}
-      </p>
+      <p className="text-[13px] text-gray-400">{emptyMsg}</p>
     </div>
   );
 
@@ -192,43 +253,61 @@ function PromisesTab({ promises, overdue = false }: { promises: any[]; overdue?:
       <table className="w-full text-[13px]">
         <thead>
           <tr className="border-b border-gray-100">
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Klienti</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Referenca</th>
-            <th className="text-right py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Shuma</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Data</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Statusi</th>
-            <th className="text-left py-2.5 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Shënim</th>
-            <th className="py-2.5 px-4" />
+            <TH>Klienti</TH>
+            <TH>Referenca</TH>
+            <TH right>Shuma</TH>
+            <TH>Data e Premtimit</TH>
+            <TH>Statusi</TH>
+            <TH>Shënim</TH>
+            <th className="py-2.5 px-3 bg-gray-50/50 w-8" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
           {list.map((p: any) => {
             const isPast = p.status === "PENDING" && new Date(p.promiseDate) < now;
+            const statusCfg = PROMISE_LABEL[p.status];
+            const daysOverdue = isPast
+              ? Math.round((now.getTime() - new Date(p.promiseDate).getTime()) / 86400000)
+              : 0;
             return (
-              <tr key={p.id} className="hover:bg-gray-50 transition-colors group">
-                <td className="py-2.5 px-4 font-medium text-gray-900 truncate max-w-[180px]">
-                  {p.case?.loan?.borrower?.fullName ?? "—"}
+              <tr key={p.id} className="hover:bg-gray-50/60 transition-colors group">
+                <td className="py-2 px-3">
+                  <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[160px]">
+                    {p.case?.loan?.borrower?.fullName ?? "—"}
+                  </div>
                 </td>
-                <td className="py-2.5 px-4">
-                  <span className="font-mono text-[12px] text-gray-500">{p.case?.caseReference ?? "—"}</span>
+                <td className="py-2 px-3">
+                  <span className="font-mono text-[11px] text-gray-500">{p.case?.caseReference ?? "—"}</span>
                 </td>
-                <td className="py-2.5 px-4 text-right font-semibold text-gray-900 tabular-nums">
-                  {formatCurrency(Number(p.promisedAmount))}
-                </td>
-                <td className="py-2.5 px-4">
-                  <span className={`text-[12px] ${isPast ? "text-red-600 font-medium" : "text-gray-700"}`}>
-                    {fmtDate(p.promiseDate)}{isPast && " ⚠"}
+                <td className="py-2 px-3 text-right">
+                  <span className="text-[12px] font-bold text-gray-900 tabular-nums">
+                    {formatCurrency(Number(p.promisedAmount))}
                   </span>
                 </td>
-                <td className="py-2.5 px-4">
-                  <span className="text-[12px] text-gray-600">{PROMISE_LABEL[p.status] ?? p.status}</span>
+                <td className="py-2 px-3">
+                  <div className={`text-[11px] font-medium ${isPast ? "text-red-600" : "text-gray-700"}`}>
+                    {fmtDate(p.promiseDate)}
+                  </div>
+                  {daysOverdue > 0 && (
+                    <div className={`text-[10px] font-semibold ${daysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
+                      {daysOverdue} ditë vonesë
+                    </div>
+                  )}
                 </td>
-                <td className="py-2.5 px-4">
-                  <span className="text-[12px] text-gray-500 truncate max-w-[180px] block">{p.notes ?? "—"}</span>
+                <td className="py-2 px-3">
+                  {statusCfg ? (
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
+                      {statusCfg.label}
+                    </span>
+                  ) : <span className="text-[11px] text-gray-500">{p.status}</span>}
                 </td>
-                <td className="py-2.5 px-4">
+                <td className="py-2 px-3">
+                  <span className="text-[11px] text-gray-500 truncate max-w-[200px] block">{p.notes ?? "—"}</span>
+                </td>
+                <td className="py-2 px-3">
                   {p.case?.id && (
-                    <Link href={`/cases/${p.case.id}`} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Link href={`/cases/${p.case.id}`} onClick={e => e.stopPropagation()}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <ChevronRight size={13} className="text-brand-500" />
                     </Link>
                   )}
@@ -242,7 +321,7 @@ function PromisesTab({ promises, overdue = false }: { promises: any[]; overdue?:
   );
 }
 
-// ── Activities tab — compact rows ────────────────────────────
+// ── Activities tab — grouped by day, matches activities page ──
 
 function ActivitiesTab({ activities }: { activities: any[] }) {
   if (activities.length === 0) return (
@@ -252,45 +331,87 @@ function ActivitiesTab({ activities }: { activities: any[] }) {
     </div>
   );
 
+  // Group by day
+  const grouped: { day: string; date: Date; items: any[] }[] = [];
+  for (const a of activities) {
+    const d = a.occurredAt ? new Date(a.occurredAt) : new Date();
+    const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const existing = grouped.find(g => `${g.date.getFullYear()}-${g.date.getMonth()}-${g.date.getDate()}` === dayKey);
+    if (existing) { existing.items.push(a); }
+    else { grouped.push({ day: fmtDayHeader(d), date: d, items: [a] }); }
+  }
+
   return (
-    <div className="divide-y divide-gray-50">
-      {activities.map((a: any) => (
-        <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
-          <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center shrink-0 text-gray-500">
-            <ActivityTypeIcon type={a.activityType} />
+    <div className="p-4 space-y-4">
+      {grouped.map(({ day, items }) => (
+        <div key={day}>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{day}</span>
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-[10px] text-gray-300">{items.length} {items.length === 1 ? "regjistrim" : "regjistrime"}</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[12px] font-medium text-gray-800">
-                {ACT_TYPE_LABEL[a.activityType] ?? a.activityType.replace(/_/g, " ")}
-              </span>
-              <span className="text-[11px] text-gray-400">
-                {a.case?.loan?.borrower?.fullName ?? "—"} · {a.case?.caseReference ?? "—"}
-              </span>
-              {a.outcome && (
-                <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                  {a.outcome}
-                </span>
-              )}
-              {a.promiseAmount && (
-                <span className="text-[10px] text-gray-600 font-medium">
-                  {formatCurrency(Number(a.promiseAmount))}
-                </span>
-              )}
-            </div>
-            {a.notes && (
-              <div className="text-[11px] text-gray-500 truncate mt-0.5">{a.notes}</div>
-            )}
+          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50"
+            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+            {items.map((a: any) => {
+              const tm = TYPE_META[a.activityType] ?? { icon: Clock, label: a.activityType?.replace(/_/g, " ") ?? "—", color: "text-gray-500", bg: "bg-gray-100" };
+              const Icon = tm.icon;
+              const om = a.outcome ? (OUTCOME_META[a.outcome] ?? { label: a.outcome, color: "text-gray-500", bg: "bg-gray-100" }) : null;
+              const debtor = a.case?.loan?.borrower?.fullName ?? null;
+              const caseRef = a.case?.caseReference ?? null;
+              const isToday = a.occurredAt ? isSameDay(new Date(a.occurredAt), new Date()) : false;
+              const time = a.occurredAt ? (isToday ? fmtTime(a.occurredAt) : fmtDate(a.occurredAt)) : null;
+              const nextAction = a.nextActionDate
+                ? new Date(a.nextActionDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short" })
+                : null;
+              return (
+                <div key={a.id}
+                  onClick={() => a.case?.id && (window.location.href = `/cases/${a.case.id}`)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 cursor-pointer transition-colors group">
+                  <div className={`w-8 h-8 rounded-xl ${tm.bg} flex items-center justify-center shrink-0`}>
+                    <Icon size={14} className={tm.color} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[11px] font-semibold shrink-0 ${tm.color}`}>{tm.label}</span>
+                      {debtor && <span className="text-[13px] font-semibold text-gray-900 truncate">{debtor}</span>}
+                      {caseRef && <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0 hidden sm:inline">{caseRef}</span>}
+                      {om && <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${om.bg} ${om.color}`}>{om.label}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                      {a.notes && <span className="text-[11px] text-gray-400 truncate">{a.notes}</span>}
+                      {a.promiseAmount > 0 && (
+                        <span className="text-[11px] font-semibold text-emerald-700 shrink-0">
+                          · {a.activityType === "PAYMENT_RECEIVED" ? "Pagesë" : "Premtim"} €{Number(a.promiseAmount).toLocaleString()}
+                        </span>
+                      )}
+                      {nextAction && <span className="text-[11px] text-gray-400 shrink-0">· Ndjekja: {nextAction}</span>}
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    {time && <span className="text-[11px] text-gray-400 whitespace-nowrap">{time}</span>}
+                    <ChevronRight size={13} className="text-gray-200 group-hover:text-brand-400 transition-colors" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="text-[11px] text-gray-400 shrink-0 whitespace-nowrap">{fmtDateTime(a.occurredAt)}</div>
-          <Link href={`/cases/${a.case?.id}`} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <ChevronRight size={13} className="text-brand-500" />
-          </Link>
         </div>
       ))}
     </div>
   );
 }
+
+// ── Tab types ────────────────────────────────────────────────
+
+type Tab = "cases" | "promises" | "overdue" | "broken" | "activities";
+
+const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: "cases",      label: "Klientët",    icon: Users },
+  { key: "promises",   label: "Premtimet",   icon: CheckCircle },
+  { key: "overdue",    label: "Vonesat",     icon: AlertTriangle },
+  { key: "broken",     label: "Dështimet",   icon: XCircle },
+  { key: "activities", label: "Aktivitetet", icon: Activity },
+];
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -315,6 +436,16 @@ export default function OfficerDetailPage() {
 
   const now = new Date();
   const overduePromises = promises.filter((p: any) => p.status === "PENDING" && new Date(p.promiseDate) < now);
+  const brokenPromises  = promises.filter((p: any) => p.status === "BROKEN" || p.status === "CANCELLED");
+
+  const badgeFor = (key: Tab) => {
+    if (key === "cases")      return cases.length;
+    if (key === "promises")   return promises.filter((p: any) => p.status !== "BROKEN" && p.status !== "CANCELLED").length;
+    if (key === "overdue")    return overduePromises.length;
+    if (key === "broken")     return brokenPromises.length;
+    if (key === "activities") return activities.length;
+    return 0;
+  };
 
   return (
     <AccessGuard permission="page:monitoring">
@@ -359,7 +490,7 @@ export default function OfficerDetailPage() {
                 </div>
               </div>
 
-              {/* Stats — same KpiCard as dashboard */}
+              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
                 <KpiCard label="Klientë aktiv"       value={stats.activeCases}                   icon={Users} />
                 <KpiCard label="Portofoli total"      value={formatCurrency(stats.totalBalance)}  icon={TrendingUp} />
@@ -374,32 +505,29 @@ export default function OfficerDetailPage() {
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <div className="flex items-center border-b border-gray-100">
                   <div className="flex overflow-x-auto flex-1">
-                  {TABS.map(({ key, label, icon: Icon }) => {
-                    const badge = key === "cases" ? cases.length
-                      : key === "promises" ? promises.length
-                      : key === "overdue" ? overduePromises.length
-                      : activities.length;
-                    return (
-                      <button key={key} onClick={() => setTab(key)}
-                        className={`flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-all whitespace-nowrap ${
-                          tab === key
-                            ? "border-brand-600 text-brand-700"
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}>
-                        <Icon size={13} />
-                        {label}
-                        {badge > 0 && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                            tab === key ? "bg-brand-100 text-brand-700"
-                              : key === "overdue" ? "bg-red-100 text-red-600"
-                              : "bg-gray-100 text-gray-500"
+                    {TABS.map(({ key, label, icon: Icon }) => {
+                      const badge = badgeFor(key);
+                      return (
+                        <button key={key} onClick={() => setTab(key)}
+                          className={`flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-all whitespace-nowrap ${
+                            tab === key
+                              ? "border-brand-600 text-brand-700"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                           }`}>
-                            {badge > 999 ? "999+" : badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                          <Icon size={13} />
+                          {label}
+                          {badge > 0 && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                              tab === key ? "bg-brand-100 text-brand-700"
+                                : key === "overdue" || key === "broken" ? "bg-red-100 text-red-600"
+                                : "bg-gray-100 text-gray-500"
+                            }`}>
+                              {badge > 999 ? "999+" : badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   <button onClick={() => triggerRefresh(() => { mutate(); })}
                     className="p-2 mr-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0">
@@ -408,8 +536,9 @@ export default function OfficerDetailPage() {
                 </div>
                 <div className="min-h-56">
                   {tab === "cases"      && <CasesTab cases={cases} />}
-                  {tab === "promises"   && <PromisesTab promises={promises} />}
-                  {tab === "overdue"    && <PromisesTab promises={promises} overdue />}
+                  {tab === "promises"   && <PromisesTab promises={promises} mode="all" />}
+                  {tab === "overdue"    && <PromisesTab promises={promises} mode="overdue" />}
+                  {tab === "broken"     && <PromisesTab promises={promises} mode="broken" />}
                   {tab === "activities" && <ActivitiesTab activities={activities} />}
                 </div>
               </div>

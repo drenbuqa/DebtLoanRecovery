@@ -108,7 +108,7 @@ export default function MonitoringPage() {
   const router = useRouter();
   const [officeId, setOfficeId] = useState("");
   const [search, setSearch]     = useState("");
-  const [sortBy, setSortBy]     = useState<"name" | "cases" | "portfolio" | "overdue" | "activity">("overdue");
+  const [sortBy, setSortBy]     = useState<"cases" | "portfolio" | "activity" | "">("");
   const [refreshing, triggerRefresh] = useRefreshing();
 
   const { data: officers = [], isLoading, mutate } = useSWR(
@@ -126,10 +126,8 @@ export default function MonitoringPage() {
       list = list.filter(o => o.fullName.toLowerCase().includes(q) || o.office?.name?.toLowerCase().includes(q));
     }
     list.sort((a, b) => {
-      if (sortBy === "name")      return a.fullName.localeCompare(b.fullName);
       if (sortBy === "cases")     return b.activeCases - a.activeCases;
       if (sortBy === "portfolio") return b.portfolioBalance - a.portfolioBalance;
-      if (sortBy === "overdue")   return b.promisesOverdue - a.promisesOverdue;
       if (sortBy === "activity") {
         const ta = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
         const tb = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
@@ -190,13 +188,13 @@ export default function MonitoringPage() {
             <Select
               value={sortBy}
               onChange={v => setSortBy(v as any)}
-              className="w-48"
+              className="w-52"
+              placeholder="Rendit sipas…"
+              clearable
               options={[
-                { value: "overdue",   label: "Premtime të vonuara (më shumë së pari)" },
-                { value: "portfolio", label: "Portofoli (më i madh së pari)" },
-                { value: "cases",     label: "Klientë aktivë (më shumë së pari)" },
-                { value: "activity",  label: "Aktiviteti i fundit (më i ri së pari)" },
-                { value: "name",      label: "Emri (A–Z)" },
+                { value: "portfolio", label: "Portofoli (më i madh)" },
+                { value: "cases",     label: "Klientë aktivë (më shumë)" },
+                { value: "activity",  label: "Aktiviteti i fundit (më i ri)" },
               ]}
             />
             <div className="flex-1" />

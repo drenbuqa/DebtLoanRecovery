@@ -252,6 +252,7 @@ export default function HrPage() {
       title: `Fshi "${doc?.title ?? "dokumentin"}"`,
       message: "Dokumenti do të fshihet përgjithmonë. Ky veprim nuk mund të zhbëhet.",
       confirmLabel: "Fshi",
+      variant: "danger",
       onConfirm: async () => {
         try {
           await hrApi.delete(id);

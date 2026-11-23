@@ -107,7 +107,8 @@ export class MonitoringService {
           id: true, caseReference: true, status: true, collectionStage: true, collectionStatus: true,
           nextActionDate: true, nextActionNote: true, registrationDate: true,
           loan: { select: { currentOutstandingBalance: true, lastPaymentDate: true,
-            borrower: { select: { fullName: true } } } },
+            borrower: { select: { fullName: true } },
+            institution: { select: { shortName: true } } } },
         },
         orderBy: { loan: { currentOutstandingBalance: 'desc' } },
         take: 500,
@@ -126,7 +127,7 @@ export class MonitoringService {
         where: { case: { assignedOfficerId: officerId }, deletedAt: null },
         select: {
           id: true, activityType: true, channel: true, outcome: true,
-          notes: true, occurredAt: true, promiseAmount: true,
+          notes: true, occurredAt: true, promiseAmount: true, nextActionDate: true,
           case: { select: { id: true, caseReference: true, loan: { select: { borrower: { select: { fullName: true } } } } } },
         },
         orderBy: { occurredAt: 'desc' },
