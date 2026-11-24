@@ -147,11 +147,17 @@ function CasesTab({ cases }: { cases: any[] }) {
       <table className="w-full text-[13px]">
         <thead>
           <tr className="border-b border-gray-100">
-            <TH>Klienti</TH>
-            <TH>Referenca</TH>
+            <TH>Emri / ID</TH>
+            <TH>Telefon</TH>
+            <TH>Adresa</TH>
             <TH>Banka</TH>
             <TH right>Borxhi</TH>
+            <TH>Qyteti</TH>
             <TH>Faza</TH>
+            <TH>Garant 1</TH>
+            <TH>Garant 2</TH>
+            <TH>Bashkëkreditues</TH>
+            <TH>Premtimi</TH>
             <TH>Sinjal</TH>
             <TH>Ndjekja e Radhës</TH>
             <th className="py-2.5 px-3 bg-gray-50/50 w-8" />
@@ -159,42 +165,91 @@ function CasesTab({ cases }: { cases: any[] }) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {cases.map((c: any) => {
+            const b = c.loan?.borrower;
+            const parties = c.loan?.relatedParties ?? [];
+            const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
+            const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
+            const phone = b?.phones?.[0]?.phoneNumber;
             const nextOverdue = c.nextActionDate && new Date(c.nextActionDate) < now;
             const stage = c.collectionStage ? STAGE_CFG[c.collectionStage] : null;
+            const latestPromise = c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0];
+            const promiseDaysOverdue = (() => {
+              if (!latestPromise) return 0;
+              const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
+              const promiseStr = new Date(latestPromise.promiseDate).toISOString().slice(0, 10);
+              if (promiseStr >= todayStr) return 0;
+              return Math.round((new Date(todayStr).getTime() - new Date(promiseStr).getTime()) / 86400000);
+            })();
             return (
               <tr key={c.id} className="hover:bg-gray-50/60 transition-colors group cursor-pointer"
                 onClick={() => window.location.href = `/cases/${c.id}`}>
                 <td className="py-2 px-3">
                   <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[160px]">
-                    {c.loan?.borrower?.fullName ?? "—"}
+                    {b?.fullName ?? "—"}
                   </div>
-                  {c.status && c.status !== "ACTIVE" && (() => {
-                    const cfg: Record<string, { label: string; color: string }> = {
-                      LEGAL:     { label: "Juridike",  color: "bg-red-100 text-red-700" },
-                      SUSPENDED: { label: "Pezulluar", color: "bg-amber-100 text-amber-700" },
-                      CLOSED:    { label: "Mbyllur",   color: "bg-gray-100 text-gray-500" },
-                      ANKES:     { label: "Ankesë",    color: "bg-purple-100 text-purple-700" },
-                      AKTGJYKIM: { label: "Aktgjykim", color: "bg-blue-100 text-blue-700" },
-                    };
-                    const s = cfg[c.status];
-                    return s ? <span className={`inline-block mt-0.5 px-1.5 py-px rounded text-[9px] font-semibold leading-tight ${s.color}`}>{s.label}</span> : null;
-                  })()}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {b?.personalId?.startsWith("NOID-") ? "—" : (b?.personalId ?? c.caseReference)}
+                    </span>
+                    {c.status && c.status !== "ACTIVE" && (() => {
+                      const cfg: Record<string, { label: string; color: string }> = {
+                        LEGAL:     { label: "Juridike",  color: "bg-red-100 text-red-700" },
+                        SUSPENDED: { label: "Pezulluar", color: "bg-amber-100 text-amber-700" },
+                        CLOSED:    { label: "Mbyllur",   color: "bg-gray-100 text-gray-500" },
+                        ANKES:     { label: "Ankesë",    color: "bg-purple-100 text-purple-700" },
+                        AKTGJYKIM: { label: "Aktgjykim", color: "bg-blue-100 text-blue-700" },
+                      };
+                      const s = cfg[c.status];
+                      return s ? <span className={`inline-block px-1.5 py-px rounded text-[9px] font-semibold leading-tight ${s.color}`}>{s.label}</span> : null;
+                    })()}
+                  </div>
+                </td>
+                <td className="py-2 px-3 whitespace-nowrap">
+                  <span className="text-[11px] text-gray-600 font-mono">{phone ?? "—"}</span>
                 </td>
                 <td className="py-2 px-3">
-                  <span className="font-mono text-[11px] text-gray-500">{c.caseReference}</span>
+                  <div className="text-[11px] text-gray-500 truncate max-w-[120px]">{b?.address ?? "—"}</div>
                 </td>
                 <td className="py-2 px-3">
-                  <span className="text-[11px] text-gray-600">{c.loan?.institution?.shortName ?? "—"}</span>
+                  <div className="text-[11px] text-gray-600 truncate">{c.loan?.institution?.shortName ?? "—"}</div>
+                  <div className="text-[10px] text-gray-400 font-mono truncate">{c.loan?.loanNumber ?? ""}</div>
                 </td>
-                <td className="py-2 px-3 text-right">
+                <td className="py-2 px-3 text-right whitespace-nowrap">
                   <span className="text-[12px] font-bold text-gray-900 tabular-nums">
                     {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
                   </span>
                 </td>
                 <td className="py-2 px-3">
+                  <div className="text-[11px] text-gray-500 truncate">{b?.city ?? "—"}</div>
+                </td>
+                <td className="py-2 px-3">
                   <span className="text-[11px] text-gray-600">
                     {c.collectionStatus ? (FAZA_LABEL[c.collectionStatus] ?? c.collectionStatus) : "—"}
                   </span>
+                </td>
+                <td className="py-2 px-3">
+                  <div className="text-[11px] text-gray-600 truncate max-w-[100px]">{guarantors[0]?.person?.fullName ?? "—"}</div>
+                </td>
+                <td className="py-2 px-3">
+                  <div className="text-[11px] text-gray-500 truncate max-w-[100px]">{guarantors[1]?.person?.fullName ?? "—"}</div>
+                </td>
+                <td className="py-2 px-3">
+                  <div className="text-[11px] text-gray-500 truncate max-w-[100px]">{coborrower?.person?.fullName ?? "—"}</div>
+                </td>
+                <td className="py-2 px-3 whitespace-nowrap">
+                  {latestPromise ? (
+                    <div>
+                      <div className="text-[11px] font-medium text-gray-700">
+                        {new Date(latestPromise.promiseDate).toLocaleDateString("sq-AL", { day: "2-digit", month: "short", year: "numeric" })}
+                      </div>
+                      <div className="text-[10px] text-gray-400">{formatCurrency(Number(latestPromise.promisedAmount ?? 0))}</div>
+                      {promiseDaysOverdue > 0 && (
+                        <div className={`text-[10px] font-semibold ${promiseDaysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
+                          {promiseDaysOverdue} ditë vonesë
+                        </div>
+                      )}
+                    </div>
+                  ) : <span className="text-gray-300">—</span>}
                 </td>
                 <td className="py-2 px-3">
                   {stage ? (
@@ -210,7 +265,7 @@ function CasesTab({ cases }: { cases: any[] }) {
                         {fmtDate(c.nextActionDate)}
                       </div>
                       {c.nextActionNote && (
-                        <div className="text-[10px] text-gray-400 truncate max-w-[160px]">{c.nextActionNote}</div>
+                        <div className="text-[10px] text-gray-400 truncate max-w-[140px]">{c.nextActionNote}</div>
                       )}
                     </div>
                   ) : <span className="text-gray-300 text-[11px]">—</span>}
@@ -255,6 +310,7 @@ function PromisesTab({ promises, mode }: { promises: any[]; mode: "all" | "overd
           <tr className="border-b border-gray-100">
             <TH>Klienti</TH>
             <TH>Referenca</TH>
+            <TH>Banka</TH>
             <TH right>Shuma</TH>
             <TH>Data e Premtimit</TH>
             <TH>Statusi</TH>
@@ -278,6 +334,9 @@ function PromisesTab({ promises, mode }: { promises: any[]; mode: "all" | "overd
                 </td>
                 <td className="py-2 px-3">
                   <span className="font-mono text-[11px] text-gray-500">{p.case?.caseReference ?? "—"}</span>
+                </td>
+                <td className="py-2 px-3">
+                  <span className="text-[11px] text-gray-600">{p.case?.loan?.institution?.shortName ?? "—"}</span>
                 </td>
                 <td className="py-2 px-3 text-right">
                   <span className="text-[12px] font-bold text-gray-900 tabular-nums">
