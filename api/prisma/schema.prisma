@@ -423,7 +423,7 @@ model LegalProceeding {
   legalCaseNumber  String?               @map("legal_case_number") @db.VarChar(100)
   status           LegalProceedingStatus @default(INITIATED)
   court            String?               @db.VarChar(150)
-  hearingDate      DateTime              @map("filing_date") @db.Date
+  hearingDate      DateTime              @map("hearing_date") @db.Date
   initiationDate   DateTime              @map("initiation_date") @db.Date
   nextHearingDate  DateTime?             @map("next_hearing_date") @db.Date
   judgmentDate     DateTime?             @map("judgment_date") @db.Date
