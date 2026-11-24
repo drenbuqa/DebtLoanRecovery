@@ -10,7 +10,8 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, CreditCard, Search, ChevronLeft, ChevronRight, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, CreditCard, Search, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 import { downloadExcel } from "@/lib/exportExcel";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -525,20 +526,7 @@ export default function PaymentsPage() {
                   />
                 ))}
                 {pages > 1 && (
-                  <div className="flex items-center justify-between pt-1 pb-2">
-                    <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                      <ChevronLeft size={15} />
-                    </button>
-                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
-                      {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
-                      {page} / {pages}
-                    </span>
-                    <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
+                  <Pagination page={page} pages={pages} paging={paging} scrollId="main-scroll" onPage={setPage} showCount={false} className="pt-1 pb-2" />
                 )}
               </div>
             )}
@@ -659,22 +647,8 @@ export default function PaymentsPage() {
                 </Table>
 
                 {pages > 1 && (
-                  <div className="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
-                    <span className="text-[12px] text-gray-400">{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
-                    <div className="flex items-center gap-2">
-                      <button disabled={page <= 1 || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                        <ChevronLeft size={15} />
-                      </button>
-                      <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center flex items-center gap-1.5 justify-center">
-                        {paging && <RefreshCw size={12} className="animate-spin text-gray-400" />}
-                        {page} / {pages}
-                      </span>
-                      <button disabled={page >= pages || paging} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                        <ChevronRight size={15} />
-                      </button>
-                    </div>
+                  <div className="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 rounded-b-xl">
+                    <Pagination page={page} pages={pages} total={total} perPage={100} paging={paging} scrollId="main-scroll" onPage={setPage} />
                   </div>
                 )}
               </div>

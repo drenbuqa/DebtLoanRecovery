@@ -171,7 +171,13 @@ function NotificationsPanel() {
   }
 
   async function toggle() {
-    if (open) { setOpen(false); return; }
+    if (open) {
+      // Mark all as read when the panel closes — badge only resets after user has seen them
+      notificationsApi.markAllRead().catch(() => {});
+      setUnreadCount(0);
+      setOpen(false);
+      return;
+    }
 
     // Business alerts are "new" if the panel hasn't been opened today
     try {
@@ -185,15 +191,12 @@ function NotificationsPanel() {
     setLoading(true);
     await loadPanel().catch(() => {});
     setLoading(false);
-
-    // Mark all as read on the server and clear the badge, but keep local readAt
-    // so items remain visually "unread" for this session
-    notificationsApi.markAllRead().catch(() => {});
-    setUnreadCount(0);
   }
 
   function goAndClose(path: string, notifId?: string) {
     if (notifId) notificationsApi.markRead(notifId).catch(() => {});
+    // Clear badge when navigating away from a notification
+    setUnreadCount(c => Math.max(0, c - 1));
     router.push(path);
     setOpen(false);
   }

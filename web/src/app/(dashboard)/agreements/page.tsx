@@ -9,7 +9,8 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import { agreements as agreementsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
-import { RefreshCw, FileText, Search, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
+import { RefreshCw, FileText, Search, Plus, X } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { DatePresetPicker, DatePreset, presetToRange, TREND_PRESETS } from "@/components/ui/DatePresetPicker";
@@ -445,19 +446,8 @@ export default function AgreementsPage() {
               </Table>
 
               {meta && meta.pages > 1 && (
-                <div className="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
-                  <span className="text-[12px] text-gray-400">{((meta.page - 1) * 25) + 1}–{Math.min(meta.page * 25, meta.total)} nga {meta.total.toLocaleString()}</span>
-                  <div className="flex items-center gap-2">
-                    <button disabled={meta.page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                      <ChevronLeft size={15} />
-                    </button>
-                    <span className="text-[12px] text-gray-500 tabular-nums min-w-[60px] text-center">{meta.page} / {meta.pages}</span>
-                    <button disabled={meta.page >= meta.pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
+                <div className="sticky bottom-0 bg-white px-5 py-3 border-t border-gray-100 rounded-b-xl">
+                  <Pagination page={meta.page} pages={meta.pages} total={meta.total} perPage={25} scrollId="main-scroll" onPage={setPage} />
                 </div>
               )}
             </>

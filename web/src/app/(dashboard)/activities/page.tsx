@@ -16,10 +16,11 @@ import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import {
   RefreshCw, Phone, MapPin, CreditCard, FileText,
-  CheckSquare, Clock, Mail, MessageSquare, ChevronLeft, ChevronRight,
+  CheckSquare, Clock, Mail, MessageSquare, ChevronRight,
   Activity, Search, X, Plus, AlertTriangle, FileSpreadsheet,
 } from "lucide-react";
 import { downloadExcel } from "@/lib/exportExcel";
+import { Pagination } from "@/components/ui/Pagination";
 
 // ── Activity type metadata ────────────────────────────────────────────────────
 const TYPE_META: Record<string, { icon: any; label: string; color: string; bg: string }> = {
@@ -771,19 +772,8 @@ export default function ActivitiesPage() {
               </div>
             ))}
             {pages > 1 && (
-              <div className="sticky bottom-0 bg-[#F4F5F7] flex items-center justify-between text-[12px] text-gray-500 px-1 py-2">
-                <span>{((page - 1) * 100) + 1}–{Math.min(page * 100, total)} nga {total.toLocaleString()}</span>
-                <div className="flex items-center gap-2">
-                  <button disabled={page <= 1} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p - 1); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                    <ChevronLeft size={15} />
-                  </button>
-                  <span className="tabular-nums min-w-[60px] text-center">{page} / {pages}</span>
-                  <button disabled={page >= pages} onClick={() => { const __s=document.getElementById('main-scroll'); if(__s)__s.scrollTop=0; setPage(p => p + 1); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 transition-colors">
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
+              <div className="sticky bottom-0 bg-[#F4F5F7] px-1 py-2">
+                <Pagination page={page} pages={pages} total={total} perPage={100} scrollId="main-scroll" onPage={setPage} />
               </div>
             )}
           </div>

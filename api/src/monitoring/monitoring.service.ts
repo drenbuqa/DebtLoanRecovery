@@ -40,13 +40,13 @@ export class MonitoringService {
       `,
       this.prisma.$queryRaw<{ officer_id: string; cnt: string }[]>`
         SELECT c.assigned_officer_id AS officer_id, COUNT(p.id)::text AS cnt
-        FROM cases c JOIN promise_to_pay p ON p.case_id = c.id
+        FROM cases c JOIN promises_to_pay p ON p.case_id = c.id
         WHERE c.assigned_officer_id IS NOT NULL AND p.status = 'PENDING'
         GROUP BY c.assigned_officer_id
       `,
       this.prisma.$queryRaw<{ officer_id: string; cnt: string }[]>`
         SELECT c.assigned_officer_id AS officer_id, COUNT(p.id)::text AS cnt
-        FROM cases c JOIN promise_to_pay p ON p.case_id = c.id
+        FROM cases c JOIN promises_to_pay p ON p.case_id = c.id
         WHERE c.assigned_officer_id IS NOT NULL AND p.status = 'PENDING' AND p.promise_date < NOW()
         GROUP BY c.assigned_officer_id
       `,

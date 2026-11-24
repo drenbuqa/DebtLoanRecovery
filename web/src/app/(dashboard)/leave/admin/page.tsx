@@ -298,97 +298,106 @@ function StaffRow({ item, onManage }: { item: any; onManage: (item: any) => void
   const usedPct = totalEarned > 0 ? Math.min(100, (b.usedAnnual / totalEarned) * 100) : 0;
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white"
+    <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white transition-shadow hover:shadow-sm"
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-      <div className="flex items-center gap-4 px-4 py-3">
+
+      {/* Main row */}
+      <div className="flex items-center gap-5 px-5 py-4">
 
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
-          <span className="text-brand-700 text-[12px] font-bold">{initials}</span>
+        <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+          <span className="text-brand-700 text-[13px] font-bold">{initials}</span>
         </div>
 
-        {/* Info */}
-        <div className={`flex-1 min-w-0 ${b.hasBalance ? "cursor-pointer" : ""}`} onClick={() => b.hasBalance && setOpen(o => !o)}>
-          <div className="text-[13px] font-semibold text-gray-900">{item.user.fullName}</div>
-          <div className="text-[11px] text-gray-400 mt-0.5">
+        {/* Name + office */}
+        <div className="min-w-0 w-44 shrink-0">
+          <div className="text-[14px] font-semibold text-gray-900 truncate">{item.user.fullName}</div>
+          <div className="text-[12px] text-gray-400 mt-0.5 truncate">
             {item.user.office?.name ?? "—"} · #{item.user.userCode}
           </div>
         </div>
 
-        {/* Balance display */}
-        <div className="hidden md:block w-40 shrink-0" onClick={() => b.hasBalance && setOpen(o => !o)}>
+        {/* Balance bar — takes all remaining space */}
+        <div
+          className={`hidden md:block flex-1 min-w-0 ${b.hasBalance ? "cursor-pointer" : ""}`}
+          onClick={() => b.hasBalance && setOpen(o => !o)}
+        >
           {b.hasBalance ? (
-            <div>
-              <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                <span>{b.usedAnnual} shfrytëzuara</span>
-                <span className="font-semibold text-brand-700">{b.balance} disponueshme</span>
+            <div className="flex items-center gap-6">
+              {/* Stats */}
+              <div className="flex items-center gap-6 shrink-0">
+                <div className="text-center">
+                  <div className="text-[16px] font-bold text-gray-700 tabular leading-none">{b.usedAnnual}</div>
+                  <div className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">shfrytëzuara</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[16px] font-bold text-brand-700 tabular leading-none">{b.balance}</div>
+                  <div className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">disponueshme</div>
+                </div>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-brand-500 rounded-full" style={{ width: `${usedPct}%` }} />
+              {/* Progress bar */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1.5">
+                  <span>{b.usedAnnual} / {totalEarned} ditë të shfrytëzuara</span>
+                  <span className="font-semibold text-gray-600">{Math.round(usedPct)}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${usedPct}%` }} />
+                </div>
               </div>
             </div>
           ) : (
-            <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
-              Pa bilans
+            <span className="inline-flex items-center gap-1.5 text-[12px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg font-medium">
+              <AlertTriangle size={12} className="text-amber-500" />
+              Pa bilans të konfiguruar
             </span>
           )}
         </div>
 
-        {/* Available days large */}
-        <div className={`text-right w-16 shrink-0 ${b.hasBalance ? "cursor-pointer" : ""}`} onClick={() => b.hasBalance && setOpen(o => !o)}>
-          {b.hasBalance ? (
-            <>
-              <div className="text-[20px] font-bold text-brand-700 leading-none tabular">{b.balance}</div>
-              <div className="text-[10px] text-gray-400 mt-0.5">ditë</div>
-            </>
-          ) : (
-            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center ml-auto">
-              <AlertTriangle size={14} className="text-amber-500" />
-            </div>
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => onManage(item)}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-gray-200 text-[12px] font-medium text-gray-600 hover:text-brand-600 hover:border-brand-300 hover:bg-brand-50 transition-colors"
+            title="Menaxho bilancin">
+            <Settings size={13} />
+            <span className="hidden lg:inline">Menaxho</span>
+          </button>
+
+          {b.hasBalance && (
+            <button onClick={() => setOpen(o => !o)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+              {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
           )}
         </div>
-
-        {/* Manage button */}
-        <button onClick={() => onManage(item)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-brand-600 hover:border-brand-300 hover:bg-brand-50 transition-colors shrink-0"
-          title="Menaxho bilancin">
-          <Settings size={14} />
-        </button>
-
-        {/* Expand toggle */}
-        {b.hasBalance && (
-          <button onClick={() => setOpen(o => !o)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors shrink-0">
-            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-        )}
       </div>
 
       {/* Expanded details */}
       {open && b.hasBalance && (
-        <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: "Bilanci Fillestar",  val: `${b.initialDays} ditë` },
-              { label: "Të Akumuluara",      val: `+${b.accrued} ditë` },
-              { label: "Pushim Vjetor",      val: `${b.usedAnnual} ditë` },
-              { label: "Pushim Sëmurë",      val: `${b.usedSick} ditë` },
-              { label: "Pa Pagë",            val: `${b.usedUnpaid} ditë` },
-            ].map(({ label, val }) => (
-              <div key={label} className="text-center">
-                <div className="text-[13px] font-semibold text-gray-700 tabular">{val}</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
+              { label: "Bilanci Fillestar",  val: `${b.initialDays}`,  unit: "ditë" },
+              { label: "Të Akumuluara",      val: `+${b.accrued}`,     unit: "ditë" },
+              { label: "Pushim Vjetor",      val: `${b.usedAnnual}`,   unit: "ditë" },
+              { label: "Pushim Sëmurë",      val: `${b.usedSick}`,     unit: "ditë" },
+              { label: "Pa Pagë",            val: `${b.usedUnpaid}`,   unit: "ditë" },
+            ].map(({ label, val, unit }) => (
+              <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-center">
+                <div className="text-[18px] font-bold text-gray-800 tabular leading-none">{val}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">{unit}</div>
+                <div className="text-[11px] text-gray-500 mt-2 font-medium">{label}</div>
               </div>
             ))}
           </div>
           {(b.adjustmentsTotal ?? 0) !== 0 && (
-            <div className="mt-2.5 text-[11px] text-gray-400 text-center">
-              Rregullime manuale: <strong className="text-gray-600">{b.adjustmentsTotal > 0 ? "+" : ""}{b.adjustmentsTotal} ditë</strong>
+            <div className="mt-3 text-[12px] text-gray-500 text-center">
+              Rregullime manuale: <strong className="text-gray-700">{b.adjustmentsTotal > 0 ? "+" : ""}{b.adjustmentsTotal} ditë</strong>
             </div>
           )}
           {b.pendingAnnualDays > 0 && (
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-amber-600">
-              <Clock size={11} />
+            <div className="mt-2 flex items-center justify-center gap-1.5 text-[12px] text-amber-600">
+              <Clock size={12} />
               <span>{b.pendingAnnualDays} ditë rezervuara në kërkesat aktive</span>
             </div>
           )}
