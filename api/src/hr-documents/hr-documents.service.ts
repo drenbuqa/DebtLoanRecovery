@@ -29,7 +29,12 @@ export class HrDocumentsService {
     fileBuffer: Buffer;
     uploadedById: string;
   }) {
-    const fileKey = await this.storage.upload(dto.fileBuffer, dto.fileName, dto.mimeType);
+    let fileKey: string;
+    try {
+      fileKey = await this.storage.upload(dto.fileBuffer, dto.fileName, dto.mimeType);
+    } catch {
+      throw new BadRequestException('Gabim gjatë ngarkimit të skedarit. Kontrolloni konfigurimin e ruajtjes.');
+    }
     return this.prisma.hrDocument.create({
       data: {
         title: dto.title,
