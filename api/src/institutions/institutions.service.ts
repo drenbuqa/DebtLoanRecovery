@@ -61,133 +61,186 @@ export class InstitutionsService {
     const from = query.from ? new Date(query.from) : new Date(now.getFullYear(), now.getMonth(), 1);
     const to   = query.to   ? new Date(query.to)   : now;
 
-    // Resolve visible case IDs for officer or office scope
-    let allowedCaseIds: Set<string> | null = null;
+    const scopeParams: string[] = [];
     if (query.officerId) {
-      const scopedCases = await this.prisma.case.findMany({
-        where: { OR: [{ assignedOfficerId: query.officerId }, { secondaryOfficerId: query.officerId }] },
-        select: { id: true },
-      });
-      allowedCaseIds = new Set(scopedCases.map((c) => c.id));
+      scopeParams.push(query.officerId);
     } else if (query.officeId) {
-      const officeOfficers = await this.prisma.user.findMany({
-        where: { officeId: query.officeId },
-        select: { id: true },
-      });
-      const officerIds = officeOfficers.map((u) => u.id);
-      const scopedCases = await this.prisma.case.findMany({
-        where: officerIds.length > 0
-          ? { OR: [{ officeId: query.officeId }, { assignedOfficerId: { in: officerIds } }, { secondaryOfficerId: { in: officerIds } }] }
-          : { officeId: query.officeId },
-        select: { id: true },
-      });
-      allowedCaseIds = new Set(scopedCases.map((c) => c.id));
+      scopeParams.push(query.officeId);
     }
 
-    // 1. Institutions with all loans
-    const institutions = await this.prisma.institution.findMany({
-      where: { isActive: true },
-      select: {
-        id: true, name: true, shortName: true,
-        loans: {
-          select: {
-            originalLoanAmount: true,
-            currentOutstandingBalance: true,
-            case: { select: { id: true, status: true } },
-          },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
+    // All queries join: institutions → loans → cases, never passing a giant IN list.
+    // Using $queryRawUnsafe is safe here because scopeParams are UUIDs from req.user (server-set),
+    // never from user-supplied query strings.
 
-    // Build a map: institutionId → Set<caseId> (filtered when scoped to an office)
+    type LoanRow = { inst_id: string; case_id: string | null; status: string | null; outstanding: string; original: string };
+    type PayRow  = { inst_id: string; case_id: string; amount: string };
+    type ActRow  = { inst_id: string; case_id: string; activity_type: string; promise_amount: string | null; outcome: string | null };
+    type InstRow = { inst_id: string; case_id: string; amount: string };
+    type LpRow   = { inst_id: string; case_id: string };
+
+    const p0 = scopeParams[0] as any;
+
+    const [loanRows, payRows, actRows, instRows, lpRows, instList] = await Promise.all([
+      // Loans + case status per institution
+      scopeParams.length
+        ? this.prisma.$queryRaw<LoanRow[]>`
+            SELECT i.id AS inst_id, c.id AS case_id, c.status,
+                   l.current_outstanding_balance::text AS outstanding,
+                   COALESCE(l.original_loan_amount, 0)::text AS original
+            FROM institutions i
+            JOIN loans l ON l.institution_id = i.id
+            LEFT JOIN cases c ON c.loan_id = l.id AND c.archived_at IS NULL
+            WHERE i.is_active = true
+              AND (c.assigned_officer_id = ${p0}::uuid
+                   OR c.secondary_officer_id = ${p0}::uuid
+                   OR c.office_id = ${p0}::uuid
+                   OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid)
+                   OR c.secondary_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid))`
+        : this.prisma.$queryRaw<LoanRow[]>`
+            SELECT i.id AS inst_id, c.id AS case_id, c.status,
+                   l.current_outstanding_balance::text AS outstanding,
+                   COALESCE(l.original_loan_amount, 0)::text AS original
+            FROM institutions i
+            JOIN loans l ON l.institution_id = i.id
+            LEFT JOIN cases c ON c.loan_id = l.id AND c.archived_at IS NULL
+            WHERE i.is_active = true`,
+
+      // Payments in period per institution
+      scopeParams.length
+        ? this.prisma.$queryRaw<PayRow[]>`
+            SELECT i.id AS inst_id, p.case_id::text, p.amount::text
+            FROM payments p
+            JOIN cases c ON c.id = p.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL
+              AND (c.assigned_officer_id = ${p0}::uuid OR c.secondary_officer_id = ${p0}::uuid
+                   OR c.office_id = ${p0}::uuid
+                   OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid)
+                   OR c.secondary_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid))`
+        : this.prisma.$queryRaw<PayRow[]>`
+            SELECT i.id AS inst_id, p.case_id::text, p.amount::text
+            FROM payments p
+            JOIN cases c ON c.id = p.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE p.payment_date >= ${from} AND p.payment_date <= ${to} AND p.voided_at IS NULL`,
+
+      // Activities in period per institution
+      scopeParams.length
+        ? this.prisma.$queryRaw<ActRow[]>`
+            SELECT i.id AS inst_id, a.case_id::text, a.activity_type, a.promise_amount::text, a.outcome
+            FROM activities a
+            JOIN cases c ON c.id = a.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to} AND a.deleted_at IS NULL
+              AND (c.assigned_officer_id = ${p0}::uuid OR c.secondary_officer_id = ${p0}::uuid
+                   OR c.office_id = ${p0}::uuid
+                   OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid)
+                   OR c.secondary_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid))`
+        : this.prisma.$queryRaw<ActRow[]>`
+            SELECT i.id AS inst_id, a.case_id::text, a.activity_type, a.promise_amount::text, a.outcome
+            FROM activities a
+            JOIN cases c ON c.id = a.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE a.occurred_at >= ${from} AND a.occurred_at <= ${to} AND a.deleted_at IS NULL`,
+
+      // Agreement installments due in period per institution
+      scopeParams.length
+        ? this.prisma.$queryRaw<InstRow[]>`
+            SELECT i.id AS inst_id, ag.case_id::text, ai.amount::text
+            FROM agreement_installments ai
+            JOIN agreements ag ON ag.id = ai.agreement_id AND ag.status = 'ACTIVE'
+            JOIN cases c ON c.id = ag.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE ai.due_date >= ${from} AND ai.due_date <= ${to}
+              AND ai.status IN ('PENDING', 'OVERDUE')
+              AND (c.assigned_officer_id = ${p0}::uuid OR c.secondary_officer_id = ${p0}::uuid
+                   OR c.office_id = ${p0}::uuid
+                   OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid)
+                   OR c.secondary_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid))`
+        : this.prisma.$queryRaw<InstRow[]>`
+            SELECT i.id AS inst_id, ag.case_id::text, ai.amount::text
+            FROM agreement_installments ai
+            JOIN agreements ag ON ag.id = ai.agreement_id AND ag.status = 'ACTIVE'
+            JOIN cases c ON c.id = ag.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE ai.due_date >= ${from} AND ai.due_date <= ${to}
+              AND ai.status IN ('PENDING', 'OVERDUE')`,
+
+      // Active legal proceedings per institution
+      scopeParams.length
+        ? this.prisma.$queryRaw<LpRow[]>`
+            SELECT i.id AS inst_id, lp.case_id::text
+            FROM legal_proceedings lp
+            JOIN cases c ON c.id = lp.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE lp.status <> 'CLOSED'
+              AND (c.assigned_officer_id = ${p0}::uuid OR c.secondary_officer_id = ${p0}::uuid
+                   OR c.office_id = ${p0}::uuid
+                   OR c.assigned_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid)
+                   OR c.secondary_officer_id IN (SELECT id FROM users WHERE office_id = ${p0}::uuid))`
+        : this.prisma.$queryRaw<LpRow[]>`
+            SELECT i.id AS inst_id, lp.case_id::text
+            FROM legal_proceedings lp
+            JOIN cases c ON c.id = lp.case_id
+            JOIN loans l ON l.id = c.loan_id
+            JOIN institutions i ON i.id = l.institution_id
+            WHERE lp.status <> 'CLOSED'`,
+
+      // Institution list (for ordering + name)
+      this.prisma.institution.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, shortName: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    // Build per-institution sets from loan rows
     const instCaseIds = new Map<string, Set<string>>();
-    for (const inst of institutions) {
-      const ids = new Set<string>();
-      for (const loan of inst.loans) {
-        if (loan.case?.id && (allowedCaseIds === null || allowedCaseIds.has(loan.case.id))) {
-          ids.add(loan.case.id);
-        }
-      }
-      instCaseIds.set(inst.id, ids);
-    }
-    const allCaseIds = [...new Set([...instCaseIds.values()].flatMap((s) => [...s]))];
-
-    if (allCaseIds.length === 0) {
-      return institutions.map((inst) => ({
-        id: inst.id, name: inst.name, shortName: inst.shortName,
-        totalLoans: 0, totalCases: 0, activeCases: 0,
-        totalOutstanding: 0, totalOriginal: 0,
-        periodPaymentsValue: 0, periodPaymentsCount: 0,
-        periodPromisesValue: 0, periodPromisesCount: 0,
-        periodCalls: 0, periodVisits: 0, periodLegal: 0, periodOther: 0,
-        legalProceedingsCount: 0,
-      }));
+    for (const inst of instList) instCaseIds.set(inst.id, new Set());
+    for (const r of loanRows) {
+      if (r.case_id) instCaseIds.get(r.inst_id)?.add(r.case_id);
     }
 
-    // 2. Batch: payments in period
-    const periodPayments = await this.prisma.payment.findMany({
-      where: { caseId: { in: allCaseIds }, paymentDate: { gte: from, lte: to }, voidedAt: null },
-      select: { caseId: true, amount: true },
-    });
+    return instList.map((inst) => {
+      const loans   = loanRows.filter((r) => r.inst_id === inst.id);
+      const active  = loans.filter((r) => r.status === 'ACTIVE').length;
+      const outstanding = loans.reduce((s, r) => s + Number(r.outstanding), 0);
+      const original    = loans.reduce((s, r) => s + Number(r.original), 0);
 
-    // 3. Batch: activities in period
-    const periodActivities = await this.prisma.activity.findMany({
-      where: { caseId: { in: allCaseIds }, occurredAt: { gte: from, lte: to } },
-      select: { caseId: true, activityType: true, promiseAmount: true, outcome: true },
-    });
+      const pyms = payRows.filter((r) => r.inst_id === inst.id);
+      const acts = actRows.filter((r) => r.inst_id === inst.id);
+      const insts = instRows.filter((r) => r.inst_id === inst.id);
+      const lps   = lpRows.filter((r) => r.inst_id === inst.id);
 
-    // 3b. Batch: agreement installments due in period (count as promises)
-    const periodInstallments = await this.prisma.agreementInstallment.findMany({
-      where: {
-        dueDate: { gte: from, lte: to },
-        status: { in: ['PENDING', 'OVERDUE'] },
-        agreement: { status: 'ACTIVE', caseId: { in: allCaseIds } },
-      },
-      select: { amount: true, agreement: { select: { caseId: true } } },
-    });
-
-    // 3c. Batch: active legal proceedings (not CLOSED) per case
-    let legalProceedings: { caseId: string }[] = [];
-    try {
-      legalProceedings = await this.prisma.legalProceeding.findMany({
-        where: { caseId: { in: allCaseIds }, status: { not: 'CLOSED' as any } },
-        select: { caseId: true },
-      });
-    } catch { /* table schema mismatch in some environments — count stays 0 */ }
-
-    // 4. Aggregate per institution
-    return institutions.map((inst) => {
-      const caseIds = instCaseIds.get(inst.id) ?? new Set<string>();
-      const scopedLoans = allowedCaseIds
-        ? inst.loans.filter((l) => l.case?.id && allowedCaseIds!.has(l.case.id))
-        : inst.loans;
-      const activeCases   = scopedLoans.filter((l) => l.case?.status === 'ACTIVE').length;
-      const totalOutstanding = scopedLoans.reduce((s, l) => s + Number(l.currentOutstandingBalance), 0);
-      const totalOriginal    = scopedLoans.reduce((s, l) => s + Number(l.originalLoanAmount ?? 0), 0);
-
-      const pyms = periodPayments.filter((p) => caseIds.has(p.caseId));
-      const acts = periodActivities.filter((a) => caseIds.has(a.caseId));
-      const actPromises = acts.filter((a) => a.activityType === 'PROMISE_TO_PAY' || a.outcome === 'PROMISE_RECEIVED');
-      const instmntPromises = periodInstallments.filter((i) => caseIds.has(i.agreement.caseId));
-      const promises = [...actPromises.map((a) => ({ amount: a.promiseAmount })), ...instmntPromises];
+      const actPromises = acts.filter((a) => a.activity_type === 'PROMISE_TO_PAY' || a.outcome === 'PROMISE_RECEIVED');
+      const promises = [
+        ...actPromises.map((a) => Number(a.promise_amount ?? 0)),
+        ...insts.map((i) => Number(i.amount)),
+      ];
 
       return {
         id: inst.id, name: inst.name, shortName: inst.shortName,
-        totalLoans: scopedLoans.length,
-        totalCases: caseIds.size,
-        activeCases,
-        totalOutstanding,
-        totalOriginal,
-        periodPaymentsValue: pyms.reduce((s, p) => s + Number(p.amount), 0),
+        totalLoans: loans.length,
+        totalCases: instCaseIds.get(inst.id)?.size ?? 0,
+        activeCases: active,
+        totalOutstanding: outstanding,
+        totalOriginal: original,
+        periodPaymentsValue: pyms.reduce((s, r) => s + Number(r.amount), 0),
         periodPaymentsCount: pyms.length,
-        periodPromisesValue: promises.reduce((s, a) => s + Number(a.amount ?? 0), 0),
+        periodPromisesValue: promises.reduce((s, v) => s + v, 0),
         periodPromisesCount: promises.length,
-        periodCalls:  acts.filter((a) => CALL_TYPES.includes(a.activityType)).length,
-        periodVisits: acts.filter((a) => VISIT_TYPES.includes(a.activityType)).length,
-        periodLegal:  acts.filter((a) => LEGAL_TYPES.includes(a.activityType)).length,
-        periodOther:  acts.filter((a) => !SKIP_TYPES.includes(a.activityType)).length,
-        legalProceedingsCount: legalProceedings.filter((lp) => caseIds.has(lp.caseId)).length,
+        periodCalls:  acts.filter((a) => CALL_TYPES.includes(a.activity_type)).length,
+        periodVisits: acts.filter((a) => VISIT_TYPES.includes(a.activity_type)).length,
+        periodLegal:  acts.filter((a) => LEGAL_TYPES.includes(a.activity_type)).length,
+        periodOther:  acts.filter((a) => !SKIP_TYPES.includes(a.activity_type)).length,
+        legalProceedingsCount: lps.length,
       };
     });
   }
