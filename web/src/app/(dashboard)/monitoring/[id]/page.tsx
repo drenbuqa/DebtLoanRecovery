@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRefreshing } from "@/lib/useRefreshing";
 import useSWR from "swr";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+
 import Topbar from "@/components/layout/Topbar";
 import { AccessGuard } from "@/components/AccessGuard";
 import { formatCurrency } from "@/lib/utils";
@@ -70,14 +70,6 @@ const OUTCOME_META: Record<string, { label: string; color: string; bg: string }>
   OTHER:            { label: "Tjetër",             color: "text-gray-500",    bg: "bg-gray-100" },
 };
 
-const STAGE_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  D1:    { label: "D1",       color: "text-gray-600",    bg: "bg-gray-100" },
-  D2:    { label: "D2",       color: "text-amber-700",   bg: "bg-amber-50" },
-  D3:    { label: "D3",       color: "text-orange-700",  bg: "bg-orange-50" },
-  D4:    { label: "90+",      color: "text-red-700",     bg: "bg-red-50" },
-  LEGAL: { label: "Juridike", color: "text-brand-700",   bg: "bg-brand-50" },
-};
-
 // ── Helpers ──────────────────────────────────────────────────
 
 function initials(name: string) {
@@ -133,14 +125,24 @@ function TH({ children, right }: { children?: React.ReactNode; right?: boolean }
 // ── Cases tab ────────────────────────────────────────────────
 
 function CasesTab({ cases }: { cases: any[] }) {
-  if (cases.length === 0) return (
+  return <CaseTable rows={cases} emptyIcon={Users} emptyMsg="Ky oficer nuk ka klientë të caktuar" />;
+}
+
+// ── Shared case-columns table (used by all non-activity tabs) ─
+
+function CaseTable({ rows, emptyIcon: EmptyIcon, emptyMsg, getPromise }: {
+  rows: any[];
+  emptyIcon: React.ElementType;
+  emptyMsg: string;
+  getPromise?: (row: any) => any;
+}) {
+  const now = new Date();
+  if (rows.length === 0) return (
     <div className="flex flex-col items-center justify-center py-14 text-center">
-      <Users size={24} className="text-gray-200 mb-2" />
-      <p className="text-[13px] text-gray-400">Ky oficer nuk ka klientë të caktuar</p>
+      <EmptyIcon size={24} className="text-gray-200 mb-2" />
+      <p className="text-[13px] text-gray-400">{emptyMsg}</p>
     </div>
   );
-
-  const now = new Date();
 
   return (
     <div className="overflow-x-auto">
@@ -158,21 +160,21 @@ function CasesTab({ cases }: { cases: any[] }) {
             <TH>Garant 2</TH>
             <TH>Bashkëkreditues</TH>
             <TH>Premtimi</TH>
-            <TH>Sinjal</TH>
             <TH>Ndjekja e Radhës</TH>
             <th className="py-2.5 px-3 bg-gray-50/50 w-8" />
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {cases.map((c: any) => {
+          {rows.map((row: any) => {
+            // Support both case rows and promise rows (p.case)
+            const c = row.case ?? row;
             const b = c.loan?.borrower;
             const parties = c.loan?.relatedParties ?? [];
             const guarantors = parties.filter((p: any) => p.role === "GUARANTOR");
             const coborrower = parties.find((p: any) => p.role === "CO_BORROWER");
             const phone = b?.phones?.[0]?.phoneNumber;
             const nextOverdue = c.nextActionDate && new Date(c.nextActionDate) < now;
-            const stage = c.collectionStage ? STAGE_CFG[c.collectionStage] : null;
-            const latestPromise = c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0];
+            const latestPromise = getPromise ? getPromise(row) : (c.latestPromise ?? (c.promises ?? c.promisesToPay)?.[0]);
             const promiseDaysOverdue = (() => {
               if (!latestPromise) return 0;
               const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date());
@@ -180,9 +182,10 @@ function CasesTab({ cases }: { cases: any[] }) {
               if (promiseStr >= todayStr) return 0;
               return Math.round((new Date(todayStr).getTime() - new Date(promiseStr).getTime()) / 86400000);
             })();
+            const caseId = c.id;
             return (
-              <tr key={c.id} className="hover:bg-gray-50/60 transition-colors group cursor-pointer"
-                onClick={() => window.location.href = `/cases/${c.id}`}>
+              <tr key={row.id} className="hover:bg-gray-50/60 transition-colors group cursor-pointer"
+                onClick={() => caseId && (window.location.href = `/cases/${caseId}`)}>
                 <td className="py-2 px-3">
                   <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[160px]">
                     {b?.fullName ?? "—"}
@@ -252,13 +255,6 @@ function CasesTab({ cases }: { cases: any[] }) {
                   ) : <span className="text-gray-300">—</span>}
                 </td>
                 <td className="py-2 px-3">
-                  {stage ? (
-                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${stage.bg} ${stage.color}`}>
-                      {stage.label}
-                    </span>
-                  ) : <span className="text-gray-300 text-[11px]">—</span>}
-                </td>
-                <td className="py-2 px-3">
                   {c.nextActionDate ? (
                     <div>
                       <div className={`text-[11px] font-medium ${nextOverdue ? "text-red-500" : "text-gray-700"}`}>
@@ -296,87 +292,13 @@ function PromisesTab({ promises, mode }: { promises: any[]; mode: "all" | "overd
     : mode === "broken" ? "Nuk ka premtime të dështuara"
     : "Nuk ka premtime të regjistruara";
 
-  if (list.length === 0) return (
-    <div className="flex flex-col items-center justify-center py-14 text-center">
-      <CheckCircle size={24} className="text-gray-200 mb-2" />
-      <p className="text-[13px] text-gray-400">{emptyMsg}</p>
-    </div>
-  );
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
-        <thead>
-          <tr className="border-b border-gray-100">
-            <TH>Klienti</TH>
-            <TH>Referenca</TH>
-            <TH>Banka</TH>
-            <TH right>Shuma</TH>
-            <TH>Data e Premtimit</TH>
-            <TH>Statusi</TH>
-            <TH>Shënim</TH>
-            <th className="py-2.5 px-3 bg-gray-50/50 w-8" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {list.map((p: any) => {
-            const isPast = p.status === "PENDING" && new Date(p.promiseDate) < now;
-            const statusCfg = PROMISE_LABEL[p.status];
-            const daysOverdue = isPast
-              ? Math.round((now.getTime() - new Date(p.promiseDate).getTime()) / 86400000)
-              : 0;
-            return (
-              <tr key={p.id} className="hover:bg-gray-50/60 transition-colors group">
-                <td className="py-2 px-3">
-                  <div className="text-[12px] font-semibold text-gray-900 truncate max-w-[160px]">
-                    {p.case?.loan?.borrower?.fullName ?? "—"}
-                  </div>
-                </td>
-                <td className="py-2 px-3">
-                  <span className="font-mono text-[11px] text-gray-500">{p.case?.caseReference ?? "—"}</span>
-                </td>
-                <td className="py-2 px-3">
-                  <span className="text-[11px] text-gray-600">{p.case?.loan?.institution?.shortName ?? "—"}</span>
-                </td>
-                <td className="py-2 px-3 text-right">
-                  <span className="text-[12px] font-bold text-gray-900 tabular-nums">
-                    {formatCurrency(Number(p.promisedAmount))}
-                  </span>
-                </td>
-                <td className="py-2 px-3">
-                  <div className={`text-[11px] font-medium ${isPast ? "text-red-600" : "text-gray-700"}`}>
-                    {fmtDate(p.promiseDate)}
-                  </div>
-                  {daysOverdue > 0 && (
-                    <div className={`text-[10px] font-semibold ${daysOverdue > 30 ? "text-red-600" : "text-amber-600"}`}>
-                      {daysOverdue} ditë vonesë
-                    </div>
-                  )}
-                </td>
-                <td className="py-2 px-3">
-                  {statusCfg ? (
-                    <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
-                      {statusCfg.label}
-                    </span>
-                  ) : <span className="text-[11px] text-gray-500">{p.status}</span>}
-                </td>
-                <td className="py-2 px-3">
-                  <span className="text-[11px] text-gray-500 truncate max-w-[200px] block">{p.notes ?? "—"}</span>
-                </td>
-                <td className="py-2 px-3">
-                  {p.case?.id && (
-                    <Link href={`/cases/${p.case.id}`} onClick={e => e.stopPropagation()}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ChevronRight size={13} className="text-brand-500" />
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <CaseTable
+      rows={list}
+      emptyIcon={CheckCircle}
+      emptyMsg={emptyMsg}
+      getPromise={(p: any) => ({ promiseDate: p.promiseDate, promisedAmount: p.promisedAmount })}
+    />
   );
 }
 
@@ -462,14 +384,16 @@ function ActivitiesTab({ activities }: { activities: any[] }) {
 
 // ── Tab types ────────────────────────────────────────────────
 
-type Tab = "cases" | "promises" | "overdue" | "broken" | "activities";
+type Tab = "cases" | "ndjekja" | "promises" | "overdue" | "broken" | "signal90" | "activities";
 
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: "cases",      label: "Klientët",    icon: Users },
-  { key: "promises",   label: "Premtimet",   icon: CheckCircle },
-  { key: "overdue",    label: "Vonesat",     icon: AlertTriangle },
-  { key: "broken",     label: "Dështimet",   icon: XCircle },
-  { key: "activities", label: "Aktivitetet", icon: Activity },
+  { key: "cases",      label: "Klientët",         icon: Users },
+  { key: "ndjekja",    label: "Ndjekja e Radhës",  icon: Clock },
+  { key: "promises",   label: "Premtimet",         icon: CheckCircle },
+  { key: "overdue",    label: "Vonesat",           icon: AlertTriangle },
+  { key: "broken",     label: "Dështimet",         icon: XCircle },
+  { key: "signal90",   label: "Sinjal 90+",        icon: TrendingUp },
+  { key: "activities", label: "Aktivitetet",       icon: Activity },
 ];
 
 // ── Page ─────────────────────────────────────────────────────
@@ -497,11 +421,16 @@ export default function OfficerDetailPage() {
   const overduePromises = promises.filter((p: any) => p.status === "PENDING" && new Date(p.promiseDate) < now);
   const brokenPromises  = promises.filter((p: any) => p.status === "BROKEN" || p.status === "CANCELLED");
 
+  const ndjekjaCases  = cases.filter((c: any) => !!c.nextActionDate);
+  const signal90Cases = cases.filter((c: any) => c.collectionStage === "D4");
+
   const badgeFor = (key: Tab) => {
     if (key === "cases")      return cases.length;
+    if (key === "ndjekja")    return ndjekjaCases.length;
     if (key === "promises")   return promises.filter((p: any) => p.status !== "BROKEN" && p.status !== "CANCELLED").length;
     if (key === "overdue")    return overduePromises.length;
     if (key === "broken")     return brokenPromises.length;
+    if (key === "signal90")   return signal90Cases.length;
     if (key === "activities") return activities.length;
     return 0;
   };
@@ -562,8 +491,8 @@ export default function OfficerDetailPage() {
               {/* Tabs */}
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex items-center border-b border-gray-100">
-                  <div className="flex overflow-x-auto flex-1">
+                <div className="flex items-center border-b border-gray-100 sticky top-14 z-10 bg-white rounded-t-xl">
+                  <div className="flex overflow-x-auto flex-1" style={{ scrollbarWidth: "none" }}>
                     {TABS.map(({ key, label, icon: Icon }) => {
                       const badge = badgeFor(key);
                       return (
@@ -595,9 +524,11 @@ export default function OfficerDetailPage() {
                 </div>
                 <div className="min-h-56">
                   {tab === "cases"      && <CasesTab cases={cases} />}
+                  {tab === "ndjekja"   && <CaseTable rows={ndjekjaCases} emptyIcon={Clock} emptyMsg="Nuk ka klientë me ndjekje të planifikuar" />}
                   {tab === "promises"   && <PromisesTab promises={promises} mode="all" />}
                   {tab === "overdue"    && <PromisesTab promises={promises} mode="overdue" />}
                   {tab === "broken"     && <PromisesTab promises={promises} mode="broken" />}
+                  {tab === "signal90"   && <CaseTable rows={signal90Cases} emptyIcon={TrendingUp} emptyMsg="Nuk ka klientë në sinjal 90+" />}
                   {tab === "activities" && <ActivitiesTab activities={activities} />}
                 </div>
               </div>
