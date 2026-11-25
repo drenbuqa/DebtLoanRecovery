@@ -153,7 +153,7 @@ function CaseTable({ rows, emptyIcon: EmptyIcon, emptyMsg, getPromise }: {
             <TH>Telefon</TH>
             <TH>Adresa</TH>
             <TH>Banka</TH>
-            <TH right>Borxhi</TH>
+            <TH>Borxhi</TH>
             <TH>Qyteti</TH>
             <TH>Faza</TH>
             <TH>Garant 1</TH>
@@ -217,7 +217,7 @@ function CaseTable({ rows, emptyIcon: EmptyIcon, emptyMsg, getPromise }: {
                   <div className="text-[11px] text-gray-600 truncate">{c.loan?.institution?.shortName ?? "—"}</div>
                   <div className="text-[10px] text-gray-400 font-mono truncate">{c.loan?.loanNumber ?? ""}</div>
                 </td>
-                <td className="py-2 px-3 text-right whitespace-nowrap">
+                <td className="py-2 px-3 whitespace-nowrap">
                   <span className="text-[12px] font-bold text-gray-900 tabular-nums">
                     {formatCurrency(Number(c.loan?.currentOutstandingBalance ?? 0))}
                   </span>

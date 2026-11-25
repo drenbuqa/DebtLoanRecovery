@@ -477,7 +477,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
 
   const { data: overdueRes, isLoading: overdueLoading } = useSWR(
     user ? ["dash-overdue", officeId] : null,
-    () => casesApi.list({ view: "vonesa", limit: 20, ...(officeId ? { officeId } : {}), page: 1 }),
+    () => casesApi.list({ view: "vonesa", limit: 8, ...(officeId ? { officeId } : {}), page: 1 }),
   );
 
   const stats          = dashData?.stats ?? null;
