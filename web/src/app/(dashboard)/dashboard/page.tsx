@@ -267,7 +267,7 @@ function OfficerDashboard({ user }: { user: any }) {
 
   const { data: overdueRes, isLoading: overdueLoading } = useSWR(
     user?.id ? ["officer-overdue", user.id] : null,
-    () => casesApi.list({ officerId: user.id, view: "vonesa", limit: 20, page: 1 }),
+    () => casesApi.list({ officerId: user.id, view: "vonesa", limit: 8, page: 1 }),
   );
 
   const { data: brokenRes, isLoading: brokenLoading } = useSWR(

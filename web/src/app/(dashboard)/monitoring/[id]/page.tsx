@@ -488,11 +488,11 @@ export default function OfficerDetailPage() {
                 <KpiCard label="Aktivitete (muaj)"    value={stats.activitiesThisMonth}           icon={Activity} />
               </div>
 
-              {/* Tabs */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <div className="flex items-center border-b border-gray-100 sticky top-14 z-10 bg-white rounded-t-xl">
-                  <div className="flex overflow-x-auto flex-1" style={{ scrollbarWidth: "none" }}>
+              {/* Sticky tab bar */}
+              <div className="sticky top-14 z-10 bg-gray-50 -mx-4 md:-mx-6 px-4 md:px-6 pb-0">
+                <div className="bg-white rounded-t-xl border border-gray-200 flex items-center"
+                  style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <div className="flex overflow-x-auto flex-1 border-b border-gray-100" style={{ scrollbarWidth: "none" }}>
                     {TABS.map(({ key, label, icon: Icon }) => {
                       const badge = badgeFor(key);
                       return (
@@ -517,20 +517,25 @@ export default function OfficerDetailPage() {
                       );
                     })}
                   </div>
-                  <button onClick={() => triggerRefresh(() => { mutate(); })}
-                    className="p-2 mr-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0">
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-                  </button>
+                  <div className="border-b border-gray-100 self-stretch flex items-center pr-2">
+                    <button onClick={() => triggerRefresh(() => { mutate(); })}
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                      <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+                    </button>
+                  </div>
                 </div>
-                <div className="min-h-56">
-                  {tab === "cases"      && <CasesTab cases={cases} />}
-                  {tab === "ndjekja"   && <CaseTable rows={ndjekjaCases} emptyIcon={Clock} emptyMsg="Nuk ka klientë me ndjekje të planifikuar" />}
-                  {tab === "promises"   && <PromisesTab promises={promises} mode="all" />}
-                  {tab === "overdue"    && <PromisesTab promises={promises} mode="overdue" />}
-                  {tab === "broken"     && <PromisesTab promises={promises} mode="broken" />}
-                  {tab === "signal90"   && <CaseTable rows={signal90Cases} emptyIcon={TrendingUp} emptyMsg="Nuk ka klientë në sinjal 90+" />}
-                  {tab === "activities" && <ActivitiesTab activities={activities} />}
-                </div>
+              </div>
+
+              {/* Tab content */}
+              <div className="bg-white rounded-b-xl border-x border-b border-gray-200 min-h-56 overflow-hidden"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                {tab === "cases"      && <CasesTab cases={cases} />}
+                {tab === "ndjekja"   && <CaseTable rows={ndjekjaCases} emptyIcon={Clock} emptyMsg="Nuk ka klientë me ndjekje të planifikuar" />}
+                {tab === "promises"   && <PromisesTab promises={promises} mode="all" />}
+                {tab === "overdue"    && <PromisesTab promises={promises} mode="overdue" />}
+                {tab === "broken"     && <PromisesTab promises={promises} mode="broken" />}
+                {tab === "signal90"   && <CaseTable rows={signal90Cases} emptyIcon={TrendingUp} emptyMsg="Nuk ka klientë në sinjal 90+" />}
+                {tab === "activities" && <ActivitiesTab activities={activities} />}
               </div>
             </>
           )}
