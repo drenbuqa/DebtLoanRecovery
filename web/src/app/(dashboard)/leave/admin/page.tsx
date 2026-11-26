@@ -598,16 +598,16 @@ export default function LeaveAdminPage() {
                 ))}
               </div>
             ) : tab === "pending" ? (
-              pending.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14">
+              <>
+              {pending.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
                     <CheckCircle size={22} className="text-emerald-400" />
                   </div>
                   <p className="text-[13px] font-medium text-gray-600">Nuk ka kërkesa në pritje</p>
-                  <p className="text-[12px] text-gray-400 mt-1">Të gjitha kërkesat janë procesuar</p>
+                  <p className="text-[12px] text-gray-400 mt-1">Të gjitha kërkesat janë procesuat</p>
                 </div>
               ) : (
-                <>
                 <div className="space-y-3">
                   {pending.map(r => (
                     <div key={r.id} className="flex items-center gap-4 px-4 py-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors bg-white"
@@ -658,85 +658,85 @@ export default function LeaveAdminPage() {
                     </div>
                   ))}
                 </div>
+              )}
 
-                {/* Approved requests - admin can cancel */}
-                {approved.length > 0 && (
-                  <div className="mt-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle size={13} className="text-emerald-500" />
-                      <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Pushime të Aprovuara</span>
-                      <span className="text-[11px] text-gray-400">({approved.length})</span>
-                    </div>
-                    <div className="space-y-2">
-                      {approved.map(r => (
-                        <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
-                          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-700 text-[11px] font-bold">
-                            {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
-                              <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded border border-emerald-200 text-[11px] font-medium bg-emerald-50 text-emerald-700">
-                                {LEAVE_TYPE_LABELS[r.leaveType]}
-                              </span>
-                            </div>
-                            <div className="text-[12px] text-gray-500 mt-0.5">
-                              {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
-                              <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => { if (window.confirm(`Anulo pushimin e aprovuar të ${r.user.fullName}? Nëse është pushim vjetor, ditët rikthehen automatikisht.`)) handleAdminCancel(r.id); }}
-                            disabled={cancelling === r.id}
-                            className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0">
-                            {cancelling === r.id ? "Duke anuluar…" : <><X size={12} /> Anulo</>}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+              {/* Approved requests - admin can cancel */}
+              {approved.length > 0 && (
+                <div className="mt-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle size={13} className="text-emerald-500" />
+                    <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Pushime të Aprovuara</span>
+                    <span className="text-[11px] text-gray-400">({approved.length})</span>
                   </div>
-                )}
-
-                {/* Rejected requests */}
-                {rejected.length > 0 && (
-                  <div className="mt-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <XCircle size={13} className="text-red-400" />
-                      <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Kërkesa të Refuzuara</span>
-                      <span className="text-[11px] text-gray-400">({rejected.length})</span>
-                    </div>
-                    <div className="space-y-2">
-                      {rejected.map(r => (
-                        <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
-                          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
-                          <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0 text-red-600 text-[11px] font-bold">
-                            {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  <div className="space-y-2">
+                    {approved.map(r => (
+                      <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
+                        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-700 text-[11px] font-bold">
+                          {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
+                            <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded border border-emerald-200 text-[11px] font-medium bg-emerald-50 text-emerald-700">
+                              {LEAVE_TYPE_LABELS[r.leaveType]}
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
-                              <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded border border-red-200 text-[11px] font-medium bg-red-50 text-red-600">
-                                {LEAVE_TYPE_LABELS[r.leaveType]}
-                              </span>
-                            </div>
-                            <div className="text-[12px] text-gray-500 mt-0.5">
-                              {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
-                              <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
-                            </div>
-                            {r.reviewNote && (
-                              <div className="text-[11px] text-gray-400 mt-0.5 italic">↳ {r.reviewNote}</div>
-                            )}
+                          <div className="text-[12px] text-gray-500 mt-0.5">
+                            {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
+                            <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <button
+                          onClick={() => { if (window.confirm(`Anulo pushimin e aprovuar të ${r.user.fullName}? Nëse është pushim vjetor, ditët rikthehen automatikisht.`)) handleAdminCancel(r.id); }}
+                          disabled={cancelling === r.id}
+                          className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0">
+                          {cancelling === r.id ? "Duke anuluar…" : <><X size={12} /> Anulo</>}
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                )}
-                </>
-              )
+                </div>
+              )}
+
+              {/* Rejected requests */}
+              {rejected.length > 0 && (
+                <div className="mt-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <XCircle size={13} className="text-red-400" />
+                    <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Kërkesa të Refuzuara</span>
+                    <span className="text-[11px] text-gray-400">({rejected.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {rejected.map(r => (
+                      <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
+                        style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+                        <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0 text-red-600 text-[11px] font-bold">
+                          {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
+                            <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded border border-red-200 text-[11px] font-medium bg-red-50 text-red-600">
+                              {LEAVE_TYPE_LABELS[r.leaveType]}
+                            </span>
+                          </div>
+                          <div className="text-[12px] text-gray-500 mt-0.5">
+                            {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
+                            <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
+                          </div>
+                          {r.reviewNote && (
+                            <div className="text-[11px] text-gray-400 mt-0.5 italic">↳ {r.reviewNote}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              </>
             ) : (
               /* Staff tab */
               <div className="space-y-2">
