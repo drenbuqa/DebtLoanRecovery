@@ -11,6 +11,7 @@ import {
   AlertTriangle, ChevronRight, Info, ChevronDown, Stethoscope,
   Wallet, History,
 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -182,122 +183,79 @@ function RequestModal({ balance, onClose, onSuccess }: { balance: any; onClose: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center">
-              <CalendarDays size={15} className="text-brand-600" />
-            </div>
-            <div>
-              <h3 className="text-[15px] font-semibold text-gray-900">Kërko Pushim</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">Plotësoni të dhënat e pushimit</p>
-            </div>
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-5">
-
-          {/* Leave type */}
-          <div>
-            <label className="block text-[12px] font-semibold text-gray-700 mb-2.5">Lloji i Pushimit</label>
-            <div className="space-y-2">
-              {LEAVE_TYPES.map(t => (
-                <button key={t.value} onClick={() => setLeaveType(t.value)}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                    leaveType === t.value
-                      ? "border-brand-500 bg-brand-50"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}>
-                  <div className="flex-1">
-                    <div className={`text-[13px] font-semibold ${leaveType === t.value ? "text-brand-700" : "text-gray-800"}`}>
-                      {t.label}
-                    </div>
-                    <div className="text-[11px] text-gray-400 mt-0.5">{t.desc}</div>
+    <Modal onClose={onClose} maxWidth="max-w-lg">
+      <ModalHeader title="Kërko Pushim" subtitle="Plotësoni të dhënat e pushimit" onClose={onClose} icon={<div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center"><CalendarDays size={15} className="text-brand-600" /></div>} />
+      <ModalBody className="space-y-5">
+        {/* Leave type */}
+        <div>
+          <label className="block text-[12px] font-semibold text-gray-700 mb-2.5">Lloji i Pushimit</label>
+          <div className="space-y-2">
+            {LEAVE_TYPES.map(t => (
+              <button key={t.value} onClick={() => setLeaveType(t.value)}
+                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                  leaveType === t.value
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-gray-200 hover:border-gray-300 bg-white"
+                }`}>
+                <div className="flex-1">
+                  <div className={`text-[13px] font-semibold ${leaveType === t.value ? "text-brand-700" : "text-gray-800"}`}>
+                    {t.label}
                   </div>
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    leaveType === t.value ? "border-brand-600 bg-brand-600" : "border-gray-300"
-                  }`}>
-                    {leaveType === t.value && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                  </div>
-                </button>
-              ))}
-            </div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">{t.desc}</div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  leaveType === t.value ? "border-brand-600 bg-brand-600" : "border-gray-300"
+                }`}>
+                  {leaveType === t.value && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Fillimit</label>
-              <div className="relative">
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Mbarimit</label>
-              <div className="relative">
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
-              </div>
-            </div>
-          </div>
-
-          {/* Reason */}
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
-              Arsyeja <span className="text-gray-400 font-normal">(opsionale)</span>
-            </label>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2}
-              placeholder="Shkruani arsyen nëse dëshironi…"
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
+            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Fillimit</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
           </div>
-
-          {/* Balance indicator */}
-          {leaveType === "ANNUAL" && balance?.hasBalance && (
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl">
-              <span className="text-[12px] text-gray-600">Bilanci aktual i disponueshëm</span>
-              <span className={`text-[13px] font-bold ${available <= 0 ? "text-red-600" : "text-brand-700"}`}>
-                {available} ditë
-              </span>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[12px] text-red-700">{error}</p>
-            </div>
-          )}
+          <div>
+            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data e Mbarimit</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={startDate}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
-          <button onClick={onClose}
-            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
-            Anulo
-          </button>
-          <button onClick={submit} disabled={saving}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-            {saving ? (
-              <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg> Duke dërguar…</>
-            ) : (
-              <><CalendarDays size={14} /> Dërgo Kërkesën</>
-            )}
-          </button>
+        {/* Reason */}
+        <div>
+          <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+            Arsyeja <span className="text-gray-400 font-normal">(opsionale)</span>
+          </label>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2}
+            placeholder="Shkruani arsyen nëse dëshironi…"
+            className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
         </div>
-      </div>
-    </div>
+
+        {/* Balance indicator */}
+        {leaveType === "ANNUAL" && balance?.hasBalance && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl">
+            <span className="text-[12px] text-gray-600">Bilanci aktual i disponueshëm</span>
+            <span className={`text-[13px] font-bold ${available <= 0 ? "text-red-600" : "text-brand-700"}`}>
+              {available} ditë
+            </span>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+            <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[12px] text-red-700">{error}</p>
+          </div>
+        )}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={saving ? "Duke dërguar…" : "Dërgo Kërkesën"} loading={saving} variant="brand" />
+    </Modal>
   );
 }
 

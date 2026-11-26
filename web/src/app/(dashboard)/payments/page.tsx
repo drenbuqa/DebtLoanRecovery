@@ -11,6 +11,7 @@ import { payments as paymentsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { RefreshCw, CreditCard, Search, X, FileSpreadsheet, Plus, Pencil, Trash2 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useToast } from "@/components/ui/Toast";
 import { downloadExcel } from "@/lib/exportExcel";
@@ -60,87 +61,75 @@ function AddPaymentModal({ officerId, onClose, onSuccess }: { officerId?: string
   const inp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Regjistro Pagesë" onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
 
-          {/* Case search */}
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Klienti *</label>
-            {selectedCase ? (
-              <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-lg">
-                <div>
-                  <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
-                  <span className="text-[12px] text-gray-700 ml-2">{selectedCase.loan?.borrower?.fullName ?? ""}</span>
-                </div>
-                <button onClick={() => { setSelectedCase(null); setCaseQuery(""); setCaseResults([]); }}
-                  className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input value={caseQuery} onChange={(e) => searchCases(e.target.value)}
-                  placeholder="Kërko sipas referencës ose emrit…"
-                  className="w-full pl-9 pr-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-                {caseResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-                    {caseResults.map((c) => (
-                      <button key={c.id} onClick={() => { setSelectedCase(c); setCaseQuery(""); setCaseResults([]); }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                        <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
-                        <span className="text-[12px] text-gray-700 truncate">{c.loan?.borrower?.fullName ?? "—"}</span>
-                        <span className="ml-auto text-[11px] text-gray-400 shrink-0">{c.loan?.institution?.shortName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
-              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
-            <DatePicker value={date} onChange={setDate} />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
-          </div>
-          <div className="border-t border-gray-100 pt-3">
-            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
-            <div className="grid grid-cols-2 gap-3">
+        {/* Case search */}
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Klienti *</label>
+          {selectedCase ? (
+            <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-lg">
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
-                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" minDate={date || undefined} />
+                <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
+                <span className="text-[12px] text-gray-700 ml-2">{selectedCase.loan?.borrower?.fullName ?? ""}</span>
               </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
-                <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00" className={inp} />
-              </div>
+              <button onClick={() => { setSelectedCase(null); setCaseQuery(""); setCaseResults([]); }}
+                className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
             </div>
-            {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
+          ) : (
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input value={caseQuery} onChange={(e) => searchCases(e.target.value)}
+                placeholder="Kërko sipas referencës ose emrit…"
+                className="w-full pl-9 pr-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+              {caseResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  {caseResults.map((c) => (
+                    <button key={c.id} onClick={() => { setSelectedCase(c); setCaseQuery(""); setCaseResults([]); }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                      <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
+                      <span className="text-[12px] text-gray-700 truncate">{c.loan?.borrower?.fullName ?? "—"}</span>
+                      <span className="ml-auto text-[11px] text-gray-400 shrink-0">{c.loan?.institution?.shortName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
+            className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
+          <DatePicker value={date} onChange={setDate} />
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
+        </div>
+        <div className="border-t border-gray-100 pt-3">
+          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+              <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" minDate={date || undefined} />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
+              <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00" className={inp} />
+            </div>
           </div>
+          {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
         </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-          <button onClick={submit} disabled={loading}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Regjistro Pagesën"}
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Regjistro Pagesën"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -168,40 +157,26 @@ function EditPaymentModal({ payment, onClose, onSaved }: { payment: any; onClose
   const inp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Pagesën</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Ndrysho Pagesën" subtitle={payment.paymentReference} onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
+            className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
         </div>
-        <div className="px-5 py-4 space-y-4">
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
-              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
-            <DatePicker value={date} onChange={setDate} />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
-          </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
+          <DatePicker value={date} onChange={setDate} />
         </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-brand-600 text-white text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
-          </button>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)" className={inp} />
         </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -220,41 +195,28 @@ function VoidPaymentModal({ payment, onClose, onVoided }: { payment: any; onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Anulo Pagesën" subtitle={payment.paymentReference} onClose={onClose} />
+      <ModalBody className="space-y-3">
+        <p className="text-[13px] text-gray-500 leading-relaxed">
+          Pagesa prej <strong>{new Intl.NumberFormat("sq-AL", { style: "currency", currency: "EUR" }).format(Number(payment.amount))}</strong> do të shënohet si e anuluar dhe balanca e kredisë do të rikthehet. Të dhënat ruhen për auditim.
+        </p>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+            Pse po anuloni këtë pagesë? <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={reason}
+            onChange={(e) => { setReason(e.target.value); setError(null); }}
+            placeholder="p.sh. U regjistrua gabimisht, dublikatë e pagesës…"
+            rows={3}
+            className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+          />
         </div>
-        <div className="px-5 py-4 space-y-3">
-          <p className="text-[13px] text-gray-500 leading-relaxed">
-            Pagesa prej <strong>{new Intl.NumberFormat("sq-AL", { style: "currency", currency: "EUR" }).format(Number(payment.amount))}</strong> do të shënohet si e anuluar dhe balanca e kredisë do të rikthehet. Të dhënat ruhen për auditim.
-          </p>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
-              Pse po anuloni këtë pagesë? <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={reason}
-              onChange={(e) => { setReason(e.target.value); setError(null); }}
-              placeholder="p.sh. U regjistrua gabimisht, dublikatë e pagesës…"
-              rows={3}
-              className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
-            />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
-        </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} disabled={loading} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={confirm} disabled={loading || !reason.trim()} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke anuluar…" : "Anulo Pagesën"}
-          </button>
-        </div>
-      </div>
-    </div>
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={confirm} confirmLabel={loading ? "Duke anuluar…" : "Anulo Pagesën"} loading={loading} disabled={!reason.trim()} variant="danger" />
+    </Modal>
   );
 }
 

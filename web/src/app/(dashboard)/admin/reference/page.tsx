@@ -13,7 +13,8 @@ function fmtShort(v: number) {
   if (v >= 1_000)     return `€${(v / 1_000).toFixed(1)}k`;
   return `€${v.toFixed(0)}`;
 }
-import { RefreshCw, Plus, X, MapPin, Users, FolderOpen, TrendingUp, Activity, CreditCard, Landmark, AlertCircle } from "lucide-react";
+import { RefreshCw, Plus, MapPin, Users, FolderOpen, TrendingUp, Activity, CreditCard, Landmark, AlertCircle } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { AccessGuard } from "@/components/AccessGuard";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
@@ -61,37 +62,26 @@ function AddOfficeModal({ onClose, onCreated }: { onClose: () => void; onCreated
     `w-full px-3 py-2 text-[13px] border rounded-lg focus:outline-none transition-colors ${hasErr ? "border-red-400 focus:border-red-400 bg-red-50/30" : "border-gray-200 focus:border-brand-400"}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">Zyrë e Re</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
-          <OF label="Emri i Zyrës" required error={nameError}>
-            <input value={name} onChange={(e) => setName(e.target.value)}
-              onBlur={() => touch("name")}
-              placeholder="p.sh. Zyra Prishtinë"
-              className={inp(!!nameError)} />
-          </OF>
-          <OF label="Kodi i Shkurtër" required error={codeError}>
-            <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); touch("code"); }}
-              onBlur={() => touch("code")}
-              placeholder="PRI" maxLength={10}
-              className={`${inp(!!codeError)} font-mono`} />
-            <p className="text-[11px] text-gray-400 mt-1">2–10 shkronja të mëdha, përdoret si identifikues i shkurtër.</p>
-          </OF>
-        </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-          <button onClick={create} disabled={saving}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {saving ? "Duke ruajtur…" : "Krijo Zyrën"}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Zyrë e Re" onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
+        <OF label="Emri i Zyrës" required error={nameError}>
+          <input value={name} onChange={(e) => setName(e.target.value)}
+            onBlur={() => touch("name")}
+            placeholder="p.sh. Zyra Prishtinë"
+            className={inp(!!nameError)} />
+        </OF>
+        <OF label="Kodi i Shkurtër" required error={codeError}>
+          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); touch("code"); }}
+            onBlur={() => touch("code")}
+            placeholder="PRI" maxLength={10}
+            className={`${inp(!!codeError)} font-mono`} />
+          <p className="text-[11px] text-gray-400 mt-1">2–10 shkronja të mëdha, përdoret si identifikues i shkurtër.</p>
+        </OF>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={create} confirmLabel={saving ? "Duke ruajtur…" : "Krijo Zyrën"} loading={saving} variant="brand" />
+    </Modal>
   );
 }
 

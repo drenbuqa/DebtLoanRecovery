@@ -5,28 +5,14 @@ import useSWR from "swr";
 import Topbar from "@/components/layout/Topbar";
 import { formatCurrency } from "@/lib/utils";
 import { institutions as instApi } from "@/lib/api";
-import { Plus, RefreshCw, X, Pencil, Trash2, Building2 } from "lucide-react";
+import { Plus, RefreshCw, Pencil, Trash2, Building2 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { AccessGuard } from "@/components/AccessGuard";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmModal";
 import { useAuth } from "@/lib/auth";
 import { DatePresetPicker, DatePreset, presetToRange, PERFORMANCE_PRESETS } from "@/components/ui/DatePresetPicker";
 import { useRefreshing } from "@/lib/useRefreshing";
-
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
@@ -50,8 +36,9 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   }
 
   return (
-    <ModalShell title="Institucion i Ri" onClose={onClose}>
-      <div className="p-6 space-y-4">
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Institucion i Ri" onClose={onClose} />
+      <ModalBody className="space-y-4">
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
         <div>
           <FieldLabel label="Emri i Plotë" required />
@@ -63,15 +50,9 @@ function CreateModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           <input value={shortName} onChange={(e) => setShortName(e.target.value.toUpperCase())} placeholder="PCB" maxLength={10}
             className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 font-mono tracking-widest" />
         </div>
-      </div>
-      <div className="px-6 pb-5 flex gap-3 justify-end">
-        <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-        <button onClick={submit} disabled={loading}
-          className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-          {loading ? "Duke krijuar…" : "Krijo"}
-        </button>
-      </div>
-    </ModalShell>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke krijuar…" : "Krijo"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -89,8 +70,9 @@ function EditModal({ inst, onClose, onSaved }: { inst: any; onClose: () => void;
   }
 
   return (
-    <ModalShell title="Ndrysho Institucionin" onClose={onClose}>
-      <div className="p-6 space-y-4">
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Ndrysho Institucionin" onClose={onClose} />
+      <ModalBody className="space-y-4">
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
         <div>
           <FieldLabel label="Emri i Plotë" required />
@@ -102,15 +84,9 @@ function EditModal({ inst, onClose, onSaved }: { inst: any; onClose: () => void;
           <input value={shortName} onChange={(e) => setShortName(e.target.value.toUpperCase())} maxLength={10}
             className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 font-mono tracking-widest" />
         </div>
-      </div>
-      <div className="px-6 pb-5 flex gap-3 justify-end">
-        <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-        <button onClick={submit} disabled={loading}
-          className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-          {loading ? "Duke ruajtur…" : "Ruaj"}
-        </button>
-      </div>
-    </ModalShell>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Ruaj"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -165,7 +141,7 @@ function InstitutionsPageInner() {
         ? `Ky institucion ka ${inst.totalLoans} hua të lidhura dhe nuk mund të fshihet.`
         : "Institucioni do të fshihet përgjithmonë. Ky veprim nuk mund të zhbëhet.",
       confirmLabel: "Fshi",
-      variant: inst.totalLoans > 0 ? "default" : "danger",
+      variant: inst.totalLoans > 0 ? "brand" : "danger",
       onConfirm: async () => {
         if (inst.totalLoans > 0) return;
         await instApi.delete(inst.id);

@@ -10,6 +10,7 @@ import { agreements as agreementsApi, cases as casesApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { RefreshCw, FileText, Search, Plus, X } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -100,96 +101,80 @@ function NewAgreementModal({ onClose, onCreated }: { onClose: () => void; onCrea
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Marrëveshje e Re Ripagimi</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5">Krijoni një plan këstesh me debitorin</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
+    <Modal onClose={onClose} maxWidth="max-w-lg">
+      <ModalHeader title="Marrëveshje e Re Ripagimi" subtitle="Krijoni një plan këstesh me debitorin" onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
-        <div className="p-4 md:p-6 space-y-4">
-          {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
-
-          {/* Case search */}
-          <AF label="Klient" required error={caseError}>
-            {selectedCase ? (
-              <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-xl">
-                <div>
-                  <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
-                  <span className="text-[12px] text-gray-600 ml-2">
-                    {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.fullName}` : ""}
-                  </span>
+        {/* Case search */}
+        <AF label="Klient" required error={caseError}>
+          {selectedCase ? (
+            <div className="flex items-center justify-between px-3 py-2.5 border border-brand-300 bg-brand-50 rounded-xl">
+              <div>
+                <span className="text-[12px] font-semibold text-brand-700 font-mono">{selectedCase.caseReference}</span>
+                <span className="text-[12px] text-gray-600 ml-2">
+                  {selectedCase.loan?.borrower ? `${selectedCase.loan.borrower.fullName}` : ""}
+                </span>
+              </div>
+              <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); }}
+                className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input value={caseSearch} onChange={(e) => searchCases(e.target.value)}
+                placeholder="Kërko sipas referencës ose emrit të debitorit…"
+                className={inp(!!caseError)} />
+              {caseResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  {caseResults.map((c) => (
+                    <button key={c.id} onClick={() => { setSelectedCase(c); setCaseSearch(""); setCaseResults([]); }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                      <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
+                      <span className="text-[12px] text-gray-700">
+                        {c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—"}
+                      </span>
+                      <span className="ml-auto text-[11px] text-gray-400">{c.loan?.institution?.shortName}</span>
+                    </button>
+                  ))}
                 </div>
-                <button onClick={() => { setSelectedCase(null); setCaseSearch(""); setCaseResults([]); }}
-                  className="text-brand-400 hover:text-brand-600"><X size={13} /></button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input value={caseSearch} onChange={(e) => searchCases(e.target.value)}
-                  placeholder="Kërko sipas referencës ose emrit të debitorit…"
-                  className={inp(!!caseError)} />
-                {caseResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-                    {caseResults.map((c) => (
-                      <button key={c.id} onClick={() => { setSelectedCase(c); setCaseSearch(""); setCaseResults([]); }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                        <span className="text-[11px] font-mono font-semibold text-brand-600">{c.caseReference}</span>
-                        <span className="text-[12px] text-gray-700">
-                          {c.loan?.borrower ? `${c.loan.borrower.fullName}` : "—"}
-                        </span>
-                        <span className="ml-auto text-[11px] text-gray-400">{c.loan?.institution?.shortName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </AF>
-
-          <div className="grid grid-cols-2 gap-3">
-            <AF label="Shuma Totale (€)" required error={amountError}>
-              <input value={totalAmount} onChange={(e) => { setTotalAmount(e.target.value); touch("totalAmount"); }}
-                onBlur={() => touch("totalAmount")}
-                placeholder="p.sh. 5000" type="number" min="0" step="0.01"
-                className={inp(!!amountError)} />
-            </AF>
-            <AF label="Numri i Kësteve" required error={countError}>
-              <input value={installmentCount} onChange={(e) => { setInstallmentCount(e.target.value); touch("installmentCount"); }}
-                onBlur={() => touch("installmentCount")}
-                placeholder="p.sh. 12" type="number" min="1" max="120"
-                className={inp(!!countError)} />
-            </AF>
-          </div>
-
-          {monthlyAmount !== null && (
-            <div className="px-3 py-2 bg-brand-50 border border-brand-100 rounded-lg text-[12px] text-brand-700">
-              Këst mujor: <span className="font-semibold">{formatCurrency(monthlyAmount)}</span>
+              )}
             </div>
           )}
+        </AF>
 
-          <AF label="Data e Këstit të Parë" required error={startError}>
-            <DatePicker value={startDate} onChange={(v) => { setStartDate(v); touch("startDate"); }} placeholder="Zgjidhni datën" />
+        <div className="grid grid-cols-2 gap-3">
+          <AF label="Shuma Totale (€)" required error={amountError}>
+            <input value={totalAmount} onChange={(e) => { setTotalAmount(e.target.value); touch("totalAmount"); }}
+              onBlur={() => touch("totalAmount")}
+              placeholder="p.sh. 5000" type="number" min="0" step="0.01"
+              className={inp(!!amountError)} />
           </AF>
-
-          <AF label="Shënime">
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-              placeholder="Kushte të veçanta, shënime mbi marrëveshjen…"
-              className={`${inp(false)} resize-none`} />
+          <AF label="Numri i Kësteve" required error={countError}>
+            <input value={installmentCount} onChange={(e) => { setInstallmentCount(e.target.value); touch("installmentCount"); }}
+              onBlur={() => touch("installmentCount")}
+              placeholder="p.sh. 12" type="number" min="1" max="120"
+              className={inp(!!countError)} />
           </AF>
         </div>
 
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={saving}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {saving ? "Duke krijuar…" : "Krijo Marrëveshjen"}
-          </button>
-        </div>
-      </div>
-    </div>
+        {monthlyAmount !== null && (
+          <div className="px-3 py-2 bg-brand-50 border border-brand-100 rounded-lg text-[12px] text-brand-700">
+            Këst mujor: <span className="font-semibold">{formatCurrency(monthlyAmount)}</span>
+          </div>
+        )}
+
+        <AF label="Data e Këstit të Parë" required error={startError}>
+          <DatePicker value={startDate} onChange={(v) => { setStartDate(v); touch("startDate"); }} placeholder="Zgjidhni datën" />
+        </AF>
+
+        <AF label="Shënime">
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+            placeholder="Kushte të veçanta, shënime mbi marrëveshjen…"
+            className={`${inp(false)} resize-none`} />
+        </AF>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={saving ? "Duke krijuar…" : "Krijo Marrëveshjen"} loading={saving} variant="brand" />
+    </Modal>
   );
 }
 

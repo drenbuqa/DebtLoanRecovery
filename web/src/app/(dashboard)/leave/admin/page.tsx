@@ -11,6 +11,7 @@ import {
   Plus, Minus, AlertTriangle, Users, Clock, CheckCircle, XCircle,
   Info, FileSpreadsheet,
 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { downloadExcel } from "@/lib/exportExcel";
 
@@ -53,82 +54,64 @@ function ReviewModal({ request, onClose, onDone }: { request: any; onClose: () =
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
-              <CalendarDays size={15} className="text-brand-600" />
-            </div>
-            <div>
-              <h3 className="text-[15px] font-semibold text-gray-900">Shqyrto Kërkesën</h3>
-              <p className="text-[11px] text-gray-400">{request.user?.fullName}</p>
-            </div>
+    <Modal onClose={onClose}>
+      <ModalHeader
+        title="Shqyrto Kërkesën"
+        subtitle={request.user?.fullName}
+        onClose={onClose}
+        icon={<div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center"><CalendarDays size={15} className="text-brand-600" /></div>}
+      />
+      <ModalBody className="space-y-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-semibold text-gray-900">{LEAVE_TYPE_LABELS[request.leaveType]}</span>
+            <span className="text-[12px] font-semibold text-brand-700">{request.workingDays} ditë pune</span>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {/* Request summary */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-gray-900">{LEAVE_TYPE_LABELS[request.leaveType]}</span>
-              <span className="text-[12px] font-semibold text-brand-700">{request.workingDays} ditë pune</span>
-            </div>
-            <div className="text-[12px] text-gray-500">
-              {new Date(request.startDate).toLocaleDateString("sq-AL")}
-              {" — "}
-              {new Date(request.endDate).toLocaleDateString("sq-AL")}
-            </div>
-            {request.user?.office && (
-              <div className="text-[11px] text-gray-400">{request.user.office.name}</div>
-            )}
-            {request.reason && (
-              <div className="pt-2 mt-2 border-t border-gray-200 text-[12px] text-gray-600 italic">
-                "{request.reason}"
-              </div>
-            )}
+          <div className="text-[12px] text-gray-500">
+            {new Date(request.startDate).toLocaleDateString("sq-AL")}
+            {" — "}
+            {new Date(request.endDate).toLocaleDateString("sq-AL")}
           </div>
-
-          {/* Note */}
-          <div>
-            <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
-              Shënim <span className="text-gray-400 font-normal">(opsional)</span>
-            </label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
-              placeholder="Shkruani shënim nëse dëshironi…"
-              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
-          </div>
-
-          {error && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[12px] text-red-700">{error}</p>
+          {request.user?.office && (
+            <div className="text-[11px] text-gray-400">{request.user.office.name}</div>
+          )}
+          {request.reason && (
+            <div className="pt-2 mt-2 border-t border-gray-200 text-[12px] text-gray-600 italic">
+              "{request.reason}"
             </div>
           )}
         </div>
 
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
-          <button onClick={onClose}
-            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
-            Anulo
-          </button>
-          <button onClick={() => submit(false)} disabled={saving}
-            className="px-4 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl transition-colors">
-            <X size={14} /> Refuzo
-          </button>
-          <button onClick={() => submit(true)} disabled={saving}
-            className="px-5 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors">
-            <Check size={14} /> Aprovo
-          </button>
+        <div>
+          <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+            Shënim <span className="text-gray-400 font-normal">(opsional)</span>
+          </label>
+          <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+            placeholder="Shkruani shënim nëse dëshironi…"
+            className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
         </div>
-      </div>
-    </div>
+
+        {error && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+            <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[12px] text-red-700">{error}</p>
+          </div>
+        )}
+      </ModalBody>
+      <ModalFooter
+        onClose={onClose}
+        onConfirm={() => submit(true)}
+        confirmLabel={saving ? "Duke procesuar…" : "Aprovo"}
+        loading={saving}
+        variant="brand"
+        leftSlot={
+          <button onClick={() => submit(false)} disabled={saving}
+            className="h-9 px-4 rounded-xl text-[13px] font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+            <X size={13} /> Refuzo
+          </button>
+        }
+      />
+    </Modal>
   );
 }
 
@@ -173,116 +156,94 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <Modal onClose={onClose}>
+      <ModalHeader
+        title={userName}
+        subtitle="Menaxho bilancin e pushimeve"
+        onClose={onClose}
+        icon={<div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0"><span className="text-brand-700 text-[12px] font-bold">{initials}</span></div>}
+      />
 
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
-              <span className="text-brand-700 text-[12px] font-bold">{initials}</span>
+      {/* Tab switcher */}
+      <div className="flex border-b border-gray-100">
+        {(["balance", "adjustment"] as const).map((t) => (
+          <button key={t} onClick={() => { setTab(t); setError(""); }}
+            className={`flex-1 py-3 text-[13px] font-semibold transition-colors border-b-2 -mb-px ${
+              tab === t ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}>
+            {t === "balance" ? "Bilanci Fillestar" : "Rregullim Manual"}
+          </button>
+        ))}
+      </div>
+
+      <ModalBody className="space-y-4">
+        {tab === "balance" ? (
+          <>
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data Fillestare e Akumulimit</label>
+              <DatePicker value={initialDate} onChange={setInitialDate} placeholder="Zgjidhni datën" />
             </div>
             <div>
-              <h3 className="text-[15px] font-semibold text-gray-900">{userName}</h3>
-              <p className="text-[11px] text-gray-400">Menaxho bilancin e pushimeve</p>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë Fillestare</label>
+              <input type="number" value={initialDays} onChange={e => setInitialDays(e.target.value)}
+                step="0.5" min="0"
+                className="w-full h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
             </div>
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-blue-700 leading-relaxed">
+                Nga kjo datë sistemi shton automatikisht <strong>+1.5 ditë çdo muaj</strong>.
+                Në fund të Qershorit, bilancet mbi 9 ditë nuk transferohen.
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë (+/-)</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAdjDays(d => {
+                    const n = parseFloat(d) || 0;
+                    return String(-n);
+                  })}
+                  className="w-9 h-9 shrink-0 rounded-lg border border-gray-300 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+                  {adjDays.startsWith("-") ? <Plus size={15} /> : <Minus size={15} />}
+                </button>
+                <input type="number" value={adjDays} onChange={e => setAdjDays(e.target.value)}
+                  step="0.5" placeholder="0"
+                  className="flex-1 h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1.5">
+                Vlera pozitive shton ditë, negative zbritet.
+              </p>
+            </div>
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
+                Arsyeja <span className="text-red-500">*</span>
+              </label>
+              <textarea value={adjNote} onChange={e => setAdjNote(e.target.value)} rows={2}
+                placeholder="Shkruani arsyen e rregullimit…"
+                className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
+            </div>
+          </>
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+            <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[12px] text-red-700">{error}</p>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Tab switcher */}
-        <div className="flex border-b border-gray-100">
-          {(["balance", "adjustment"] as const).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setError(""); }}
-              className={`flex-1 py-3 text-[13px] font-semibold transition-colors border-b-2 -mb-px ${
-                tab === t ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}>
-              {t === "balance" ? "Bilanci Fillestar" : "Rregullim Manual"}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-6 space-y-4">
-          {tab === "balance" ? (
-            <>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data Fillestare e Akumulimit</label>
-                <DatePicker value={initialDate} onChange={setInitialDate} placeholder="Zgjidhni datën" />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë Fillestare</label>
-                <input type="number" value={initialDays} onChange={e => setInitialDays(e.target.value)}
-                  step="0.5" min="0"
-                  className="w-full h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
-              </div>
-              <div className="flex items-start gap-2.5 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
-                <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-blue-700 leading-relaxed">
-                  Nga kjo datë sistemi shton automatikisht <strong>+1.5 ditë çdo muaj</strong>.
-                  Në fund të Qershorit, bilancet mbi 9 ditë nuk transferohen.
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë (+/-)</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAdjDays(d => {
-                      const n = parseFloat(d) || 0;
-                      return String(-n);
-                    })}
-                    className="w-9 h-9 shrink-0 rounded-lg border border-gray-300 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
-                    {adjDays.startsWith("-") ? <Plus size={15} /> : <Minus size={15} />}
-                  </button>
-                  <input type="number" value={adjDays} onChange={e => setAdjDays(e.target.value)}
-                    step="0.5" placeholder="0"
-                    className="flex-1 h-9 px-3 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition" />
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1.5">
-                  Vlera pozitive shton ditë, negative zbritet.
-                </p>
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">
-                  Arsyeja <span className="text-red-500">*</span>
-                </label>
-                <textarea value={adjNote} onChange={e => setAdjNote(e.target.value)} rows={2}
-                  placeholder="Shkruani arsyen e rregullimit…"
-                  className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400 transition resize-none" />
-              </div>
-            </>
-          )}
-
-          {error && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[12px] text-red-700">{error}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
-          <button onClick={onClose}
-            className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">
-            Anulo
-          </button>
-          <button onClick={tab === "balance" ? saveBalance : saveAdj} disabled={saving}
-            className="px-5 py-2 flex items-center gap-2 text-[13px] font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 rounded-xl transition-colors">
-            {saving ? (
-              <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg> Duke ruajtur…</>
-            ) : "Ruaj Ndryshimet"}
-          </button>
-        </div>
-      </div>
-    </div>
+        )}
+      </ModalBody>
+      <ModalFooter
+        onClose={onClose}
+        onConfirm={tab === "balance" ? saveBalance : saveAdj}
+        confirmLabel={saving ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
+        loading={saving}
+        variant="brand"
+      />
+    </Modal>
   );
 }
 
@@ -599,15 +560,14 @@ export default function LeaveAdminPage() {
               </div>
             ) : tab === "pending" ? (
               <>
-              {pending.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
-                    <CheckCircle size={22} className="text-emerald-400" />
+              {pending.length === 0 && approved.length === 0 && rejected.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                    <CalendarDays size={20} className="text-gray-300" />
                   </div>
-                  <p className="text-[13px] font-medium text-gray-600">Nuk ka kërkesa në pritje</p>
-                  <p className="text-[12px] text-gray-400 mt-1">Të gjitha kërkesat janë procesuat</p>
+                  <p className="text-[13px] font-medium text-gray-400">Nuk ka kërkesa pushimi</p>
                 </div>
-              ) : (
+              ) : pending.length === 0 ? null : (
                 <div className="space-y-3">
                   {pending.map(r => (
                     <div key={r.id} className="flex items-center gap-4 px-4 py-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors bg-white"

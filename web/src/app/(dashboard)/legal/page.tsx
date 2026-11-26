@@ -10,6 +10,7 @@ import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
 import { formatCurrency } from "@/lib/utils";
 import { legal as legalApi, cases as casesApi, documents as docsApi } from "@/lib/api";
 import { RefreshCw, Scale, Plus, X, Search, Pencil } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
 import { useRefreshing } from "@/lib/useRefreshing";
 import { DatePresetPicker, DatePreset, presetToRange } from "@/components/ui/DatePresetPicker";
@@ -139,17 +140,9 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
     `w-full px-3 py-2 text-[13px] border rounded-lg focus:outline-none transition-colors ${hasErr ? "border-red-400 focus:border-red-400 bg-red-50/30" : "border-gray-200 focus:border-brand-400"}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Procedim i Ri Gjyqësor</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5">Inicioni një procedim gjyqësor ndaj një debitori</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-
-        <div className="p-4 md:p-6 space-y-4 overflow-y-auto flex-1">
+    <Modal onClose={onClose} maxWidth="max-w-lg">
+      <ModalHeader title="Procedim i Ri Gjyqësor" subtitle="Inicioni një procedim gjyqësor ndaj një debitori" onClose={onClose} />
+      <div className="p-4 md:p-6 space-y-4 overflow-y-auto max-h-[65vh]">
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Case search */}
@@ -237,15 +230,8 @@ function NewProceedingModal({ onClose, onCreated }: { onClose: () => void; onCre
           </LF>
         </div>
 
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={saving}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {saving ? "Duke krijuar…" : "Krijo Procedimin"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={saving ? "Duke krijuar…" : "Krijo Procedimin"} loading={saving} variant="brand" />
+    </Modal>
   );
 }
 
@@ -562,55 +548,41 @@ export default function LegalPage() {
 
       {/* ── Edit Legal Proceeding modal ── */}
       {editLp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel">
-            <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Procedimin</h2>
-                <p className="text-[12px] text-gray-400 mt-0.5">{editLp.case?.caseReference} · {editLp.case?.loan?.borrower ? `${editLp.case.loan.borrower.fullName}` : ""}</p>
-              </div>
-              <button onClick={() => setEditLp(null)} className="modal-close-btn"><X size={16} /></button>
+        <Modal onClose={() => setEditLp(null)} maxWidth="max-w-md">
+          <ModalHeader title="Ndrysho Procedimin" subtitle={`${editLp.case?.caseReference} · ${editLp.case?.loan?.borrower ? `${editLp.case.loan.borrower.fullName}` : ""}`} onClose={() => setEditLp(null)} />
+          <ModalBody className="space-y-4">
+            {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi</label>
+              <Select value={editStatus} onChange={setEditStatus} placeholder="Pa ndryshim" clearable
+                options={Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))} />
             </div>
-            <div className="p-6 space-y-4">
-              {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
+            <div className="grid grid-cols-2 gap-3 items-end">
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi</label>
-                <Select value={editStatus} onChange={setEditStatus} placeholder="Pa ndryshim" clearable
-                  options={Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-3 items-end">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Seancës Tjetër</label>
-                  <DatePicker value={editNextHearing} onChange={setEditNextHearing} placeholder="Zgjidhni datën" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Vendimit</label>
-                  <DatePicker value={editJudgmentDate} onChange={setEditJudgmentDate} placeholder="Zgjidhni datën" />
-                </div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Seancës Tjetër</label>
+                <DatePicker value={editNextHearing} onChange={setEditNextHearing} placeholder="Zgjidhni datën" />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma e Vendimit (EUR)</label>
-                <input type="number" min="0" step="0.01" value={editJudgmentAmount}
-                  onChange={(e) => setEditJudgmentAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime</label>
-                <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3}
-                  placeholder="Shënime shtesë…"
-                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 resize-none" />
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Vendimit</label>
+                <DatePicker value={editJudgmentDate} onChange={setEditJudgmentDate} placeholder="Zgjidhni datën" />
               </div>
             </div>
-            <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
-              <button onClick={() => setEditLp(null)} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-              <button onClick={saveEdit} disabled={editSaving}
-                className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-                {editSaving ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
-              </button>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma e Vendimit (EUR)</label>
+              <input type="number" min="0" step="0.01" value={editJudgmentAmount}
+                onChange={(e) => setEditJudgmentAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400" />
             </div>
-          </div>
-        </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime</label>
+              <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3}
+                placeholder="Shënime shtesë…"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 resize-none" />
+            </div>
+          </ModalBody>
+          <ModalFooter onClose={() => setEditLp(null)} onConfirm={saveEdit} confirmLabel={editSaving ? "Duke ruajtur…" : "Ruaj Ndryshimet"} loading={editSaving} variant="brand" />
+        </Modal>
       )}
     </div>
   );

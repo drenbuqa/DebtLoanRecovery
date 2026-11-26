@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Topbar from "@/components/layout/Topbar";
 import { users as usersApi, offices as officesApi } from "@/lib/api";
 import { RefreshCw, Plus, UserCheck, UserX, Edit2, Key, X, Search, Users } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { useFormErrors, validate } from "@/lib/form";
 import { AccessGuard } from "@/components/AccessGuard";
 import { useAuth } from "@/lib/auth";
@@ -25,20 +26,6 @@ const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Administrator", MANAGER: "Menaxher", OFFICER: "Oficer", VIEWER: "Vëzhgues",
 };
 
-// ── Shared primitives ────────────────────────────────────────
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string | null; children: React.ReactNode }) {
   return (
@@ -103,8 +90,9 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
   }
 
   return (
-    <ModalShell title={isEdit ? "Ndrysho Përdoruesin" : "Përdorues i Ri"} onClose={onClose}>
-      <div className="p-6 space-y-4">
+    <Modal onClose={onClose} maxWidth="max-w-md">
+      <ModalHeader title={isEdit ? "Ndrysho Përdoruesin" : "Përdorues i Ri"} onClose={onClose} />
+      <ModalBody className="space-y-4">
         {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
         <Field label="Emri i Përdoruesit" required error={E.username}>
           <TextInput hasError={!!E.username} value={form.username}
@@ -144,15 +132,9 @@ function UserModal({ user, offices, onClose, onSaved }: { user?: any; offices: a
               placeholder="Min. 8 karaktere" />
           </Field>
         )}
-      </div>
-      <div className="px-6 pb-5 flex gap-3 justify-end">
-        <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-        <button onClick={submit} disabled={loading}
-          className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-          {loading ? "Duke ruajtur…" : isEdit ? "Ruaj Ndryshimet" : "Krijo Përdoruesin"}
-        </button>
-      </div>
-    </ModalShell>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : isEdit ? "Ruaj Ndryshimet" : "Krijo Përdoruesin"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -182,8 +164,9 @@ function ResetPasswordModal({ user, onClose, onSaved }: { user: any; onClose: ()
   }
 
   return (
-    <ModalShell title={`Rivendos Fjalëkalimin — ${user.fullName}`} onClose={onClose}>
-      <div className="p-6 space-y-4">
+    <Modal onClose={onClose} maxWidth="max-w-md">
+      <ModalHeader title={`Rivendos Fjalëkalimin — ${user.fullName}`} onClose={onClose} />
+      <ModalBody className="space-y-4">
         {success ? (
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-[13px] text-gray-700 text-center">
             Fjalëkalimi u ndryshua me sukses. Përdoruesi mund të hyjë tani me fjalëkalimin e ri.
@@ -208,21 +191,13 @@ function ResetPasswordModal({ user, onClose, onSaved }: { user: any; onClose: ()
             </Field>
           </>
         )}
-      </div>
-      <div className="px-6 pb-5 flex gap-3 justify-end">
-        {success ? (
-          <button onClick={onClose} className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 transition-colors">U krye</button>
-        ) : (
-          <>
-            <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-            <button onClick={submit} disabled={loading}
-              className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-              <Key size={13} /> {loading ? "Duke ruajtur…" : "Rivendos Fjalëkalimin"}
-            </button>
-          </>
-        )}
-      </div>
-    </ModalShell>
+      </ModalBody>
+      {success ? (
+        <ModalFooter onClose={onClose} cancelLabel="U krye" variant="none" />
+      ) : (
+        <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Rivendos Fjalëkalimin"} loading={loading} variant="brand" />
+      )}
+    </Modal>
   );
 }
 
@@ -270,7 +245,7 @@ function UsersAdminPageInner() {
       title: `Riaktivizo ${u.fullName}`,
       message: "Ky përdorues do të rifitojë aksesin në platformë me rolin dhe lejet e mëparshme.",
       confirmLabel: "Riaktivizo",
-      variant: "default",
+      variant: "brand",
       onConfirm: async () => { await usersApi.update(u.id, { isActive: true }); load(); toast("Përdoruesi u riaktivizua"); },
     });
   }

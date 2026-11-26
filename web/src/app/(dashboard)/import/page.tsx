@@ -9,6 +9,7 @@ import {
   Copy, Check, X, RefreshCw, Info, ChevronRight, History,
   Pencil, ArrowRightLeft, Activity, CreditCard, Users,
 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { downloadExcel } from "@/lib/exportExcel";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -337,111 +338,85 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
   const confirmTexts = state.phase === "confirm" ? rollbackConfirmText(state.check) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
-              <RotateCcw size={15} className="text-red-500" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[14px] font-semibold text-gray-900">Anulo Importin</div>
-              <div className="text-[11px] text-gray-400 truncate">{job.fileName}</div>
+    <Modal onClose={onClose} maxWidth="max-w-md">
+      <ModalHeader title="Anulo Importin" subtitle={job.fileName} onClose={onClose} icon={<div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0"><RotateCcw size={15} className="text-red-500" /></div>} />
+      <ModalBody>
+        {state.phase === "checking" && (
+          <div className="flex items-center gap-3 py-4">
+            <RefreshCw size={16} className="animate-spin text-brand-500 shrink-0" />
+            <span className="text-[13px] text-gray-600">Duke kontrolluar nëse anulimi është i mundshëm…</span>
+          </div>
+        )}
+        {state.phase === "blocked" && (
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+              <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-semibold text-amber-800 mb-1">Anulimi nuk është i mundshëm</p>
+                <p className="text-[12px] text-amber-700 leading-relaxed">{state.reason}</p>
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="px-6 py-5">
-          {state.phase === "checking" && (
-            <div className="flex items-center gap-3 py-4">
-              <RefreshCw size={16} className="animate-spin text-brand-500 shrink-0" />
-              <span className="text-[13px] text-gray-600">Duke kontrolluar nëse anulimi është i mundshëm…</span>
-            </div>
-          )}
-          {state.phase === "blocked" && (
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
-                <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[13px] font-semibold text-amber-800 mb-1">Anulimi nuk është i mundshëm</p>
-                  <p className="text-[12px] text-amber-700 leading-relaxed">{state.reason}</p>
-                </div>
-              </div>
-            </div>
-          )}
-          {state.phase === "confirm" && confirmTexts && (
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
-                <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[13px] font-semibold text-red-800 mb-1">{confirmTexts.title}</p>
-                  <p className="text-[12px] text-red-700 leading-relaxed">{confirmTexts.body}</p>
-                </div>
-              </div>
-              {/* Skipped cases warning */}
-              {(state.check.skippedCount ?? 0) > 0 && (
-                <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                  <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-amber-700">
-                    <strong>{state.check.skippedCount} raste</strong> nuk do të fshihen sepse kanë aktivitete ose pagesa të shtuara manualisht pas importit.
-                  </p>
-                </div>
-              )}
-              {/* Case list preview for PORTFOLIO */}
-              {state.check.importType === "PORTFOLIO" && (state.check.cases?.length ?? 0) > 0 && (
-                <div className="border border-gray-100 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                    <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Klientët që do të fshihen</span>
-                  </div>
-                  <div className="divide-y divide-gray-50 max-h-32 overflow-y-auto">
-                    {state.check.cases!.map((ref) => (
-                      <div key={ref} className="px-3 py-1.5 text-[12px] font-mono text-gray-700">{ref}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          {state.phase === "deleting" && (
-            <div className="flex items-center gap-3 py-4">
-              <RefreshCw size={16} className="animate-spin text-red-500 shrink-0" />
-              <span className="text-[13px] text-gray-600">Duke procesuar anulimin…</span>
-            </div>
-          )}
-          {state.phase === "done" && (
-            <div className="flex items-center gap-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-              <CheckCircle size={15} className="text-emerald-500 shrink-0" />
-              <p className="text-[13px] font-semibold text-emerald-800">
-                {rollbackDoneText(state.importType, state.deleted, state.skipped)}
-              </p>
-            </div>
-          )}
-          {state.phase === "error" && (
+        )}
+        {state.phase === "confirm" && confirmTexts && (
+          <div className="space-y-3">
             <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
-              <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[13px] text-red-700">{state.message}</p>
+              <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-semibold text-red-800 mb-1">{confirmTexts.title}</p>
+                <p className="text-[12px] text-red-700 leading-relaxed">{confirmTexts.body}</p>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          {(state.phase === "blocked" || state.phase === "error") && (
-            <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">Mbyll</button>
-          )}
-          {state.phase === "confirm" && confirmTexts && (
-            <>
-              <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
-              <button onClick={confirm}
-                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2">
-                <RotateCcw size={13} /> {confirmTexts.buttonLabel}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+            {(state.check.skippedCount ?? 0) > 0 && (
+              <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-amber-700">
+                  <strong>{state.check.skippedCount} raste</strong> nuk do të fshihen sepse kanë aktivitete ose pagesa të shtuara manualisht pas importit.
+                </p>
+              </div>
+            )}
+            {state.check.importType === "PORTFOLIO" && (state.check.cases?.length ?? 0) > 0 && (
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Klientët që do të fshihen</span>
+                </div>
+                <div className="divide-y divide-gray-50 max-h-32 overflow-y-auto">
+                  {state.check.cases!.map((ref) => (
+                    <div key={ref} className="px-3 py-1.5 text-[12px] font-mono text-gray-700">{ref}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {state.phase === "deleting" && (
+          <div className="flex items-center gap-3 py-4">
+            <RefreshCw size={16} className="animate-spin text-red-500 shrink-0" />
+            <span className="text-[13px] text-gray-600">Duke procesuar anulimin…</span>
+          </div>
+        )}
+        {state.phase === "done" && (
+          <div className="flex items-center gap-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <CheckCircle size={15} className="text-emerald-500 shrink-0" />
+            <p className="text-[13px] font-semibold text-emerald-800">
+              {rollbackDoneText(state.importType, state.deleted, state.skipped)}
+            </p>
+          </div>
+        )}
+        {state.phase === "error" && (
+          <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
+            <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[13px] text-red-700">{state.message}</p>
+          </div>
+        )}
+      </ModalBody>
+      {(state.phase === "blocked" || state.phase === "error") && (
+        <ModalFooter onClose={onClose} cancelLabel="Mbyll" variant="none" />
+      )}
+      {state.phase === "confirm" && confirmTexts && (
+        <ModalFooter onClose={onClose} onConfirm={confirm} confirmLabel={confirmTexts.buttonLabel} variant="danger" />
+      )}
+    </Modal>
   );
 }
 

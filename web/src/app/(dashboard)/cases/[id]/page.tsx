@@ -24,6 +24,7 @@ import {
   FileText, CheckSquare, Clock, Scale, RefreshCw,
   MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList, Ban, Pencil, FileSpreadsheet,
 } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 
 // ── Shared empty state ───────────────────────────────────────
 function EmptyState({ icon: Icon, title, description, action }: {
@@ -254,13 +255,9 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
   const tinp = "w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-        <div className="p-5 space-y-3 overflow-y-auto flex-1">
+    <Modal onClose={onClose} maxWidth="max-w-lg">
+      <ModalHeader title="Regjistro Aktivitet" onClose={onClose} />
+      <div className="p-5 space-y-3 overflow-y-auto max-h-[65vh]">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
 
           {/* Type + Date — always visible */}
@@ -370,15 +367,8 @@ function LogActivityModal({ caseId, onClose, onSuccess }: { caseId: string; onCl
             </div>
           )}
         </div>
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-          <button onClick={submit} disabled={loading}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Regjistro Aktivitet"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Regjistro Aktivitet"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -411,55 +401,42 @@ function AddPaymentModal({ caseId, officerId, onClose, onSuccess }: { caseId: st
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Pagesë</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose}>
+      <ModalHeader title="Regjistro Pagesë" onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
+            className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
         </div>
-        <div className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€) *</label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00"
-              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
-            <DatePicker value={date} onChange={setDate} />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)"
-              className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-gray-100 pt-3">
-            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
-                <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
-                <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00"
-                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
-              </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Pagesës</label>
+          <DatePicker value={date} onChange={setDate} />
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Referencë (opsionale)"
+            className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+        </div>
+        <div className="border-t border-gray-100 pt-3">
+          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-3">Pagesa e Ardhshme (Premtim)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+              <DatePicker value={nextDate} onChange={setNextDate} placeholder="Opsionale" />
             </div>
-            {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma (€)</label>
+              <input type="number" value={nextAmount} onChange={(e) => setNextAmount(e.target.value)} placeholder="0.00"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors tabular" />
+            </div>
           </div>
+          {nextDate && <p className="text-[11px] text-gray-400 mt-1.5">Do të krijohet premtim pagese automatikisht.</p>}
         </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-          <button onClick={submit} disabled={loading}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Regjistro Pagesën"}
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Regjistro Pagesën"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -483,49 +460,38 @@ function CreateAgreementModal({ caseId, onClose, onSuccess }: { caseId: string; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">Krijo Marrëveshje</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose}>
+      <ModalHeader title="Krijo Marrëveshje" onClose={onClose} />
+      <ModalBody className="space-y-4">
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma Totale (€) *</label>
+          <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00"
+            className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
         </div>
-        <div className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{error}</div>}
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shuma Totale (€) *</label>
-            <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00"
-              className="w-full px-3 py-2.5 text-[17px] font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Këste</label>
-              <Select value={count} onChange={setCount}
-                options={[3,6,9,12,18,24,36].map((n) => ({ value: String(n), label: `${n} muaj` }))} />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Këst Mujor</label>
-              <div className="px-3 py-2 text-[15px] font-bold text-gray-800 tabular">€{monthly}</div>
-            </div>
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Këste</label>
+            <Select value={count} onChange={setCount}
+              options={[3,6,9,12,18,24,36].map((n) => ({ value: String(n), label: `${n} muaj` }))} />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Fillimit</label>
-            <DatePicker value={start} onChange={setStart} />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Kushte (opsionale)"
-              className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Këst Mujor</label>
+            <div className="px-3 py-2 text-[15px] font-bold text-gray-800 tabular">€{monthly}</div>
           </div>
         </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-          <button onClick={submit} disabled={loading}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke krijuar…" : "Krijo Marrëveshje"}
-          </button>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Data e Fillimit</label>
+          <DatePicker value={start} onChange={setStart} />
         </div>
-      </div>
-    </div>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime</label>
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Kushte (opsionale)"
+            className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+        </div>
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke krijuar…" : "Krijo Marrëveshje"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -545,35 +511,22 @@ function CaseVoidModal({ payment, onClose, onVoided }: { payment: any; onClose: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Anulo Pagesën</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose}>
+      <ModalHeader title="Anulo Pagesën" subtitle={payment.paymentReference} onClose={onClose} />
+      <ModalBody className="space-y-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
+          Kjo do të anulojë <strong>{formatCurrency(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
         </div>
-        <div className="px-5 py-4 space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[12px] text-amber-800">
-            Kjo do të anulojë <strong>{formatCurrency(Number(payment.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
-            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
-              placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Arsyeja e anulimit <span className="text-red-500">*</span></label>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
+            placeholder="p.sh. Pagesë e dyfishuar, gabim në shumë…"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
         </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke anuluar…" : "Konfirmo Anulimin"}
-          </button>
-        </div>
-      </div>
-    </div>
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke anuluar…" : "Konfirmo Anulimin"} loading={loading} variant="danger" />
+    </Modal>
   );
 }
 
@@ -601,52 +554,39 @@ function EditPaymentModal({ payment, onClose, onSaved }: { payment: any; onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Pagesën</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{payment.paymentReference}</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose}>
+      <ModalHeader title="Ndrysho Pagesën" subtitle={payment.paymentReference} onClose={onClose} />
+      <ModalBody className="space-y-3">
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shuma (EUR) <span className="text-red-500">*</span></label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} step="0.01" min="0"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
         </div>
-        <div className="px-5 py-4 space-y-3">
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shuma (EUR) <span className="text-red-500">*</span></label>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} step="0.01" min="0"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Data e Pagesës</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Kanali i Pagesës</label>
-            <select value={channel} onChange={(e) => setChannel(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 bg-white">
-              <option value="">— Zgjidh —</option>
-              <option value="CASH">Para cash</option>
-              <option value="BANK_TRANSFER">Transfer bankar</option>
-              <option value="CARD">Kartë</option>
-              <option value="ONLINE">Online</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shënim</label>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Data e Pagesës</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
         </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-brand-600 text-white text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
-          </button>
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Kanali i Pagesës</label>
+          <select value={channel} onChange={(e) => setChannel(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 bg-white">
+            <option value="">— Zgjidh —</option>
+            <option value="CASH">Para cash</option>
+            <option value="BANK_TRANSFER">Transfer bankar</option>
+            <option value="CARD">Kartë</option>
+            <option value="ONLINE">Online</option>
+          </select>
         </div>
-      </div>
-    </div>
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shënim</label>
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400" />
+        </div>
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -670,32 +610,22 @@ function EditActivityModal({ activity, onClose, onSaved }: { activity: any; onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Aktivitetin</h2>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
+    <Modal onClose={onClose}>
+      <ModalHeader title="Ndrysho Aktivitetin" onClose={onClose} />
+      <ModalBody className="space-y-3">
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Data</label>
+          <DatePicker value={date} onChange={setDate} placeholder="Zgjidhni datën" />
         </div>
-        <div className="px-5 py-4 space-y-3">
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Data</label>
-            <DatePicker value={date} onChange={setDate} placeholder="Zgjidhni datën" />
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shënime <span className="text-red-500">*</span></label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        <div>
+          <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Shënime <span className="text-red-500">*</span></label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:border-brand-400 resize-none" />
         </div>
-        <div className="px-5 pb-5 flex gap-2">
-          <button onClick={onClose} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading} className="flex-1 h-10 rounded-xl bg-brand-600 text-white text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
-          </button>
-        </div>
-      </div>
-    </div>
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke ruajtur…" : "Ruaj Ndryshimet"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 
@@ -1052,135 +982,109 @@ export default function CaseDetailPage() {
       {editActivityTarget && <EditActivityModal activity={editActivityTarget} onClose={() => setEditActivityTarget(null)} onSaved={() => { setEditActivityTarget(null); loadCase(); toast("Aktiviteti u ndryshua"); }} />}
       {editPaymentTarget && <EditPaymentModal payment={editPaymentTarget} onClose={() => setEditPaymentTarget(null)} onSaved={() => { setEditPaymentTarget(null); loadCase(); toast("Pagesa u ndryshua"); }} />}
       {deletePaymentTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setDeletePaymentTarget(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 pt-5 pb-4 border-b border-gray-100">
-              <h2 className="text-[15px] font-semibold text-gray-900">Fshi Pagesën</h2>
-              <p className="text-[12px] text-gray-400 mt-0.5 font-mono">{deletePaymentTarget.paymentReference}</p>
+        <Modal onClose={() => setDeletePaymentTarget(null)}>
+          <ModalHeader title="Fshi Pagesën" subtitle={deletePaymentTarget.paymentReference} onClose={() => setDeletePaymentTarget(null)} />
+          <ModalBody>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[12px] text-red-800">
+              Kjo do të fshijë përgjithmonë <strong>{formatCurrency(Number(deletePaymentTarget.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
             </div>
-            <div className="px-5 py-4">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[12px] text-red-800">
-                Kjo do të fshijë përgjithmonë <strong>{formatCurrency(Number(deletePaymentTarget.amount))}</strong> dhe do të rikthejë balancën e kredisë. Ky veprim nuk mund të zhbëhet.
-              </div>
-            </div>
-            <div className="px-5 pb-5 flex gap-2">
-              <button onClick={() => setDeletePaymentTarget(null)} className="flex-1 h-10 rounded-xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors">Anulo</button>
-              <button disabled={deletingPayment} onClick={async () => {
-                setDeletingPayment(true);
-                try { await paymentsApi.delete(deletePaymentTarget.id); setDeletePaymentTarget(null); loadCase(); toast("Pagesa u fshi"); }
-                catch (e: any) { toast(e.message); }
-                finally { setDeletingPayment(false); }
-              }} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-[13px] font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
-                {deletingPayment ? "Duke fshirë…" : "Fshi Pagesën"}
-              </button>
-            </div>
-          </div>
-        </div>
+          </ModalBody>
+          <ModalFooter
+            onClose={() => setDeletePaymentTarget(null)}
+            onConfirm={async () => {
+              setDeletingPayment(true);
+              try { await paymentsApi.delete(deletePaymentTarget.id); setDeletePaymentTarget(null); loadCase(); toast("Pagesa u fshi"); }
+              catch (e: any) { toast(e.message); }
+              finally { setDeletingPayment(false); }
+            }}
+            confirmLabel={deletingPayment ? "Duke fshirë…" : "Fshi Pagesën"}
+            loading={deletingPayment}
+            variant="danger"
+          />
+        </Modal>
       )}
 
       {showStatusUpdate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowStatusUpdate(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Statusin</h2>
-              <button onClick={() => setShowStatusUpdate(false)} className="modal-close-btn"><X size={16} /></button>
+        <Modal onClose={() => setShowStatusUpdate(false)}>
+          <ModalHeader title="Ndrysho Statusin" onClose={() => setShowStatusUpdate(false)} />
+          <ModalBody className="space-y-4">
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Klientit</label>
+              <Select value={statusForm.status} onChange={(v) => setStatusForm(f => ({ ...f, status: v }))}
+                placeholder="Pa ndryshim" clearable
+                options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","ANKES","AKTGJYKIM"].map((s) => ({ value: s, label: formatEnum(s) }))} />
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Statusi i Klientit</label>
-                <Select value={statusForm.status} onChange={(v) => setStatusForm(f => ({ ...f, status: v }))}
-                  placeholder="Pa ndryshim" clearable
-                  options={["ACTIVE","SUSPENDED","LEGAL","CLOSED","ANKES","AKTGJYKIM"].map((s) => ({ value: s, label: formatEnum(s) }))} />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
-                <Select value={statusForm.collectionStatus} onChange={(v) => setStatusForm(f => ({ ...f, collectionStatus: v }))}
-                  placeholder="Pa ndryshim" clearable
-                  options={FAZA_OPTIONS} />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
-                <textarea value={statusForm.note} onChange={(e) => setStatusForm(f => ({ ...f, note: e.target.value }))} rows={2}
-                  placeholder="Arsyeja e ndryshimit…"
-                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
-              </div>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
+              <Select value={statusForm.collectionStatus} onChange={(v) => setStatusForm(f => ({ ...f, collectionStatus: v }))}
+                placeholder="Pa ndryshim" clearable
+                options={FAZA_OPTIONS} />
             </div>
-            <div className="px-6 pb-5 flex gap-3 justify-end">
-              <button onClick={() => setShowStatusUpdate(false)} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-              <button onClick={submitStatusUpdate} disabled={statusSaving}
-                className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-                {statusSaving ? "Duke ruajtur…" : "Përditëso"}
-              </button>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënim</label>
+              <textarea value={statusForm.note} onChange={(e) => setStatusForm(f => ({ ...f, note: e.target.value }))} rows={2}
+                placeholder="Arsyeja e ndryshimit…"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors resize-none" />
             </div>
-          </div>
-        </div>
+          </ModalBody>
+          <ModalFooter onClose={() => setShowStatusUpdate(false)} onConfirm={submitStatusUpdate} confirmLabel={statusSaving ? "Duke ruajtur…" : "Përditëso"} loading={statusSaving} variant="brand" />
+        </Modal>
       )}
 
       {/* ── Edit Case modal ── */}
       {showEditCase && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowEditCase(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-gray-900">Ndrysho Detajet e Klientit</h2>
-              <button onClick={() => setShowEditCase(false)} className="modal-close-btn"><X size={16} /></button>
-            </div>
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
-              <div className="grid grid-cols-2 gap-3 items-end">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Primar</label>
-                  <Select value={editForm.assignedOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, assignedOfficerId: v }))}
-                    placeholder="Pa caktuar" clearable
-                    options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Sekondar</label>
-                  <Select value={editForm.secondaryOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, secondaryOfficerId: v }))}
-                    placeholder="Pa caktuar" clearable
-                    options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyra</label>
-                  <Select value={editForm.officeId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, officeId: v }))}
-                    placeholder="Pa zyrë specifike" clearable
-                    options={editOffices.map((o: any) => ({ value: o.id, label: o.name }))} />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Borxhi Aktual (EUR)</label>
-                  <input type="number" min="0" step="0.01" value={editForm.currentOutstandingBalance}
-                    onChange={(e) => setEditForm((f: any) => ({ ...f, currentOutstandingBalance: e.target.value }))}
-                    className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Norma e Interesit (%)</label>
-                  <input type="number" min="0" step="0.01" value={editForm.interestRate}
-                    onChange={(e) => setEditForm((f: any) => ({ ...f, interestRate: e.target.value }))}
-                    className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
-                  <Select value={editForm.collectionStatus ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, collectionStatus: v }))}
-                    dropUp placeholder="Asnjë" clearable
-                    options={FAZA_OPTIONS} />
-                </div>
+        <Modal onClose={() => setShowEditCase(false)} maxWidth="max-w-lg">
+          <ModalHeader title="Ndrysho Detajet e Klientit" onClose={() => setShowEditCase(false)} />
+          <div className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
+            {editError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{editError}</div>}
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Primar</label>
+                <Select value={editForm.assignedOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, assignedOfficerId: v }))}
+                  placeholder="Pa caktuar" clearable
+                  options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Produktit</label>
-                <input value={editForm.productType}
-                  onChange={(e) => setEditForm((f: any) => ({ ...f, productType: e.target.value }))}
-                  placeholder="p.sh. Kredi Konsumatore, Hipotekë…"
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyrtari Sekondar</label>
+                <Select value={editForm.secondaryOfficerId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, secondaryOfficerId: v }))}
+                  placeholder="Pa caktuar" clearable
+                  options={editOfficers.map((o) => ({ value: o.id, label: o.fullName }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Zyra</label>
+                <Select value={editForm.officeId ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, officeId: v }))}
+                  placeholder="Pa zyrë specifike" clearable
+                  options={editOffices.map((o: any) => ({ value: o.id, label: o.name }))} />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Borxhi Aktual (EUR)</label>
+                <input type="number" min="0" step="0.01" value={editForm.currentOutstandingBalance}
+                  onChange={(e) => setEditForm((f: any) => ({ ...f, currentOutstandingBalance: e.target.value }))}
                   className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
               </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Norma e Interesit (%)</label>
+                <input type="number" min="0" step="0.01" value={editForm.interestRate}
+                  onChange={(e) => setEditForm((f: any) => ({ ...f, interestRate: e.target.value }))}
+                  className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Faza e Klientit</label>
+                <Select value={editForm.collectionStatus ?? ""} onChange={(v) => setEditForm((f: any) => ({ ...f, collectionStatus: v }))}
+                  dropUp placeholder="Asnjë" clearable
+                  options={FAZA_OPTIONS} />
+              </div>
             </div>
-            <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end">
-              <button onClick={() => setShowEditCase(false)} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-              <button onClick={saveEditCase} disabled={editSaving}
-                className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-                {editSaving ? "Duke ruajtur…" : "Ruaj Ndryshimet"}
-              </button>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Produktit</label>
+              <input value={editForm.productType}
+                onChange={(e) => setEditForm((f: any) => ({ ...f, productType: e.target.value }))}
+                placeholder="p.sh. Kredi Konsumatore, Hipotekë…"
+                className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
             </div>
           </div>
-        </div>
+          <ModalFooter onClose={() => setShowEditCase(false)} onConfirm={saveEditCase} confirmLabel={editSaving ? "Duke ruajtur…" : "Ruaj Ndryshimet"} loading={editSaving} variant="brand" />
+        </Modal>
       )}
 
       {/* ── Case header ── */}
@@ -1792,48 +1696,37 @@ export default function CaseDetailPage() {
           <div className="bg-white rounded-xl border border-gray-200">
             {/* Upload modal */}
             {showUpload && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={() => setShowUpload(false)}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-modal-in modal-panel" onClick={(e) => e.stopPropagation()}>
-                  <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-[15px] font-semibold text-gray-900">Ngarko Dokument</h2>
-                    <button onClick={() => setShowUpload(false)} className="modal-close-btn"><X size={16} /></button>
+              <Modal onClose={() => setShowUpload(false)} maxWidth="max-w-md">
+                <ModalHeader title="Ngarko Dokument" onClose={() => setShowUpload(false)} />
+                <ModalBody className="space-y-4">
+                  {uploadError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{uploadError}</div>}
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Skedari <span className="text-red-500">*</span></label>
+                    <input ref={fileInputRef} type="file" onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                      className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+                    {uploadFile && <p className="mt-1 text-[11px] text-gray-400">{(uploadFile.size / 1024).toFixed(0)} KB</p>}
                   </div>
-                  <div className="p-6 space-y-4">
-                    {uploadError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{uploadError}</div>}
-                    <div>
-                      <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Skedari <span className="text-red-500">*</span></label>
-                      <input ref={fileInputRef} type="file" onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-                        className="w-full text-[13px] text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
-                      {uploadFile && <p className="mt-1 text-[11px] text-gray-400">{(uploadFile.size / 1024).toFixed(0)} KB</p>}
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Dokumentit</label>
-                      <Select value={uploadType} onChange={setUploadType} options={[
-                        { value: "CONTRACT", label: "Kontratë" },
-                        { value: "ID_DOCUMENT", label: "Dokument Identiteti" },
-                        { value: "COLLATERAL", label: "Kolateral" },
-                        { value: "COURT_ORDER", label: "Urdhër Gjykate" },
-                        { value: "PAYMENT_PROOF", label: "Vërtetim Pagese" },
-                        { value: "AGREEMENT", label: "Marrëveshje" },
-                        { value: "CORRESPONDENCE", label: "Korrespondencë" },
-                        { value: "OTHER", label: "Tjetër" },
-                      ]} />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime <span className="text-gray-300 font-normal normal-case text-[10px]">(opsionale)</span></label>
-                      <input value={uploadNotes} onChange={(e) => setUploadNotes(e.target.value)} placeholder="Përshkrim i shkurtër…"
-                        className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
-                    </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Lloji i Dokumentit</label>
+                    <Select value={uploadType} onChange={setUploadType} options={[
+                      { value: "CONTRACT", label: "Kontratë" },
+                      { value: "ID_DOCUMENT", label: "Dokument Identiteti" },
+                      { value: "COLLATERAL", label: "Kolateral" },
+                      { value: "COURT_ORDER", label: "Urdhër Gjykate" },
+                      { value: "PAYMENT_PROOF", label: "Vërtetim Pagese" },
+                      { value: "AGREEMENT", label: "Marrëveshje" },
+                      { value: "CORRESPONDENCE", label: "Korrespondencë" },
+                      { value: "OTHER", label: "Tjetër" },
+                    ]} />
                   </div>
-                  <div className="px-6 pb-5 flex gap-3 justify-end">
-                    <button onClick={() => setShowUpload(false)} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-                    <button onClick={submitUpload} disabled={uploading || !uploadFile}
-                      className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-                      {uploading ? "Duke ngarkuar…" : "Ngarko"}
-                    </button>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">Shënime <span className="text-gray-300 font-normal normal-case text-[10px]">(opsionale)</span></label>
+                    <input value={uploadNotes} onChange={(e) => setUploadNotes(e.target.value)} placeholder="Përshkrim i shkurtër…"
+                      className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-brand-400 transition-colors" />
                   </div>
-                </div>
-              </div>
+                </ModalBody>
+                <ModalFooter onClose={() => setShowUpload(false)} onConfirm={submitUpload} confirmLabel={uploading ? "Duke ngarkuar…" : "Ngarko"} loading={uploading} disabled={!uploadFile} variant="brand" />
+              </Modal>
             )}
 
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
@@ -1888,102 +1781,76 @@ export default function CaseDetailPage() {
 
       {/* ── Delete activity modal ─────────────────────────────── */}
       {deleteActivityTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && !deleteActivitySaving && setDeleteActivityTarget(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Trash2 size={15} className="text-red-500" />
-                </div>
-                <span className="text-[14px] font-semibold text-gray-900">Fshi Aktivitetin</span>
-              </div>
-              <button onClick={() => setDeleteActivityTarget(null)} disabled={deleteActivitySaving} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
-                <X size={15} />
-              </button>
+        <Modal onClose={() => !deleteActivitySaving && setDeleteActivityTarget(null)}>
+          <ModalHeader
+            title="Fshi Aktivitetin"
+            onClose={() => setDeleteActivityTarget(null)}
+            icon={<div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><Trash2 size={15} className="text-red-500" /></div>}
+          />
+          <ModalBody className="space-y-4">
+            <p className="text-[13px] text-gray-500 leading-relaxed">
+              Aktiviteti do të fshihet nga kronologjia e klientit. Të dhënat ruhen në databazë për auditim.
+            </p>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+                Pse po e fshini këtë aktivitet? <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={deleteActivityReason}
+                onChange={(e) => { setDeleteActivityReason(e.target.value); setDeleteActivityError(""); }}
+                placeholder="p.sh. U regjistrua gabimisht, dublikatë e aktivitetit…"
+                rows={3}
+                className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+              />
             </div>
-            <div className="px-6 py-5 space-y-4">
-              <p className="text-[13px] text-gray-500 leading-relaxed">
-                Aktiviteti do të fshihet nga kronologjia e klientit. Të dhënat ruhen në databazë për auditim.
-              </p>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
-                  Pse po e fshini këtë aktivitet? <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={deleteActivityReason}
-                  onChange={(e) => { setDeleteActivityReason(e.target.value); setDeleteActivityError(""); }}
-                  placeholder="p.sh. U regjistrua gabimisht, dublikatë e aktivitetit…"
-                  rows={3}
-                  className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
-                />
-              </div>
-              {deleteActivityError && <p className="text-[12px] text-red-600">{deleteActivityError}</p>}
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setDeleteActivityTarget(null)} disabled={deleteActivitySaving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                Anulo
-              </button>
-              <button
-                onClick={handleDeleteActivity}
-                disabled={deleteActivitySaving || !deleteActivityReason.trim()}
-                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-              >
-                {deleteActivitySaving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                {deleteActivitySaving ? "Duke fshirë..." : "Fshi Aktivitetin"}
-              </button>
-            </div>
-          </div>
-        </div>
+            {deleteActivityError && <p className="text-[12px] text-red-600">{deleteActivityError}</p>}
+          </ModalBody>
+          <ModalFooter
+            onClose={() => setDeleteActivityTarget(null)}
+            onConfirm={handleDeleteActivity}
+            confirmLabel={deleteActivitySaving ? "Duke fshirë..." : "Fshi Aktivitetin"}
+            loading={deleteActivitySaving}
+            disabled={!deleteActivityReason.trim()}
+            variant="danger"
+          />
+        </Modal>
       )}
 
       {/* ── Archive modal ─────────────────────────────────────── */}
       {showArchive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && !archiveSaving && setShowArchive(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Trash2 size={15} className="text-red-500" />
-                </div>
-                <span className="text-[14px] font-semibold text-gray-900">Hiq Klientin</span>
-              </div>
-              <button onClick={() => setShowArchive(false)} disabled={archiveSaving} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
-                <X size={15} />
-              </button>
+        <Modal onClose={() => !archiveSaving && setShowArchive(false)}>
+          <ModalHeader
+            title="Hiq Klientin"
+            onClose={() => setShowArchive(false)}
+            icon={<div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><Trash2 size={15} className="text-red-500" /></div>}
+          />
+          <ModalBody className="space-y-4">
+            <p className="text-[13px] text-gray-500 leading-relaxed">
+              Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
+            </p>
+            <div>
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+                Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={archiveReason}
+                onChange={(e) => { setArchiveReason(e.target.value); setArchiveError(""); }}
+                placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
+                rows={3}
+                className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+              />
             </div>
-            <div className="px-6 py-5 space-y-4">
-              <p className="text-[13px] text-gray-500 leading-relaxed">
-                Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
-              </p>
-              <div>
-                <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
-                  Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={archiveReason}
-                  onChange={(e) => { setArchiveReason(e.target.value); setArchiveError(""); }}
-                  placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
-                  rows={3}
-                  className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
-                />
-              </div>
-              {archiveError && <p className="text-[12px] text-red-600">{archiveError}</p>}
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-              <button onClick={() => setShowArchive(false)} disabled={archiveSaving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                Anulo
-              </button>
-              <button
-                onClick={handleArchiveCase}
-                disabled={archiveSaving || !archiveReason.trim()}
-                className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-              >
-                {archiveSaving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                {archiveSaving ? "Duke hequr..." : "Hiq Klientin"}
-              </button>
-            </div>
-          </div>
-        </div>
+            {archiveError && <p className="text-[12px] text-red-600">{archiveError}</p>}
+          </ModalBody>
+          <ModalFooter
+            onClose={() => setShowArchive(false)}
+            onConfirm={handleArchiveCase}
+            confirmLabel={archiveSaving ? "Duke hequr..." : "Hiq Klientin"}
+            loading={archiveSaving}
+            disabled={!archiveReason.trim()}
+            variant="danger"
+          />
+        </Modal>
       )}
     </div>
   );

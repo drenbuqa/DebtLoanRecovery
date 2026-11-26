@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatEnum } from "@/lib/utils";
 import { cases as casesApi, institutions as instApi, users as usersApi } from "@/lib/api";
 import { Search, RefreshCw, Plus, X, Briefcase, ChevronDown, Trash2, AlertTriangle, FileSpreadsheet, Archive } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import { Pagination } from "@/components/ui/Pagination";
 import { downloadExcel } from "@/lib/exportExcel";
 import { Select } from "@/components/ui/Select";
@@ -43,54 +44,28 @@ function DeleteCaseModal({ caseId, onClose, onDeleted }: { caseId: string; onClo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-              <Trash2 size={15} className="text-red-500" />
-            </div>
-            <span className="text-[14px] font-semibold text-gray-900">Hiq Klientin</span>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
-            <X size={15} />
-          </button>
+    <Modal onClose={onClose} maxWidth="max-w-sm">
+      <ModalHeader title="Hiq Klientin" onClose={onClose} icon={<div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><Trash2 size={15} className="text-red-500" /></div>} />
+      <ModalBody className="space-y-4">
+        <p className="text-[13px] text-gray-500 leading-relaxed">
+          Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
+        </p>
+        <div>
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
+            Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={reason}
+            onChange={(e) => { setReason(e.target.value); setError(null); }}
+            placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
+            rows={3}
+            className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
+          />
         </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-[13px] text-gray-500 leading-relaxed">
-            Klienti do të fshihet nga lista dhe nuk do të shfaqet më. Të dhënat ruhen në databazë për auditim.
-          </p>
-          <div>
-            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 block">
-              Pse po e hiqni këtë klient? <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={reason}
-              onChange={(e) => { setReason(e.target.value); setError(null); }}
-              placeholder="p.sh. U importua gabimisht, dublikatë e klientit K0422/44…"
-              rows={3}
-              className="w-full px-3 py-2.5 text-[13px] border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 transition-colors resize-none"
-            />
-          </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
-        </div>
-
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={saving} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">
-            Anulo
-          </button>
-          <button
-            onClick={handleArchive}
-            disabled={saving || !reason.trim()}
-            className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-          >
-            {saving ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-            {saving ? "Duke hequr..." : "Hiq Klientin"}
-          </button>
-        </div>
-      </div>
-    </div>
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
+      </ModalBody>
+      <ModalFooter onClose={onClose} onConfirm={handleArchive} confirmLabel={saving ? "Duke hequr..." : "Hiq Klientin"} loading={saving} disabled={!reason.trim()} variant="danger" />
+    </Modal>
   );
 }
 
@@ -218,19 +193,9 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col modal-panel">
-        {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Klient i Ri</h2>
-            <p className="text-[12px] text-gray-400 mt-0.5">Plotëso të dhënat kryesore për të regjistruar klientin</p>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={18} /></button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+    <Modal onClose={onClose} maxWidth="max-w-lg">
+      <ModalHeader title="Klient i Ri" subtitle="Plotëso të dhënat kryesore për të regjistruar klientin" onClose={onClose} />
+      <div className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[65vh]">
           {submitError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{submitError}</div>}
 
           {/* Step 1 — ID search */}
@@ -364,16 +329,8 @@ function CreateCaseModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Anulo</button>
-          <button onClick={submit} disabled={loading}
-            className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-            {loading ? "Duke regjistruar…" : "Regjistro Klientin"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <ModalFooter onClose={onClose} onConfirm={submit} confirmLabel={loading ? "Duke regjistruar…" : "Regjistro Klientin"} loading={loading} variant="brand" />
+    </Modal>
   );
 }
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { cases as casesApi, payments as paymentsApi, agreements as agreementsApi, activities as activitiesApi, legal as legalApi, reports as reportsApi, fetchAllPages } from "@/lib/api";
 import { formatEnum } from "@/lib/utils";
 import { BarChart3, Play, X, RefreshCw, CheckCircle2, FileText, CreditCard, Scale, Activity, FileCheck, FileSpreadsheet, AlertCircle, Handshake } from "lucide-react";
+import { Modal, ModalHeader, ModalFooter } from "@/components/ui/Modal";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { presetToRange, REPORT_PRESETS } from "@/components/ui/DatePresetPicker";
 import { AccessGuard } from "@/components/AccessGuard";
@@ -244,22 +245,14 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
   const Icon = report.icon;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh] modal-panel">
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Icon size={15} className="text-gray-500" />
-            </div>
-            <div>
-              <h2 className="text-[15px] font-semibold text-gray-900">{report.name}</h2>
-              <p className="text-[12px] text-gray-400">{report.desc}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="modal-close-btn"><X size={16} /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+    <Modal onClose={onClose} maxWidth="max-w-2xl">
+      <ModalHeader
+        title={report.name}
+        subtitle={report.desc}
+        onClose={onClose}
+        icon={<div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Icon size={15} className="text-gray-500" /></div>}
+      />
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[65vh]">
 
           {/* Report info */}
           <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -357,23 +350,27 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           )}
         </div>
 
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 transition-colors">Mbyll</button>
-          <button onClick={run} disabled={running}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-[13px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            {running ? <RefreshCw size={13} className="animate-spin" /> : <Play size={13} />}
-            {running ? "Duke ekzekutuar…" : "Ekzekuto Raportin"}
-          </button>
-          {result && result.rows > 0 && (
-            <button
-              onClick={() => downloadCSV(`DLR-${report.code.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`, result.all)}
-              className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 transition-colors">
-              <FileSpreadsheet size={13} /> Eksporto në Excel
+      <ModalFooter
+        onClose={onClose}
+        cancelLabel="Mbyll"
+        onConfirm={result && result.rows > 0
+          ? () => downloadCSV(`DLR-${report.code.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`, result.all)
+          : run}
+        confirmLabel={result && result.rows > 0
+          ? <><FileSpreadsheet size={13} /> Eksporto në Excel</>
+          : running ? <><RefreshCw size={13} className="animate-spin" /> Duke ekzekutuar…</> : <><Play size={13} /> Ekzekuto Raportin</>}
+        loading={running && !(result && result.rows > 0)}
+        variant="brand"
+        leftSlot={result && result.rows > 0
+          ? <button onClick={run} disabled={running}
+              className="h-9 px-4 rounded-xl text-[13px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+              {running ? <RefreshCw size={13} className="animate-spin" /> : <Play size={13} />}
+              {running ? "Duke ekzekutuar…" : "Ekzekuto Sërish"}
             </button>
-          )}
-        </div>
-      </div>
-    </div>
+          : undefined
+        }
+      />
+    </Modal>
   );
 }
 

@@ -14,6 +14,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { MobileFilterSheet } from "@/components/ui/MobileFilterSheet";
 import { Table, Thead, Tbody, Th, Td, Tr } from "@/components/ui/Table";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/Modal";
 import {
   RefreshCw, Phone, MapPin, CreditCard, FileText,
   CheckSquare, Clock, Mail, MessageSquare, ChevronRight,
@@ -378,13 +379,9 @@ export default function ActivitiesPage() {
         const showPromise = LOG_PROMISE_TYPES.has(logType) && (logType === "PROMISE_TO_PAY" || logOutcome === "PROMISE_RECEIVED");
         const showFollowup = LOG_FOLLOWUP_TYPES.has(logType) && !showPromise;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-backdrop-in modal-backdrop" onClick={closeLog}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-modal-in modal-panel max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <h2 className="text-[15px] font-semibold text-gray-900">Regjistro Aktivitet</h2>
-                <button onClick={closeLog} className="modal-close-btn"><X size={16} /></button>
-              </div>
-              <div className="p-5 space-y-3 overflow-y-auto flex-1">
+          <Modal onClose={closeLog} maxWidth="max-w-lg">
+            <ModalHeader title="Regjistro Aktivitet" onClose={closeLog} />
+            <div className="p-5 space-y-3 overflow-y-auto max-h-[65vh]">
                 {logError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-red-700">{logError}</div>}
 
                 {/* Case search */}
@@ -530,15 +527,8 @@ export default function ActivitiesPage() {
                   </div>
                 )}
               </div>
-              <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-3 justify-end shrink-0">
-                <button onClick={closeLog} className="px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900">Anulo</button>
-                <button onClick={submitLog} disabled={logging}
-                  className="px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors">
-                  {logging ? "Duke ruajtur…" : "Regjistro Aktivitetin"}
-                </button>
-              </div>
-            </div>
-          </div>
+            <ModalFooter onClose={closeLog} onConfirm={submitLog} confirmLabel={logging ? "Duke ruajtur…" : "Regjistro Aktivitetin"} loading={logging} variant="brand" />
+          </Modal>
         );
       })()}
 
