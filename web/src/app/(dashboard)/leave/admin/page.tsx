@@ -9,8 +9,10 @@ import { useToast } from "@/components/ui/Toast";
 import {
   CalendarDays, Check, X, Settings, ChevronDown, ChevronUp,
   Plus, Minus, AlertTriangle, Users, Clock, CheckCircle,
-  Info,
+  Info, FileSpreadsheet,
 } from "lucide-react";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { downloadExcel } from "@/lib/exportExcel";
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -208,10 +210,7 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
             <>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Data Fillestare e Akumulimit</label>
-                <div className="relative">
-                  <input type="date" value={initialDate} onChange={e => setInitialDate(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] text-gray-800 focus:outline-none focus:border-brand-400 transition-colors" />
-                </div>
+                <DatePicker value={initialDate} onChange={setInitialDate} placeholder="Zgjidhni datën" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Ditë Fillestare</label>
@@ -223,7 +222,7 @@ function BalanceModal({ userId, userName, current, onClose, onDone }: {
                 <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-blue-700 leading-relaxed">
                   Nga kjo datë sistemi shton automatikisht <strong>+1.5 ditë çdo muaj</strong>.
-                  Në fund të Qershorit, bilancet mbi 6 ditë nuk transferohen.
+                  Në fund të Qershorit, bilancet mbi 9 ditë nuk transferohen.
                 </p>
               </div>
             </>
@@ -453,6 +452,45 @@ export default function LeaveAdminPage() {
 
   const noBalance = staff.filter(s => !s.balance.hasBalance).length;
 
+  function exportStaffBalances() {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = staff.map(item => {
+      const b = item.balance;
+      const totalEarned = b.hasBalance ? (b.initialDays + b.accrued + (b.adjustmentsTotal ?? 0)) : 0;
+      return {
+        "Emri i Plotë": item.user.fullName,
+        "Kodi": item.user.userCode ?? "",
+        "Zyra": item.user.office?.name ?? "",
+        "Bilanci Fillestar (ditë)": b.hasBalance ? b.initialDays : "",
+        "Të Fituara (akumulim)": b.hasBalance ? b.accrued : "",
+        "Rregullime Manuale": b.hasBalance ? (b.adjustmentsTotal ?? 0) : "",
+        "Totali i Mundshëm (ditë)": b.hasBalance ? totalEarned : "",
+        "Të Shfrytëzuara (ditë)": b.hasBalance ? b.usedAnnual : "",
+        "Disponueshme (ditë)": b.hasBalance ? b.balance : "",
+        "Statusi Bilancit": b.hasBalance ? "Konfiguruar" : "Pa bilans",
+      };
+    });
+    downloadExcel(rows, `DLR-Bilanci-Pushimeve-${today}`);
+  }
+
+  function exportApprovedRequests() {
+    const today = new Date().toISOString().slice(0, 10);
+    const allApproved = [...approved];
+    const rows = allApproved.map(r => ({
+      "Emri i Plotë": r.user.fullName,
+      "Kodi": r.user.userCode ?? "",
+      "Zyra": r.user.office?.name ?? "",
+      "Lloji i Pushimit": LEAVE_TYPE_LABELS[r.leaveType] ?? r.leaveType,
+      "Data e Fillimit": new Date(r.startDate).toLocaleDateString("sq-AL"),
+      "Data e Mbarimit": new Date(r.endDate).toLocaleDateString("sq-AL"),
+      "Ditë Pune": r.workingDays,
+      "Arsyeja": r.reason ?? "",
+      "Data e Aprovimit": r.reviewedAt ? new Date(r.reviewedAt).toLocaleDateString("sq-AL") : "",
+      "Aprovuar nga": r.reviewedBy?.fullName ?? "",
+    }));
+    downloadExcel(rows, `DLR-Kerkesat-e-Aprovuara-${today}`);
+  }
+
   return (
     <>
       <Topbar title="Menaxhimi i Pushimeve" subtitle="Aprovo kërkesat dhe menaxho bilancet e stafit" help={[
@@ -502,25 +540,41 @@ export default function LeaveAdminPage() {
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
           {/* Tabs */}
-          <div className="flex border-b border-gray-100 px-5">
-            {([
-              { key: "pending" as Tab, label: "Kërkesat",  badge: pending.length },
-              { key: "staff"   as Tab, label: "Stafi",     badge: null },
-            ]).map(({ key, label, badge }) => (
-              <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-4 py-3.5 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-                  tab === key ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}>
-                {label}
-                {badge != null && badge > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    tab === key ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700"
+          <div className="flex items-center border-b border-gray-100 px-5">
+            <div className="flex flex-1">
+              {([
+                { key: "pending" as Tab, label: "Kërkesat",  badge: pending.length },
+                { key: "staff"   as Tab, label: "Stafi",     badge: null },
+              ]).map(({ key, label, badge }) => (
+                <button key={key} onClick={() => setTab(key)}
+                  className={`flex items-center gap-2 px-4 py-3.5 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                    tab === key ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}>
-                    {badge}
-                  </span>
-                )}
+                  {label}
+                  {badge != null && badge > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      tab === key ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700"
+                    }`}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            {!loading && tab === "staff" && staff.length > 0 && (
+              <button onClick={exportStaffBalances}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 transition-colors shrink-0">
+                <FileSpreadsheet size={13} />
+                Excel
               </button>
-            ))}
+            )}
+            {!loading && tab === "pending" && approved.length > 0 && (
+              <button onClick={exportApprovedRequests}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 transition-colors shrink-0">
+                <FileSpreadsheet size={13} />
+                Excel
+              </button>
+            )}
           </div>
 
           {/* Content */}

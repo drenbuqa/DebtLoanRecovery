@@ -157,7 +157,7 @@ export class SchedulerService {
     this.log.log(`Broken agreements notification sweep complete — ${seenAgreements.size} agreements, ${notifs.length} notifications sent`);
   }
 
-  // June 1 at midnight: apply annual leave cap (forfeits balance > 6 days)
+  // June 1 at midnight: apply annual leave cap (forfeits balance > 9 days)
   @Cron('0 0 1 6 *')
   async applyJuneCap() {
     const year = new Date().getFullYear();

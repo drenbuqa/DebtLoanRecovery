@@ -228,10 +228,11 @@ function StatusBadge({ status, allSkipped }: { status: string; allSkipped?: bool
     );
   }
   const map: Record<string, { label: string; color: string; dot: string }> = {
-    COMPLETED:  { label: "Përfunduar",     color: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-    FAILED:     { label: "Dështuar",       color: "bg-red-50 text-red-600",         dot: "bg-red-400" },
-    PROCESSING: { label: "Duke procesuar", color: "bg-amber-50 text-amber-700",     dot: "bg-amber-500 animate-pulse" },
-    PENDING:    { label: "Në pritje",      color: "bg-gray-100 text-gray-600",      dot: "bg-gray-400" },
+    COMPLETED:    { label: "Përfunduar",    color: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+    FAILED:       { label: "Dështuar",      color: "bg-red-50 text-red-600",         dot: "bg-red-400" },
+    PROCESSING:   { label: "Duke procesuar",color: "bg-amber-50 text-amber-700",     dot: "bg-amber-500 animate-pulse" },
+    PENDING:      { label: "Në pritje",     color: "bg-gray-100 text-gray-600",      dot: "bg-gray-400" },
+    ROLLED_BACK:  { label: "I anuluar",     color: "bg-gray-100 text-gray-500",      dot: "bg-gray-400" },
   };
   const m = map[status] ?? map.PENDING;
   return (
@@ -255,25 +256,68 @@ function TypeBadge({ importType }: { importType: string }) {
 
 // ── Rollback modal ─────────────────────────────────────────────────────────────
 
+type RollbackCheckResult = {
+  canRollback: boolean;
+  importType?: string;
+  reason?: string | null;
+  deletableCount?: number;
+  skippedCount?: number;
+  totalCases?: number;
+  cases?: string[];
+};
+
 type RollbackState =
-  | { phase: "idle" }
   | { phase: "checking" }
-  | { phase: "blocked"; reason: string; blockers: string[] }
-  | { phase: "confirm"; caseCount: number; cases: string[] }
+  | { phase: "blocked"; reason: string }
+  | { phase: "confirm"; check: RollbackCheckResult }
   | { phase: "deleting" }
-  | { phase: "done"; deleted: number }
+  | { phase: "done"; deleted: number; skipped: number; importType: string }
   | { phase: "error"; message: string };
+
+function rollbackConfirmText(check: RollbackCheckResult): { title: string; body: string; buttonLabel: string } {
+  if (check.importType === "ACTIVITIES") {
+    return {
+      title: `Do të fshihen ${check.deletableCount} aktivitete`,
+      body: "Aktivitetet e importuara do të shënohen si të fshira. Premtimet e lidhura me to do të anulohen.",
+      buttonLabel: "Po, fshi aktivitetet",
+    };
+  }
+  if (check.importType === "PAYMENTS") {
+    return {
+      title: `Do të anulohen ${check.deletableCount} pagesa`,
+      body: "Pagesat e importuara do të shënohen si të anuluara (void). Ky veprim nuk i fshin fizikisht nga baza e të dhënave.",
+      buttonLabel: "Po, anulo pagesat",
+    };
+  }
+  // PORTFOLIO
+  const skipped = check.skippedCount ?? 0;
+  const skippedNote = skipped > 0
+    ? ` ${skipped} rast${skipped !== 1 ? "e" : ""} me ndryshime manuale pas importit do të ruhen.`
+    : "";
+  return {
+    title: `Do të fshihen ${check.deletableCount} klientë dhe kreditë e tyre`,
+    body: `Ky veprim është i pakthyeshëm. Klientët e importuara nga ky skedar do të fshihen përgjithmonë.${skippedNote}`,
+    buttonLabel: "Po, fshi klientët",
+  };
+}
+
+function rollbackDoneText(importType: string, deleted: number, skipped: number): string {
+  if (importType === "ACTIVITIES") return `${deleted} aktivitete u fshinë me sukses.`;
+  if (importType === "PAYMENTS")   return `${deleted} pagesa u anuluan me sukses.`;
+  const s = skipped > 0 ? ` ${skipped} raste u ruajtën sepse kishin ndryshime manuale.` : "";
+  return `${deleted} klientë u fshinë me sukses.${s}`;
+}
 
 function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => void; onSuccess: () => void }) {
   const [state, setState] = useState<RollbackState>({ phase: "checking" });
 
   useEffect(() => {
     importApi.rollbackCheck(job.id)
-      .then((r) => {
+      .then((r: RollbackCheckResult) => {
         if (r.canRollback) {
-          setState({ phase: "confirm", caseCount: r.caseCount ?? 0, cases: r.cases ?? [] });
+          setState({ phase: "confirm", check: r });
         } else {
-          setState({ phase: "blocked", reason: r.reason ?? "Rollback i bllokuar", blockers: r.blockers ?? [] });
+          setState({ phase: "blocked", reason: r.reason ?? "Rollback i bllokuar" });
         }
       })
       .catch((e: any) => setState({ phase: "error", message: e.message ?? "Gabim gjatë kontrollit" }));
@@ -283,12 +327,14 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
     setState({ phase: "deleting" });
     try {
       const r = await importApi.rollback(job.id);
-      setState({ phase: "done", deleted: r.deleted });
-      setTimeout(() => { onSuccess(); onClose(); }, 1800);
+      setState({ phase: "done", deleted: r.deleted ?? 0, skipped: r.skipped ?? 0, importType: r.importType ?? job.importType });
+      setTimeout(() => { onSuccess(); onClose(); }, 2200);
     } catch (e: any) {
       setState({ phase: "error", message: e.message ?? "Gabim gjatë anulimit" });
     }
   }
+
+  const confirmTexts = state.phase === "confirm" ? rollbackConfirmText(state.check) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -324,31 +370,34 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
                   <p className="text-[12px] text-amber-700 leading-relaxed">{state.reason}</p>
                 </div>
               </div>
-              <p className="text-[12px] text-gray-500 leading-relaxed">
-                Për të hequr të dhënat e këtij importi, duhet të fshini manualisht klientët e regjistruar.
-              </p>
             </div>
           )}
-          {state.phase === "confirm" && (
+          {state.phase === "confirm" && confirmTexts && (
             <div className="space-y-3">
               <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-xl">
                 <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[13px] font-semibold text-red-800 mb-1">
-                    Do të fshihen {state.caseCount} klientë dhe kreditë e tyre
-                  </p>
-                  <p className="text-[12px] text-red-700 leading-relaxed">
-                    Ky veprim është <strong>i pakthyeshëm</strong>. Klientët e importuara nga ky skedar do të fshihen përgjithmonë.
-                  </p>
+                  <p className="text-[13px] font-semibold text-red-800 mb-1">{confirmTexts.title}</p>
+                  <p className="text-[12px] text-red-700 leading-relaxed">{confirmTexts.body}</p>
                 </div>
               </div>
-              {state.cases.length > 0 && (
+              {/* Skipped cases warning */}
+              {(state.check.skippedCount ?? 0) > 0 && (
+                <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-amber-700">
+                    <strong>{state.check.skippedCount} raste</strong> nuk do të fshihen sepse kanë aktivitete ose pagesa të shtuara manualisht pas importit.
+                  </p>
+                </div>
+              )}
+              {/* Case list preview for PORTFOLIO */}
+              {state.check.importType === "PORTFOLIO" && (state.check.cases?.length ?? 0) > 0 && (
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                     <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Klientët që do të fshihen</span>
                   </div>
                   <div className="divide-y divide-gray-50 max-h-32 overflow-y-auto">
-                    {state.cases.map((ref) => (
+                    {state.check.cases!.map((ref) => (
                       <div key={ref} className="px-3 py-1.5 text-[12px] font-mono text-gray-700">{ref}</div>
                     ))}
                   </div>
@@ -359,13 +408,15 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
           {state.phase === "deleting" && (
             <div className="flex items-center gap-3 py-4">
               <RefreshCw size={16} className="animate-spin text-red-500 shrink-0" />
-              <span className="text-[13px] text-gray-600">Duke fshirë klientët…</span>
+              <span className="text-[13px] text-gray-600">Duke procesuar anulimin…</span>
             </div>
           )}
           {state.phase === "done" && (
             <div className="flex items-center gap-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
               <CheckCircle size={15} className="text-emerald-500 shrink-0" />
-              <p className="text-[13px] font-semibold text-emerald-800">{state.deleted} klientë u fshinë me sukses</p>
+              <p className="text-[13px] font-semibold text-emerald-800">
+                {rollbackDoneText(state.importType, state.deleted, state.skipped)}
+              </p>
             </div>
           )}
           {state.phase === "error" && (
@@ -379,12 +430,12 @@ function RollbackModal({ job, onClose, onSuccess }: { job: any; onClose: () => v
           {(state.phase === "blocked" || state.phase === "error") && (
             <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">Mbyll</button>
           )}
-          {state.phase === "confirm" && (
+          {state.phase === "confirm" && confirmTexts && (
             <>
               <button onClick={onClose} className="h-9 px-4 text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors">Anulo</button>
               <button onClick={confirm}
                 className="h-9 px-5 text-[13px] font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2">
-                <RotateCcw size={13} /> Po, fshi klientët
+                <RotateCcw size={13} /> {confirmTexts.buttonLabel}
               </button>
             </>
           )}
@@ -403,7 +454,8 @@ function HistoryRow({ job, onRollback, showType }: { job: any; onRollback: () =>
   const skippedRows = job.skippedRows ?? (job.totalRows - job.successfulRows - job.failedRows);
   const allSkipped = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && skippedRows > 0 && (job.failedRows ?? 0) === 0;
   const allFailed  = job.status === "COMPLETED" && (job.successfulRows ?? 0) === 0 && (job.failedRows ?? 0) > 0;
-  const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0 && job.importType === "PORTFOLIO";
+  const rollbackableTypes = ["PORTFOLIO", "ACTIVITIES", "PAYMENTS"];
+  const canShowRollback = job.status === "COMPLETED" && (job.successfulRows ?? 0) > 0 && rollbackableTypes.includes(job.importType);
   const canExpand = hasErrors || allSkipped || allFailed;
 
   return (
@@ -1549,7 +1601,7 @@ export default function ImportPage() {
 
       {/* Tab bar */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6">
-        <nav className="flex gap-0 overflow-x-auto">
+        <nav className="flex gap-0 overflow-x-auto overflow-y-hidden" style={{ scrollbarWidth: "none" }}>
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}

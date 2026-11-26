@@ -244,7 +244,7 @@ export default function ActivitiesPage() {
         "Telefon i Azhurnuar": a.updatedPhone ?? "",
       }));
       const date = new Date().toISOString().slice(0, 10);
-      downloadExcel(rows, `aktivitetet-${date}`);
+      downloadExcel(rows, `DLR-Aktivitetet-${date}`);
     } finally {
       setExporting(false);
     }

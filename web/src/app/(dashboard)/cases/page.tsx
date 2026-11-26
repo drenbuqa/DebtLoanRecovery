@@ -556,7 +556,17 @@ function CasesPageInner() {
         return row;
       });
       const date = new Date().toISOString().slice(0, 10);
-      downloadExcel(rows, `klientet-${date}`);
+      const viewLabel: Record<string, string> = {
+        "":                "Lista-Klienteve",
+        "ndjekja_radhes":  "Ndjekja-e-Radhes",
+        "all_promises":    "Premtimet",
+        "vonesa":          "Vonesat",
+        "premtime_thyera": "Premtimet-e-Thyera",
+        "signal_90":       "Sinjal-90",
+        "inactive":        "Joaktive",
+      };
+      const prefix = viewLabel[view] ?? "Klientet";
+      downloadExcel(rows, `DLR-${prefix}-${date}`);
     } finally {
       setExporting(false);
     }

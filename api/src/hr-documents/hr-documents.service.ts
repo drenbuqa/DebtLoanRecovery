@@ -66,7 +66,7 @@ export class HrDocumentsService {
   async delete(id: string) {
     const doc = await this.prisma.hrDocument.findUnique({ where: { id }, select: { fileKey: true } });
     if (!doc) throw new NotFoundException('Dokumenti nuk u gjet');
-    await this.storage.delete(doc.fileKey);
+    try { await this.storage.delete(doc.fileKey); } catch { /* file may not exist in storage; continue */ }
     await this.prisma.hrDocument.delete({ where: { id } });
     return { deleted: true };
   }

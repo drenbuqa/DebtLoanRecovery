@@ -144,7 +144,12 @@ function NotificationsPanel() {
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(o => {
+          if (o) { notificationsApi.markAllRead().catch(() => {}); setUnreadCount(0); }
+          return false;
+        });
+      }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -172,9 +177,6 @@ function NotificationsPanel() {
 
   async function toggle() {
     if (open) {
-      // Mark all as read when the panel closes — badge only resets after user has seen them
-      notificationsApi.markAllRead().catch(() => {});
-      setUnreadCount(0);
       setOpen(false);
       return;
     }
@@ -191,6 +193,9 @@ function NotificationsPanel() {
     setLoading(true);
     await loadPanel().catch(() => {});
     setLoading(false);
+    // Mark all as read now that the user has seen the panel; reset badge
+    notificationsApi.markAllRead().catch(() => {});
+    setUnreadCount(0);
   }
 
   function goAndClose(path: string, notifId?: string) {

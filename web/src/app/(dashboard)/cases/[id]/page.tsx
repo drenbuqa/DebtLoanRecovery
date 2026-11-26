@@ -22,7 +22,7 @@ import { formatCurrency, formatEnum } from "@/lib/utils";
 import {
   ChevronLeft, Phone, MessageSquare, MapPin, CreditCard,
   FileText, CheckSquare, Clock, Scale, RefreshCw,
-  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList, Ban, Pencil,
+  MoreHorizontal, Plus, Upload, Circle, CheckCircle2, X, Trash2, Download, ClipboardList, Ban, Pencil, FileSpreadsheet,
 } from "lucide-react";
 
 // ── Shared empty state ───────────────────────────────────────
@@ -897,7 +897,7 @@ export default function CaseDetailPage() {
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Historia");
-    XLSX.writeFile(wb, `historia-${caseRef}.xlsx`);
+    XLSX.writeFile(wb, `DLR-Historia-${caseRef}-${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
   async function submitUpload() {
@@ -1468,9 +1468,9 @@ export default function CaseDetailPage() {
               <button
                 onClick={exportHistoriaToExcel}
                 disabled={allActivitiesLoading || allActivities.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                <Download size={13} />
-                Eksporto Excel
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <FileSpreadsheet size={13} />
+                Excel
               </button>
             </div>
             {allActivitiesLoading ? (

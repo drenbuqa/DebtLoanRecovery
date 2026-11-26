@@ -345,7 +345,7 @@ export default function PaymentsPage() {
         "Shënime": p.notes ?? "",
       }));
       const date = new Date().toISOString().slice(0, 10);
-      downloadExcel(rows, `pagesat-${date}`);
+      downloadExcel(rows, `DLR-Pagesat-${date}`);
     } finally {
       setExporting(false);
     }

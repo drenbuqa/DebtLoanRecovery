@@ -111,7 +111,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `gjendja-klientëve-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Gjendja-Klienteve-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -129,7 +129,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `arketimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Arketimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -143,7 +143,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `marreveshjet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Marreveshjet-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -157,7 +157,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `keste-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Keste-me-Vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -171,7 +171,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `klientët-gjyqesore-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Klientet-Juridike-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -185,7 +185,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Aktivitetet-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -199,7 +199,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `pagesat-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Pagesat-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -211,7 +211,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `klientet-vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Klientet-me-Vonese-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -225,7 +225,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `premtimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.download = `DLR-Premtimet-${new Date().toISOString().slice(0, 10)}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
         onClose();
@@ -366,7 +366,7 @@ function RunModal({ report, onClose }: { report: typeof REPORTS[0]; onClose: () 
           </button>
           {result && result.rows > 0 && (
             <button
-              onClick={() => downloadCSV(`${report.code.toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`, result.all)}
+              onClick={() => downloadCSV(`DLR-${report.code.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`, result.all)}
               className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-xl text-[13px] font-medium hover:bg-brand-700 transition-colors">
               <FileSpreadsheet size={13} /> Eksporto në Excel
             </button>

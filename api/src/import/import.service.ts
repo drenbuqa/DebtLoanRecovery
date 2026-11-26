@@ -573,88 +573,269 @@ export class ImportService {
 
   // ── Import rollback ────────────────────────────────────────────────────────────
 
+  private readonly ROLLBACK_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
+
   async rollbackCheck(jobId: string) {
     const job = await this.prisma.importJob.findUnique({
       where: { id: jobId },
-      select: { id: true, fileName: true, successfulRows: true, completedAt: true, cases: { select: { id: true, caseReference: true } } },
+      select: {
+        id: true, fileName: true, importType: true, successfulRows: true,
+        status: true, completedAt: true,
+        cases: { select: { id: true, caseReference: true } },
+      },
     });
     if (!job) throw new Error('Importi nuk u gjet');
 
-    const caseIds = job.cases.map((c) => c.id);
-    if (caseIds.length === 0) {
+    if (job.status === 'ROLLED_BACK') {
+      return { canRollback: false, reason: 'Ky import është anuluar tashmë.' };
+    }
+    if (job.status !== 'COMPLETED') {
+      return { canRollback: false, reason: 'Vetëm importet e kompletuar mund të anulohen.' };
+    }
+
+    const completedAt = job.completedAt ?? new Date(0);
+    if (Date.now() - completedAt.getTime() > this.ROLLBACK_WINDOW_MS) {
       return {
         canRollback: false,
-        reason: 'Ky import u krye para se sistemi të fillonte të gjurmonte lidhjen midis importeve dhe rasteve. Anulimi automatik nuk është i mundshëm për importet e vjetra.',
-        blockers: [],
+        reason: 'Anulimi është i mundur vetëm brenda 48 orëve nga përfundimi i importit. Ky import ka kaluar afatin.',
       };
     }
 
-    // Check for any follow-up data on these cases
-    const [activities, payments, agreements, legalProceedings, documents] = await Promise.all([
-      this.prisma.activity.count({ where: { caseId: { in: caseIds } } }),
-      this.prisma.payment.count({ where: { caseId: { in: caseIds } } }),
-      this.prisma.agreement.count({ where: { caseId: { in: caseIds } } }),
-      this.prisma.legalProceeding.count({ where: { caseId: { in: caseIds } } }),
-      this.prisma.document.count({ where: { caseId: { in: caseIds } } }),
-    ]);
+    // ── PORTFOLIO (client) imports ──
+    if (job.importType === 'PORTFOLIO') {
+      const caseIds = job.cases.map((c) => c.id);
+      if (caseIds.length === 0) {
+        return { canRollback: false, reason: 'Ky import nuk krijoi asnjë rast. Nuk ka të dhëna për të anuluar.' };
+      }
 
-    const blockers: string[] = [];
-    if (activities > 0)       blockers.push(`${activities} aktivitet${activities !== 1 ? 'e' : ''}`);
-    if (payments > 0)         blockers.push(`${payments} pagesë${payments !== 1 ? '' : ''}`);
-    if (agreements > 0)       blockers.push(`${agreements} marrëveshje`);
-    if (legalProceedings > 0) blockers.push(`${legalProceedings} procedurë ligjore`);
-    if (documents > 0)        blockers.push(`${documents} dokument${documents !== 1 ? 'e' : ''}`);
+      // Find cases that have post-import manual work (created after completedAt, not from this import job)
+      const [manualActivities, manualPayments, manualAgreements, manualDocs, manualLegal] = await Promise.all([
+        this.prisma.activity.findMany({
+          where: { caseId: { in: caseIds }, createdAt: { gt: completedAt }, deletedAt: null, importJobId: null },
+          select: { caseId: true },
+        }),
+        this.prisma.payment.findMany({
+          where: { caseId: { in: caseIds }, createdAt: { gt: completedAt }, voidedAt: null, importJobId: null },
+          select: { caseId: true },
+        }),
+        this.prisma.agreement.findMany({
+          where: { caseId: { in: caseIds }, createdAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+        this.prisma.document.findMany({
+          where: { caseId: { in: caseIds }, uploadedAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+        this.prisma.legalProceeding.findMany({
+          where: { caseId: { in: caseIds }, createdAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+      ]);
 
-    if (blockers.length > 0) {
+      const protectedIds = new Set([
+        ...manualActivities.map((a) => a.caseId),
+        ...manualPayments.map((p) => p.caseId),
+        ...manualAgreements.map((a) => a.caseId),
+        ...manualDocs.map((d) => d.caseId),
+        ...manualLegal.map((l) => l.caseId),
+      ]);
+
+      const deletableCases = job.cases.filter((c) => !protectedIds.has(c.id));
+      const skippedCount   = job.cases.length - deletableCases.length;
+
+      if (deletableCases.length === 0) {
+        return {
+          canRollback: false,
+          reason: `Të gjitha ${job.cases.length} rastet e këtij importi kanë të dhëna të shtuara manualisht pas importit dhe nuk mund të fshihen.`,
+          importType: 'PORTFOLIO',
+          totalCases: job.cases.length,
+          deletableCount: 0,
+          skippedCount,
+        };
+      }
+
       return {
-        canRollback: false,
-        reason: `Rastet e këtij importi kanë të dhëna të regjistruara: ${blockers.join(', ')}. Fshirja do të shkatërronte këto të dhëna.`,
-        blockers,
-        caseCount: caseIds.length,
+        canRollback: true,
+        importType: 'PORTFOLIO',
+        totalCases: job.cases.length,
+        deletableCount: deletableCases.length,
+        skippedCount,
+        cases: deletableCases.map((c) => c.caseReference),
+        reason: null,
       };
     }
 
-    return {
-      canRollback: true,
-      reason: null,
-      caseCount: caseIds.length,
-      cases: job.cases.map((c) => c.caseReference),
-    };
+    // ── ACTIVITIES imports ──
+    if (job.importType === 'ACTIVITIES') {
+      const count = await this.prisma.activity.count({
+        where: { importJobId: jobId, deletedAt: null },
+      });
+      if (count === 0) {
+        return { canRollback: false, reason: 'Të gjitha aktivitetet e këtij importi janë fshirë tashmë.', importType: 'ACTIVITIES' };
+      }
+      return { canRollback: true, importType: 'ACTIVITIES', deletableCount: count, reason: null };
+    }
+
+    // ── PAYMENTS imports ──
+    if (job.importType === 'PAYMENTS') {
+      const count = await this.prisma.payment.count({
+        where: { importJobId: jobId, voidedAt: null },
+      });
+      if (count === 0) {
+        return { canRollback: false, reason: 'Të gjitha pagesat e këtij importi janë anuluar tashmë.', importType: 'PAYMENTS' };
+      }
+      return { canRollback: true, importType: 'PAYMENTS', deletableCount: count, reason: null };
+    }
+
+    return { canRollback: false, reason: 'Ky lloj importi nuk mbështet anulimin.' };
   }
 
   async rollback(jobId: string) {
     const check = await this.rollbackCheck(jobId);
     if (!check.canRollback) throw new Error(check.reason ?? 'Rollback i bllokuar');
 
-    const job = await this.prisma.importJob.findUnique({
-      where: { id: jobId },
-      select: { cases: { select: { id: true, loanId: true, loan: { select: { borrowerId: true } } } } },
-    });
-    if (!job) throw new Error('Importi nuk u gjet');
+    const now = new Date();
 
-    const caseIds  = job.cases.map((c) => c.id);
-    const loanIds  = job.cases.map((c) => c.loanId);
-    const borrowerIds = [...new Set(job.cases.map((c) => c.loan.borrowerId))];
+    // ── PORTFOLIO rollback ──
+    if (check.importType === 'PORTFOLIO') {
+      const job = await this.prisma.importJob.findUnique({
+        where: { id: jobId },
+        select: {
+          completedAt: true,
+          cases: {
+            select: { id: true, loanId: true, loan: { select: { borrowerId: true } } },
+          },
+        },
+      });
+      if (!job) throw new Error('Importi nuk u gjet');
 
-    await this.prisma.$transaction(async (tx) => {
-      // Delete in dependency order
-      await tx.loanParty.deleteMany({ where: { loanId: { in: loanIds } } });
-      await tx.loanBalanceHistory.deleteMany({ where: { loanId: { in: loanIds } } });
-      await tx.case.deleteMany({ where: { id: { in: caseIds } } });
-      await tx.loan.deleteMany({ where: { id: { in: loanIds } } });
-      // Only delete persons not referenced by other loans
-      for (const borrowerId of borrowerIds) {
-        const otherLoans = await tx.loan.count({ where: { borrowerId } });
-        if (otherLoans === 0) {
-          await tx.personPhone.deleteMany({ where: { personId: borrowerId } });
-          await tx.person.deleteMany({ where: { id: borrowerId } });
+      const completedAt = job.completedAt ?? new Date(0);
+
+      // Re-determine safe cases inside the transaction to guard against race conditions
+      const [manualActivities, manualPayments, manualAgreements, manualDocs, manualLegal] = await Promise.all([
+        this.prisma.activity.findMany({
+          where: { caseId: { in: job.cases.map((c) => c.id) }, createdAt: { gt: completedAt }, deletedAt: null, importJobId: null },
+          select: { caseId: true },
+        }),
+        this.prisma.payment.findMany({
+          where: { caseId: { in: job.cases.map((c) => c.id) }, createdAt: { gt: completedAt }, voidedAt: null, importJobId: null },
+          select: { caseId: true },
+        }),
+        this.prisma.agreement.findMany({
+          where: { caseId: { in: job.cases.map((c) => c.id) }, createdAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+        this.prisma.document.findMany({
+          where: { caseId: { in: job.cases.map((c) => c.id) }, uploadedAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+        this.prisma.legalProceeding.findMany({
+          where: { caseId: { in: job.cases.map((c) => c.id) }, createdAt: { gt: completedAt } },
+          select: { caseId: true },
+        }),
+      ]);
+
+      const protectedIds = new Set([
+        ...manualActivities.map((a) => a.caseId),
+        ...manualPayments.map((p) => p.caseId),
+        ...manualAgreements.map((a) => a.caseId),
+        ...manualDocs.map((d) => d.caseId),
+        ...manualLegal.map((l) => l.caseId),
+      ]);
+
+      const safeCases = job.cases.filter((c) => !protectedIds.has(c.id));
+      if (safeCases.length === 0) throw new Error('Nuk ka raste të sigurta për fshirje pas verifikimit të fundit.');
+
+      const safeCaseIds   = safeCases.map((c) => c.id);
+      const safeLoanIds   = safeCases.map((c) => c.loanId);
+      const borrowerIds   = [...new Set(safeCases.map((c) => c.loan.borrowerId))];
+
+      await this.prisma.$transaction(async (tx) => {
+        // Cancel pending promises on deleted cases
+        await tx.promiseToPay.updateMany({
+          where: { caseId: { in: safeCaseIds }, status: 'PENDING' },
+          data: { status: 'CANCELLED' },
+        });
+        // Soft-delete any activities on these cases
+        await tx.activity.updateMany({
+          where: { caseId: { in: safeCaseIds }, deletedAt: null },
+          data: { deletedAt: now, deleteReason: 'Importi u anulua' },
+        });
+        // Void any payments on these cases
+        await tx.payment.updateMany({
+          where: { caseId: { in: safeCaseIds }, voidedAt: null },
+          data: { voidedAt: now, voidReason: 'Importi u anulua' },
+        });
+        await tx.caseStatusHistory.deleteMany({ where: { caseId: { in: safeCaseIds } } });
+        await tx.caseAssignment.deleteMany({ where: { caseId: { in: safeCaseIds } } });
+        await tx.loanParty.deleteMany({ where: { loanId: { in: safeLoanIds } } });
+        await tx.loanBalanceHistory.deleteMany({ where: { loanId: { in: safeLoanIds } } });
+        await tx.case.deleteMany({ where: { id: { in: safeCaseIds } } });
+        await tx.loan.deleteMany({ where: { id: { in: safeLoanIds } } });
+        // Only delete persons not referenced by any remaining loan
+        for (const borrowerId of borrowerIds) {
+          const otherLoans = await tx.loan.count({ where: { borrowerId } });
+          if (otherLoans === 0) {
+            await tx.personPhone.deleteMany({ where: { personId: borrowerId } });
+            await tx.person.deleteMany({ where: { id: borrowerId } });
+          }
         }
-      }
-      // Mark job as rolled back
-      await tx.importJob.update({ where: { id: jobId }, data: { status: 'FAILED' } });
-    });
+        await tx.importJob.update({ where: { id: jobId }, data: { status: 'ROLLED_BACK' } });
+      }, { timeout: 60000 });
 
-    return { deleted: caseIds.length };
+      return { deleted: safeCases.length, skipped: job.cases.length - safeCases.length, importType: 'PORTFOLIO' };
+    }
+
+    // ── ACTIVITIES rollback ──
+    if (check.importType === 'ACTIVITIES') {
+      const activities = await this.prisma.activity.findMany({
+        where: { importJobId: jobId, deletedAt: null },
+        select: { id: true, caseId: true },
+      });
+      const activityIds = activities.map((a) => a.id);
+      const affectedCaseIds = [...new Set(activities.map((a) => a.caseId))];
+
+      await this.prisma.$transaction(async (tx) => {
+        // Cancel pending promises linked to these activities
+        await tx.promiseToPay.updateMany({
+          where: { activityId: { in: activityIds }, status: 'PENDING' },
+          data: { status: 'CANCELLED' },
+        });
+        // Soft-delete the activities
+        await tx.activity.updateMany({
+          where: { id: { in: activityIds } },
+          data: { deletedAt: now, deleteReason: 'Importi u anulua' },
+        });
+        await tx.importJob.update({ where: { id: jobId }, data: { status: 'ROLLED_BACK' } });
+      });
+
+      // Recalculate nextActionDate for each affected case
+      for (const caseId of affectedCaseIds) {
+        const latest = await this.prisma.activity.findFirst({
+          where: { caseId, deletedAt: null, activityType: { notIn: ['PROMISE_TO_PAY'] as any[] }, outcome: { not: 'PROMISE_RECEIVED' as any } },
+          orderBy: { occurredAt: 'desc' },
+          select: { nextActionDate: true },
+        });
+        await this.prisma.case.update({ where: { id: caseId }, data: { nextActionDate: latest?.nextActionDate ?? null } });
+      }
+
+      return { deleted: activityIds.length, importType: 'ACTIVITIES' };
+    }
+
+    // ── PAYMENTS rollback ──
+    if (check.importType === 'PAYMENTS') {
+      const count = await this.prisma.payment.count({ where: { importJobId: jobId, voidedAt: null } });
+      await this.prisma.$transaction(async (tx) => {
+        await tx.payment.updateMany({
+          where: { importJobId: jobId, voidedAt: null },
+          data: { voidedAt: now, voidReason: 'Importi u anulua' },
+        });
+        await tx.importJob.update({ where: { id: jobId }, data: { status: 'ROLLED_BACK' } });
+      });
+      return { deleted: count, importType: 'PAYMENTS' };
+    }
+
+    throw new Error('Ky lloj importi nuk mbështet anulimin.');
   }
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
@@ -1240,6 +1421,7 @@ export class ImportService {
           row: {
             caseId,
             officerId,
+            importJobId: job.id,
             activityType: actType as any,
             occurredAt,
             notes: notesRaw || undefined,
@@ -1387,7 +1569,7 @@ export class ImportService {
         if (existingRefs.has(payRef)) payRef = `${payRef.slice(0, 40)}-${Date.now().toString(36)}`.slice(0, 50);
         existingRefs.add(payRef);
 
-        valid.push({ caseId, officerId, paymentReference: payRef, amount, paymentDate, notes: notesRaw || undefined });
+        valid.push({ caseId, officerId, importJobId: job.id, paymentReference: payRef, amount, paymentDate, notes: notesRaw || undefined });
       } catch (e: any) {
         errors.push({ row: rowNum, ref: caseRef || `rreshti ${rowNum}`, error: e.message });
       }

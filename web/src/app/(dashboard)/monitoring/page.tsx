@@ -128,11 +128,7 @@ export default function MonitoringPage() {
     list.sort((a, b) => {
       if (sortBy === "cases")     return b.activeCases - a.activeCases;
       if (sortBy === "portfolio") return b.portfolioBalance - a.portfolioBalance;
-      if (sortBy === "activity") {
-        const ta = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
-        const tb = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
-        return tb - ta;
-      }
+      if (sortBy === "activity") return b.activitiesThisMonth - a.activitiesThisMonth;
       return 0;
     });
     return list;
@@ -194,7 +190,7 @@ export default function MonitoringPage() {
               options={[
                 { value: "portfolio", label: "Portofoli (më i madh)" },
                 { value: "cases",     label: "Klientë aktivë (më shumë)" },
-                { value: "activity",  label: "Aktiviteti i fundit (më i ri)" },
+                { value: "activity",  label: "Aktivitete (më shumë)" },
               ]}
             />
             <div className="flex-1" />

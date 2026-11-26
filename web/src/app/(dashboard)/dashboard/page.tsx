@@ -404,7 +404,7 @@ function OfficerDashboard({ user }: { user: any }) {
                 "Data Premtimit":     c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
                 "Shuma Premtimit (€)":c.latestPromise?.promisedAmount ? Number(c.latestPromise.promisedAmount) : "",
                 "Data Veprimit":      c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL") : "",
-              })), `klientet-e-mi-${today}`);
+              })), `DLR-Klientet-e-Mi-${today}`);
             },
           },
           {
@@ -439,7 +439,7 @@ function OfficerDashboard({ user }: { user: any }) {
                 "Ref. Klientit": a.case?.caseReference ?? "",
                 "Shënime":       a.notes ?? "",
                 "Oficeri":       a.officer?.fullName ?? "",
-              })), `aktivitetet-${MONTHS[mo2].toLowerCase()}-${yr2}-${today}`);
+              })), `DLR-Aktivitetet-${MONTHS[mo2]}-${yr2}`);
             },
           },
         ]} />
@@ -562,14 +562,14 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                   const type = ACT_LABEL[a.activityType] ?? formatEnum(a.activityType);
                   return (
                     <div key={a.id} onClick={() => router.push(`/cases/${a.caseId ?? a.case?.id}`)}
-                      className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 cursor-pointer transition-colors">
-                      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                         <span className="text-gray-500 text-[9px] font-bold">
                           {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12.5px] font-medium text-gray-900 truncate">{name}</div>
+                        <div className="text-[13px] font-medium text-gray-900 truncate">{name}</div>
                         <div className="text-[11px] text-gray-400">
                           {type}{a.officer?.fullName ? ` · ${a.officer.fullName}` : ""}
                         </div>
@@ -684,7 +684,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                       "Data Premtimit":     c.latestPromise?.promiseDate ? new Date(c.latestPromise.promiseDate).toLocaleDateString("sq-AL") : "",
                       "Data Veprimit":      c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString("sq-AL") : "",
                     };
-                  }), `klientet-${today2}`);
+                  }), `DLR-Lista-Klienteve-${today2}`);
                 },
               },
               {
@@ -710,7 +710,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     "Shuma (€)":       pay.amount ? Number(pay.amount) : "",
                     "Oficeri":         pay.officer?.fullName ?? "",
                     "Shënime":         pay.notes ?? "",
-                  })), `pagesat-${MONTHS[mo2].toLowerCase()}-${yr2}`);
+                  })), `DLR-Pagesat-${MONTHS[mo2]}-${yr2}`);
                 },
               },
               {
@@ -736,7 +736,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     "Shuma Premtimit (€)": c.latestPromise?.promisedAmount ? Number(c.latestPromise.promisedAmount) : "",
                     "Ditë Vonesë":         c.latestPromise?.promiseDate ? (() => { const t = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Belgrade' }).format(new Date()); const p = new Date(c.latestPromise.promiseDate).toISOString().slice(0,10); return p >= t ? 0 : Math.round((new Date(t).getTime() - new Date(p).getTime()) / 86400000); })() : "",
                     "Zyrtari Kryesor":     c.assignedOfficer?.fullName ?? "",
-                  })), `vonesa-${today2}`);
+                  })), `DLR-Klientet-me-Vonese-${today2}`);
                 },
               },
               {
@@ -761,7 +761,7 @@ function ManagerDashboard({ user, isAdmin }: { user: any; isAdmin: boolean }) {
                     "Oficeri":       a.officer?.fullName ?? "",
                     "Zyra":          a.officer?.office?.name ?? "",
                     "Shënime":       a.notes ?? "",
-                  })), `aktivitetet-${MONTHS[mo2].toLowerCase()}-${yr2}`);
+                  })), `DLR-Aktivitetet-${MONTHS[mo2]}-${yr2}`);
                 },
               },
             ]} />

@@ -278,6 +278,7 @@ model Activity {
   id              String           @id @default(uuid()) @db.Uuid
   caseId          String           @map("case_id") @db.Uuid
   officerId       String           @map("officer_id") @db.Uuid
+  importJobId     String?          @map("import_job_id") @db.Uuid
   activityType    ActivityType     @map("activity_type")
   channel         String?          @db.VarChar(30)
   notes           String?          @db.Text
@@ -297,11 +298,13 @@ model Activity {
 
   case      Case          @relation(fields: [caseId], references: [id])
   officer   User          @relation(fields: [officerId], references: [id])
+  importJob ImportJob?    @relation(fields: [importJobId], references: [id])
   deletedBy User?         @relation("ActivityDeletedBy", fields: [deletedById], references: [id])
   promise   PromiseToPay?
 
   @@index([caseId, occurredAt(sort: Desc)])
   @@index([deletedAt])
+  @@index([importJobId])
   @@map("activities")
 }
 
@@ -343,6 +346,7 @@ model Payment {
   id                String        @id @default(uuid()) @db.Uuid
   caseId            String        @map("case_id") @db.Uuid
   officerId         String        @map("officer_id") @db.Uuid
+  importJobId       String?       @map("import_job_id") @db.Uuid
   paymentReference  String        @unique @map("payment_reference") @db.VarChar(50)
   amount            Decimal       @db.Decimal(18, 2)
   currency          String        @default("EUR") @db.VarChar(3)
@@ -355,13 +359,15 @@ model Payment {
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  case     Case  @relation(fields: [caseId], references: [id])
-  officer  User  @relation(fields: [officerId], references: [id])
-  voidedBy User? @relation("PaymentVoidedBy", fields: [voidedById], references: [id])
+  case      Case       @relation(fields: [caseId], references: [id])
+  officer   User       @relation(fields: [officerId], references: [id])
+  importJob ImportJob? @relation(fields: [importJobId], references: [id])
+  voidedBy  User?      @relation("PaymentVoidedBy", fields: [voidedById], references: [id])
 
   @@index([caseId, paymentDate(sort: Desc)])
   @@index([paymentDate])
   @@index([voidedAt])
+  @@index([importJobId])
   @@map("payments")
 }
 
@@ -543,6 +549,8 @@ model ImportJob {
   uploadedBy  User         @relation(fields: [uploadedById], references: [id])
   errors      ImportError[]
   cases       Case[]
+  activities  Activity[]
+  payments    Payment[]
 
   @@index([uploadedById])
   @@map("import_jobs")
@@ -716,6 +724,7 @@ enum ImportStatus {
   PROCESSING
   COMPLETED
   FAILED
+  ROLLED_BACK
 }
 
 enum BalanceSource {
