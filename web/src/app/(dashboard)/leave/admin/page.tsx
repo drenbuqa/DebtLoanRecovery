@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import {
   CalendarDays, Check, X, Settings, ChevronDown, ChevronUp,
-  Plus, Minus, AlertTriangle, Users, Clock, CheckCircle,
+  Plus, Minus, AlertTriangle, Users, Clock, CheckCircle, XCircle,
   Info, FileSpreadsheet,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -417,6 +417,7 @@ export default function LeaveAdminPage() {
 
   const [pending, setPending]         = useState<any[]>([]);
   const [approved, setApproved]       = useState<any[]>([]);
+  const [rejected, setRejected]       = useState<any[]>([]);
   const [staff, setStaff]             = useState<any[]>([]);
   const [loading, setLoading]         = useState(true);
   const [tab, setTab]                 = useState<Tab>("pending");
@@ -435,6 +436,7 @@ export default function LeaveAdminPage() {
       const [p, all, s] = await Promise.all([leaveApi.adminPending(), leaveApi.adminAllRequests(), leaveApi.adminStaff()]);
       setPending(p);
       setApproved(all.filter((r: any) => r.status === "APPROVED"));
+      setRejected(all.filter((r: any) => r.status === "REJECTED"));
       setStaff(s);
     } catch {} finally { setLoading(false); }
   }
@@ -691,6 +693,43 @@ export default function LeaveAdminPage() {
                             className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 shrink-0">
                             {cancelling === r.id ? "Duke anuluar…" : <><X size={12} /> Anulo</>}
                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rejected requests */}
+                {rejected.length > 0 && (
+                  <div className="mt-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <XCircle size={13} className="text-red-400" />
+                      <span className="text-[12px] font-semibold text-gray-600 uppercase tracking-wide">Kërkesa të Refuzuara</span>
+                      <span className="text-[11px] text-gray-400">({rejected.length})</span>
+                    </div>
+                    <div className="space-y-2">
+                      {rejected.map(r => (
+                        <div key={r.id} className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
+                          style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+                          <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0 text-red-600 text-[11px] font-bold">
+                            {r.user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[13px] font-semibold text-gray-900">{r.user.fullName}</span>
+                              <span className="text-[10px] text-gray-400">#{r.user.userCode}</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded border border-red-200 text-[11px] font-medium bg-red-50 text-red-600">
+                                {LEAVE_TYPE_LABELS[r.leaveType]}
+                              </span>
+                            </div>
+                            <div className="text-[12px] text-gray-500 mt-0.5">
+                              {new Date(r.startDate).toLocaleDateString("sq-AL")} — {new Date(r.endDate).toLocaleDateString("sq-AL")}
+                              <span className="text-gray-400"> · {r.workingDays} ditë pune</span>
+                            </div>
+                            {r.reviewNote && (
+                              <div className="text-[11px] text-gray-400 mt-0.5 italic">↳ {r.reviewNote}</div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
