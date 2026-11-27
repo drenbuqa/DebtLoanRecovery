@@ -840,7 +840,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2'|'inactive', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2'|'inactive'|'payment', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -1010,6 +1010,41 @@ export class ImportService {
             continue;
           }
           await this.prisma.case.update({ where: { id: cas.id }, data: { status: targetStatus } });
+          updated++;
+        } else if (type === 'payment') {
+          const amountRaw = String(row[1] ?? '').trim();
+          const amount = parseFloat(amountRaw.replace(',', '.'));
+          if (isNaN(amount) || amount <= 0) {
+            errors.push(`${rowLabel}: shuma "${amountRaw}" nuk është numër valid`);
+            skipped++;
+            continue;
+          }
+          const dateRaw = String(row[2] ?? '').trim();
+          let paymentDate: Date;
+          if (dateRaw) {
+            const parsed = new Date(dateRaw);
+            if (isNaN(parsed.getTime())) {
+              errors.push(`${rowLabel}: data "${dateRaw}" nuk mund të lexohet (formati: YYYY-MM-DD)`);
+              skipped++;
+              continue;
+            }
+            paymentDate = parsed;
+          } else {
+            paymentDate = new Date();
+          }
+          const noteRaw = String(row[3] ?? '').trim().slice(0, 500) || undefined;
+          let payRef = `BLK-${caseRef.slice(-6)}-${i + 1}-${Date.now().toString(36)}`.slice(0, 50);
+          await this.prisma.payment.create({
+            data: {
+              caseId: cas.id,
+              officerId: performedById,
+              importJobId: job.id,
+              paymentReference: payRef,
+              amount,
+              paymentDate,
+              notes: noteRaw,
+            },
+          });
           updated++;
         }
       } catch (e: any) {

@@ -1138,7 +1138,7 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh, refData }: {
 
 // ── TAB 4: Ndryshime te pjesshme ───────────────────────────────────────────────
 
-type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2" | "inactive";
+type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2" | "inactive" | "payment";
 
 const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "officer",           label: "Zyrtar kryesor",      desc: "Ndrysho zyrtar kryesor të rastit" },
@@ -1152,6 +1152,7 @@ const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "guarantor1",        label: "Garanti 1",            desc: "Shto/ndrysho garantorin e parë" },
   { key: "guarantor2",        label: "Garanti 2",            desc: "Shto/ndrysho garantorin e dytë" },
   { key: "inactive",          label: "Klientët joaktiv",    desc: "Shëno klientët si joaktiv" },
+  { key: "payment",           label: "Regjistro Pagesa",     desc: "Regjistro pagesa për raste specifike" },
 ];
 
 function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs, onRollback }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[]; jobs: any[]; loadingJobs: boolean; onRollback: () => void }) {
@@ -1179,6 +1180,14 @@ function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs
   }
 
   function downloadTemplate() {
+    if (type === "payment") {
+      downloadExcel([
+        { "Numri i Klientit (case_reference)": "Q71234567R", "Shuma EUR": 250.00, "Data (opsional, YYYY-MM-DD)": "2026-11-01", "Shënimi (opsional)": "Pagesa e muajit" },
+        { "Numri i Klientit (case_reference)": "M31234567N", "Shuma EUR": 180.50, "Data (opsional, YYYY-MM-DD)": "2026-11-15", "Shënimi (opsional)": "" },
+        { "Numri i Klientit (case_reference)": "", "Shuma EUR": "", "Data (opsional, YYYY-MM-DD)": "", "Shënimi (opsional)": "" },
+      ], `template-${type}`);
+      return;
+    }
     if (type === "inactive") {
       downloadExcel([
         { "Numri i Klientit (case_reference)": "Q71234567R", "Statusi i Ri (opsional)": "CLOSED" },
@@ -1300,6 +1309,17 @@ function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs
             </div>
           ))}
         </div>
+      </div>
+    );
+    if (type === "payment") return (
+      <div className="space-y-2">
+        <p className="text-[12px] text-gray-500 leading-relaxed">
+          Kolona B: shuma e pagesës si numër decimal, p.sh.{" "}
+          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">250.00</span>.<br />
+          Kolona C (opsionale): data në formatin{" "}
+          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">YYYY-MM-DD</span> — nëse lihet bosh, vendoset data e sotme.<br />
+          Kolona D (opsionale): shënim/referencë e brendshme.
+        </p>
       </div>
     );
     return null;

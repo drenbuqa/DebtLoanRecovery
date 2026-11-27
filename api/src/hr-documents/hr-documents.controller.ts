@@ -37,8 +37,8 @@ export class HrDocumentsController {
   }
 
   @Get(':id/file')
-  async getFile(@Param('id') id: string) {
-    const url = await this.svc.getSignedUrl(id);
+  async getFile(@Param('id') id: string, @Request() req: any) {
+    const url = await this.svc.getSignedUrl(id, req);
     return { url };
   }
 

@@ -49,7 +49,7 @@ export class HrDocumentsService {
     });
   }
 
-  async getSignedUrl(id: string): Promise<string> {
+  async getSignedUrl(id: string, req?: any): Promise<string> {
     const doc = await this.prisma.hrDocument.findUnique({
       where: { id },
       select: { fileKey: true },
@@ -59,6 +59,12 @@ export class HrDocumentsService {
       throw new BadRequestException(
         'Ky dokument është importuar nga sistemi i vjetër dhe nuk mund të hapet. Ju lutemi ngarkoni përsëri dokumentin.',
       );
+    }
+    if (doc.fileKey.startsWith('local:') && req) {
+      const localKey = doc.fileKey.slice(6);
+      const protocol = req.protocol ?? 'http';
+      const host = req.get('host');
+      return `${protocol}://${host}/uploads/${localKey}`;
     }
     return this.storage.getSignedUrl(doc.fileKey);
   }
