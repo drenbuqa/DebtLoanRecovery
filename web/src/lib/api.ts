@@ -458,9 +458,8 @@ export const leave = {
 export const hrDocuments = {
   list: () => req<any[]>('/hr-documents'),
   fileUrl: (id: string) => `${API_BASE}/hr-documents/${id}/file`,
-  openFile: async (id: string): Promise<void> => {
-    const data = await req<{ url: string }>(`/hr-documents/${id}/file`);
-    window.open(data.url, '_blank', 'noreferrer');
+  openFile: (id: string): void => {
+    window.open(`${API_BASE}/hr-documents/${id}/file`, '_blank', 'noreferrer');
   },
   upload: async (file: File, title: string, description?: string) => {
     const form = new FormData();

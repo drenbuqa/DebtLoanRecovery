@@ -71,6 +71,12 @@ export class StorageService {
     );
   }
 
+  /** Returns the absolute path for a local: key, or null if the key is not local. */
+  localPath(key: string): string | null {
+    if (!key.startsWith('local:')) return null;
+    return path.join(this.localDir, key.slice(6));
+  }
+
   async delete(key: string): Promise<void> {
     if (key.startsWith('local:')) {
       const filePath = path.join(this.localDir, key.slice(6));
