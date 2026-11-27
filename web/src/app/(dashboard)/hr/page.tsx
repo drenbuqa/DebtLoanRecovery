@@ -5,6 +5,7 @@ import Topbar from "@/components/layout/Topbar";
 import { hrDocuments as hrApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmModal";
+import { useToast } from "@/components/ui/Toast";
 import {
   BookOpen, Upload, Trash2, FileText, FileSpreadsheet,
   File, Download, Eye, Plus, Loader2, AlertCircle,
@@ -208,6 +209,7 @@ function DocCard({ doc, canDelete, onDelete }: {
 
 export default function HrPage() {
   const { can } = useAuth();
+  const { toast } = useToast();
   const [docs, setDocs]           = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [showUpload, setShowUpload] = useState(false);
@@ -231,8 +233,9 @@ export default function HrPage() {
         try {
           await hrApi.delete(id);
           setDocs(d => d.filter(doc => doc.id !== id));
+          toast("Dokumenti u fshi");
         } catch (e: any) {
-          alert(e.message ?? "Gabim gjatë fshirjes.");
+          toast(e.message ?? "Gabim gjatë fshirjes.", "error");
         }
       },
     });
@@ -308,7 +311,7 @@ export default function HrPage() {
       {showUpload && (
         <UploadModal
           onClose={() => setShowUpload(false)}
-          onUploaded={load}
+          onUploaded={() => { load(); toast("Dokumenti u ngarkua me sukses"); }}
         />
       )}
     </div>

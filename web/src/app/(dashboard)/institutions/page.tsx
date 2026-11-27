@@ -144,9 +144,13 @@ function InstitutionsPageInner() {
       variant: inst.totalLoans > 0 ? "brand" : "danger",
       onConfirm: async () => {
         if (inst.totalLoans > 0) return;
-        await instApi.delete(inst.id);
-        mutate();
-        toast("Institucioni u fshi");
+        try {
+          await instApi.delete(inst.id);
+          mutate();
+          toast("Institucioni u fshi");
+        } catch (e: any) {
+          toast(e.message ?? "Gabim gjatë fshirjes së institucionit.", "error");
+        }
       },
     });
   }

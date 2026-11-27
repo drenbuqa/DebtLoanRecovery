@@ -604,7 +604,7 @@ export default function LeaveAdminPage() {
                       {/* Actions */}
                       <div className="flex items-center gap-2 shrink-0">
                         <button
-                          onClick={() => leaveApi.reviewRequest(r.id, false).then(load).catch((e: any) => alert(e.message))}
+                          onClick={() => leaveApi.reviewRequest(r.id, false).then(() => { load(); toast("Kërkesa u refuzua", "warning"); }).catch((e: any) => toast(e.message ?? "Gabim gjatë refuzimit", "error"))}
                           className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
                           title="Refuzo">
                           <X size={14} />

@@ -861,8 +861,13 @@ export default function CaseDetailPage() {
       confirmLabel: "Fshi",
       variant: "danger",
       onConfirm: async () => {
-        await docsApi.delete(docId);
-        setDocs((prev) => prev.filter((d) => d.id !== docId));
+        try {
+          await docsApi.delete(docId);
+          setDocs((prev) => prev.filter((d) => d.id !== docId));
+          toast("Dokumenti u fshi");
+        } catch (e: any) {
+          toast(e.message ?? "Gabim gjatë fshirjes së dokumentit.", "error");
+        }
       },
     });
   }
@@ -881,6 +886,7 @@ export default function CaseDetailPage() {
       await activitiesApi.delete(deleteActivityTarget.id, deleteActivityReason.trim());
       setDeleteActivityTarget(null);
       await loadCase();
+      toast("Aktiviteti u fshi");
     } catch (e: any) {
       setDeleteActivityError(e.message ?? "Gabim gjatë fshirjes.");
       setDeleteActivitySaving(false);
