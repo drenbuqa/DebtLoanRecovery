@@ -840,7 +840,7 @@ export class ImportService {
 
   // ── Bulk partial update ────────────────────────────────────────────────────────
 
-  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2'|'inactive'|'payment', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
+  async bulkUpdate(buffer: Buffer, type: 'officer'|'secondary_officer'|'npl'|'institution'|'city'|'category'|'balance'|'phone2'|'office'|'guarantor1'|'guarantor2'|'inactive'|'edit_payment', performedById: string, fileName = `ndryshime-${type}.xlsx`) {
     const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -897,7 +897,49 @@ export class ImportService {
       const rowLabel = `Rreshti ${i + 2}`;
 
       if (!caseRef) { skipped++; continue; }
-      if (type !== 'inactive' && !codeRaw) { skipped++; continue; }
+      if (type !== 'inactive' && type !== 'edit_payment' && !codeRaw) { skipped++; continue; }
+
+      // edit_payment uses col A as paymentReference — handle before the case lookup
+      if (type === 'edit_payment') {
+        const payRef = caseRef; // col A is payment_reference here
+        const amountRaw = String(row[1] ?? '').trim();
+        const dateRaw   = String(row[2] ?? '').trim();
+        const noteRaw   = String(row[3] ?? '').trim();
+
+        if (!amountRaw && !dateRaw && !noteRaw) { skipped++; continue; }
+
+        try {
+          const payment = await this.prisma.payment.findUnique({
+            where: { paymentReference: payRef },
+            select: { id: true, voidedAt: true },
+          });
+          if (!payment) { errors.push(`${rowLabel}: pagesa me referencë "${payRef}" nuk u gjet`); skipped++; continue; }
+          if (payment.voidedAt) { errors.push(`${rowLabel}: pagesa "${payRef}" është anuluar dhe nuk mund të ndryshohet`); skipped++; continue; }
+
+          const data: Record<string, any> = {};
+
+          if (amountRaw) {
+            const amount = parseFloat(amountRaw.replace(',', '.'));
+            if (isNaN(amount) || amount <= 0) { errors.push(`${rowLabel}: shuma "${amountRaw}" nuk është numër valid`); skipped++; continue; }
+            data.amount = amount;
+          }
+
+          if (dateRaw) {
+            const parsed = new Date(dateRaw);
+            if (isNaN(parsed.getTime())) { errors.push(`${rowLabel}: data "${dateRaw}" nuk mund të lexohet (formati: YYYY-MM-DD)`); skipped++; continue; }
+            data.paymentDate = parsed;
+          }
+
+          if (noteRaw) data.notes = noteRaw.slice(0, 500);
+
+          await this.prisma.payment.update({ where: { id: payment.id }, data });
+          updated++;
+        } catch (e: any) {
+          errors.push(`${rowLabel}: ${e.message}`);
+          skipped++;
+        }
+        continue;
+      }
 
       try {
         const cas = await this.prisma.case.findUnique({
@@ -1010,41 +1052,6 @@ export class ImportService {
             continue;
           }
           await this.prisma.case.update({ where: { id: cas.id }, data: { status: targetStatus } });
-          updated++;
-        } else if (type === 'payment') {
-          const amountRaw = String(row[1] ?? '').trim();
-          const amount = parseFloat(amountRaw.replace(',', '.'));
-          if (isNaN(amount) || amount <= 0) {
-            errors.push(`${rowLabel}: shuma "${amountRaw}" nuk është numër valid`);
-            skipped++;
-            continue;
-          }
-          const dateRaw = String(row[2] ?? '').trim();
-          let paymentDate: Date;
-          if (dateRaw) {
-            const parsed = new Date(dateRaw);
-            if (isNaN(parsed.getTime())) {
-              errors.push(`${rowLabel}: data "${dateRaw}" nuk mund të lexohet (formati: YYYY-MM-DD)`);
-              skipped++;
-              continue;
-            }
-            paymentDate = parsed;
-          } else {
-            paymentDate = new Date();
-          }
-          const noteRaw = String(row[3] ?? '').trim().slice(0, 500) || undefined;
-          let payRef = `BLK-${caseRef.slice(-6)}-${i + 1}-${Date.now().toString(36)}`.slice(0, 50);
-          await this.prisma.payment.create({
-            data: {
-              caseId: cas.id,
-              officerId: performedById,
-              importJobId: job.id,
-              paymentReference: payRef,
-              amount,
-              paymentDate,
-              notes: noteRaw,
-            },
-          });
           updated++;
         }
       } catch (e: any) {

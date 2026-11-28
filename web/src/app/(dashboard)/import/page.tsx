@@ -1138,7 +1138,7 @@ function PaymentsTab({ jobs, loadingJobs, onRollback, onRefresh, refData }: {
 
 // ── TAB 4: Ndryshime te pjesshme ───────────────────────────────────────────────
 
-type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2" | "inactive" | "payment";
+type BulkType = "officer" | "secondary_officer" | "institution" | "city" | "category" | "balance" | "phone2" | "office" | "guarantor1" | "guarantor2" | "inactive" | "edit_payment";
 
 const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "officer",           label: "Zyrtar kryesor",      desc: "Ndrysho zyrtar kryesor të rastit" },
@@ -1152,7 +1152,7 @@ const BULK_OPTIONS: { key: BulkType; label: string; desc: string }[] = [
   { key: "guarantor1",        label: "Garanti 1",            desc: "Shto/ndrysho garantorin e parë" },
   { key: "guarantor2",        label: "Garanti 2",            desc: "Shto/ndrysho garantorin e dytë" },
   { key: "inactive",          label: "Klientët joaktiv",    desc: "Shëno klientët si joaktiv" },
-  { key: "payment",           label: "Regjistro Pagesa",     desc: "Regjistro pagesa për raste specifike" },
+  { key: "edit_payment",      label: "Ndrysho Pagesa",        desc: "Ndrysho shumën, datën ose shënimin e pagesave ekzistuese" },
 ];
 
 function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs, onRollback }: { officers: any[]; institutions: any[]; cities: any[]; offices: any[]; jobs: any[]; loadingJobs: boolean; onRollback: () => void }) {
@@ -1180,11 +1180,11 @@ function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs
   }
 
   function downloadTemplate() {
-    if (type === "payment") {
+    if (type === "edit_payment") {
       downloadExcel([
-        { "Numri i Klientit (case_reference)": "Q71234567R", "Shuma EUR": 250.00, "Data (opsional, YYYY-MM-DD)": "2026-11-01", "Shënimi (opsional)": "Pagesa e muajit" },
-        { "Numri i Klientit (case_reference)": "M31234567N", "Shuma EUR": 180.50, "Data (opsional, YYYY-MM-DD)": "2026-11-15", "Shënimi (opsional)": "" },
-        { "Numri i Klientit (case_reference)": "", "Shuma EUR": "", "Data (opsional, YYYY-MM-DD)": "", "Shënimi (opsional)": "" },
+        { "Referenca e Pagesës (payment_reference)": "IMP-7R-1-abc123", "Shuma e Re EUR (opsional)": 300.00, "Data e Re (opsional, YYYY-MM-DD)": "2026-11-15", "Shënimi i Ri (opsional)": "Korrigjim pagese" },
+        { "Referenca e Pagesës (payment_reference)": "IMP-7N-2-def456", "Shuma e Re EUR (opsional)": "",      "Data e Re (opsional, YYYY-MM-DD)": "",             "Shënimi i Ri (opsional)": "Pagese e rregulluar" },
+        { "Referenca e Pagesës (payment_reference)": "",                  "Shuma e Re EUR (opsional)": "",      "Data e Re (opsional, YYYY-MM-DD)": "",             "Shënimi i Ri (opsional)": "" },
       ], `template-${type}`);
       return;
     }
@@ -1311,14 +1311,16 @@ function UpdatesTab({ officers, institutions, cities, offices, jobs, loadingJobs
         </div>
       </div>
     );
-    if (type === "payment") return (
+    if (type === "edit_payment") return (
       <div className="space-y-2">
         <p className="text-[12px] text-gray-500 leading-relaxed">
-          Kolona B: shuma e pagesës si numër decimal, p.sh.{" "}
-          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">250.00</span>.<br />
-          Kolona C (opsionale): data në formatin{" "}
-          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">YYYY-MM-DD</span> — nëse lihet bosh, vendoset data e sotme.<br />
-          Kolona D (opsionale): shënim/referencë e brendshme.
+          Kolona A: referenca unike e pagesës ekzistuese (p.sh.{" "}
+          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">IMP-7R-1-abc123</span>) — e gjeni te faqja e pagesave.<br />
+          Kolona B (opsionale): shuma e re si numër decimal.<br />
+          Kolona C (opsionale): data e re në formatin{" "}
+          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">YYYY-MM-DD</span>.<br />
+          Kolona D (opsionale): shënim/referencë e re.<br />
+          <span className="text-amber-600 font-medium">Pagesa të anuluara nuk mund të ndryshohen.</span>
         </p>
       </div>
     );
